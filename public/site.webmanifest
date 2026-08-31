@@ -1,0 +1,32 @@
+{
+  "name": "Valmiki Tiger Watch",
+  "short_name": "Tiger Watch",
+  "description": "A conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F3E5",
+  "theme_color": "#0B3D2E",
+  "lang": "en",
+  "id": "/",
+  "categories": ["education", "news"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
