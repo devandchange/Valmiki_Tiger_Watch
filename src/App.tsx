@@ -9,6 +9,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { InstallPrompt } from './components/InstallPrompt';
 import { AdminModal } from './components/AdminModal';
+import { GlobalSearchModal } from './components/GlobalSearchModal';
 
 // Section Views
 import { HomeSection } from './components/sections/HomeSection';
@@ -101,6 +102,9 @@ export default function App() {
 
       {/* Admin Protected Dashboard Modal */}
       <AdminModal isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />
+
+      {/* Global Search Component Modal (⌘K / Ctrl+K) */}
+      <GlobalSearchModal />
     </div>
   );
 }

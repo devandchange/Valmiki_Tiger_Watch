@@ -32,6 +32,9 @@ interface DataContextType {
   setActiveTab: (tab: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  isSearchOpen: boolean;
+  setIsSearchOpen: (open: boolean) => void;
+  openSearchModal: (initialQuery?: string) => void;
   selectedTiger: TigerProfile | null;
   setSelectedTiger: (tiger: TigerProfile | null) => void;
   selectedNews: NewsArticle | null;
@@ -99,8 +102,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Navigation
   const [activeTab, setActiveTabState] = useState<string>('home');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [selectedTiger, setSelectedTiger] = useState<TigerProfile | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsArticle | null>(null);
+
+  const openSearchModal = (initialQuery?: string) => {
+    if (typeof initialQuery === 'string') {
+      setSearchQuery(initialQuery);
+    }
+    setIsSearchOpen(true);
+  };
 
   // Network State
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -469,6 +480,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveTab,
         searchQuery,
         setSearchQuery,
+        isSearchOpen,
+        setIsSearchOpen,
+        openSearchModal,
         selectedTiger,
         setSelectedTiger,
         selectedNews,
