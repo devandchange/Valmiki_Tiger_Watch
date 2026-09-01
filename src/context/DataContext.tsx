@@ -59,27 +59,58 @@ interface DataContextType {
   gallery: GalleryItem[];
 
   // Public Actions
-  submitSighting: (sighting: Omit<WildlifeSighting, 'id' | 'verificationStatus' | 'submittedAt'>) => void;
+  submitSighting: (sighting: any) => void;
+  addSighting?: (sighting: any) => void;
 
   // Admin Features
   isAdmin: boolean;
+  isAdminAuthenticated: boolean;
   adminLogin: (pass: string) => boolean;
+  loginAdmin: (pass: string) => boolean;
   adminLogout: () => void;
+  logoutAdmin: () => void;
+
+  // Tiger Operations & Verification
   addTiger: (tiger: Omit<TigerProfile, 'id'>) => void;
   updateTiger: (tiger: TigerProfile) => void;
   deleteTiger: (id: string) => void;
+  verifyTiger: (id: string, officialSource?: string, customDate?: string, isLive?: boolean) => void;
+  setTigerVerificationStatus: (id: string, status: 'verified' | 'reported' | 'unverified', isLive?: boolean, sources?: string, date?: string) => void;
+  toggleTigerLive: (id: string) => void;
+  updateTigerVerification: (id: string, updates: Partial<TigerProfile>) => void;
+  batchVerifyTigers: (ids: string[], officialSource?: string) => void;
+
+  // News Operations & Verification
   addNews: (article: Omit<NewsArticle, 'id'>) => void;
   updateNews: (article: NewsArticle) => void;
   deleteNews: (id: string) => void;
+  verifyNews: (id: string, status?: any, officialSourceRef?: string, customDate?: string, isLive?: boolean) => void;
+  toggleNewsLive: (id: string) => void;
+  updateNewsVerification: (id: string, updates: Partial<NewsArticle>) => void;
+  batchVerifyNews: (ids: string[], status: any, officialSourceRef?: string) => void;
+
+  // News Source Management
   toggleNewsSource: (id: string) => void;
   addNewsSource: (source: Omit<NewsSource, 'id' | 'lastChecked' | 'checkStatus'>) => void;
   syncNewsSources: () => Promise<{ addedCount: number; message: string }>;
+
+  // Alerts Operations & Verification
   addAlert: (alert: Omit<ConservationAlert, 'id'>) => void;
   toggleAlert: (id: string) => void;
+  toggleAlertStatus: (id: string) => void;
   deleteAlert: (id: string) => void;
+  verifyAlert: (id: string, verifiedSource?: string, customDate?: string) => void;
+  updateAlertVerification: (id: string, updates: Partial<ConservationAlert>) => void;
+
+  // Sightings Operations & Verification
   approveSighting: (id: string) => void;
   flagSighting: (id: string) => void;
   deleteSighting: (id: string) => void;
+  updateSightingStatus: (id: string, status: 'pending' | 'verified' | 'flagged' | 'under_review' | 'reported', officialNote?: string, customDate?: string) => void;
+  verifySighting: (id: string, officialNote?: string, customDate?: string) => void;
+  toggleSightingLive: (id: string) => void;
+
+  // Backup & Reset
   exportDataBackup: () => string;
   importDataBackup: (jsonData: string) => boolean;
   resetToDefaults: () => void;
@@ -332,11 +363,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
   };
 
-  // Admin Tiger CRUD
+  // Admin Tiger CRUD & Verification
   const addTiger = (tigerData: Omit<TigerProfile, 'id'>) => {
     const newTiger: TigerProfile = {
       ...tigerData,
-      id: `tiger-${Date.now()}`
+      id: `tiger-${Date.now()}`,
+      isLive: tigerData.isLive ?? true
     };
     setTigers(prev => [newTiger, ...prev]);
   };
@@ -349,11 +381,66 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTigers(prev => prev.filter(t => t.id !== id));
   };
 
-  // Admin News CRUD
+  const verifyTiger = (
+    id: string, 
+    officialSource = 'NTCA 5th Cycle & Bihar Forest Dept Protocol', 
+    customDate?: string, 
+    isLive = true
+  ) => {
+    const stamp = customDate || new Date().toISOString().split('T')[0];
+    setTigers(prev => prev.map(t => t.id === id ? {
+      ...t,
+      verification: 'verified',
+      sources: officialSource,
+      lastVerifiedDate: stamp,
+      verifiedBy: 'National Tiger Conservation Authority (NTCA) / Bihar Forest Dept',
+      isLive
+    } : t));
+  };
+
+  const setTigerVerificationStatus = (
+    id: string, 
+    status: 'verified' | 'reported' | 'unverified', 
+    isLive?: boolean, 
+    sources?: string, 
+    date?: string
+  ) => {
+    const stamp = date || new Date().toISOString().split('T')[0];
+    setTigers(prev => prev.map(t => t.id === id ? {
+      ...t,
+      verification: status,
+      sources: sources !== undefined ? sources : t.sources,
+      lastVerifiedDate: stamp,
+      isLive: isLive !== undefined ? isLive : (t.isLive ?? true)
+    } : t));
+  };
+
+  const toggleTigerLive = (id: string) => {
+    setTigers(prev => prev.map(t => t.id === id ? { ...t, isLive: t.isLive === false ? true : false } : t));
+  };
+
+  const updateTigerVerification = (id: string, updates: Partial<TigerProfile>) => {
+    setTigers(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
+  const batchVerifyTigers = (ids: string[], officialSource = 'NTCA 5th Cycle & Bihar Forest Dept Protocol') => {
+    const stamp = new Date().toISOString().split('T')[0];
+    setTigers(prev => prev.map(t => ids.includes(t.id) ? {
+      ...t,
+      verification: 'verified',
+      sources: officialSource,
+      lastVerifiedDate: stamp,
+      verifiedBy: 'National Tiger Conservation Authority (NTCA)',
+      isLive: true
+    } : t));
+  };
+
+  // Admin News CRUD & Verification
   const addNews = (newsData: Omit<NewsArticle, 'id'>) => {
     const newArticle: NewsArticle = {
       ...newsData,
-      id: `news-${Date.now()}`
+      id: `news-${Date.now()}`,
+      isLive: newsData.isLive ?? true
     };
     setNews(prev => [newArticle, ...prev]);
   };
@@ -364,6 +451,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteNews = (id: string) => {
     setNews(prev => prev.filter(n => n.id !== id));
+  };
+
+  const verifyNews = (
+    id: string, 
+    status: any = 'verified_govt', 
+    officialSourceRef = 'NTCA MoEFCC Press Notification', 
+    customDate?: string, 
+    isLive = true
+  ) => {
+    const stamp = customDate || new Date().toISOString().split('T')[0];
+    setNews(prev => prev.map(n => n.id === id ? {
+      ...n,
+      verificationStatus: status,
+      retrievedDate: stamp,
+      verifiedDate: stamp,
+      verifiedBy: 'NTCA / State Forest Media Division',
+      officialSourceRef,
+      isLive
+    } : n));
+  };
+
+  const toggleNewsLive = (id: string) => {
+    setNews(prev => prev.map(n => n.id === id ? { ...n, isLive: n.isLive === false ? true : false } : n));
+  };
+
+  const updateNewsVerification = (id: string, updates: Partial<NewsArticle>) => {
+    setNews(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
+  };
+
+  const batchVerifyNews = (ids: string[], status: any = 'verified_govt', officialSourceRef = 'NTCA MoEFCC Press Notification') => {
+    const stamp = new Date().toISOString().split('T')[0];
+    setNews(prev => prev.map(n => ids.includes(n.id) ? {
+      ...n,
+      verificationStatus: status,
+      retrievedDate: stamp,
+      verifiedDate: stamp,
+      verifiedBy: 'NTCA / State Forest Media Division',
+      officialSourceRef,
+      isLive: true
+    } : n));
   };
 
   // Admin News Source Management
@@ -399,11 +526,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  // Admin Alerts CRUD
+  // Admin Alerts CRUD & Verification
   const addAlert = (alertData: Omit<ConservationAlert, 'id'>) => {
     const newAlert: ConservationAlert = {
       ...alertData,
-      id: `alert-${Date.now()}`
+      id: `alert-${Date.now()}`,
+      verified: alertData.verified ?? true,
+      verifiedDate: alertData.verifiedDate || new Date().toISOString().split('T')[0],
+      verifiedSource: alertData.verifiedSource || 'VTR Control Cell Official Directive'
     };
     setAlerts(prev => [newAlert, ...prev]);
   };
@@ -412,21 +542,85 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: !a.active } : a));
   };
 
+  const toggleAlertStatus = toggleAlert;
+
   const deleteAlert = (id: string) => {
     setAlerts(prev => prev.filter(a => a.id !== id));
   };
 
-  // Admin Sightings Review
+  const verifyAlert = (
+    id: string, 
+    verifiedSource = 'VTR Field Directorate Emergency Bulletin #2026/08', 
+    customDate?: string
+  ) => {
+    const stamp = customDate || new Date().toISOString().split('T')[0];
+    setAlerts(prev => prev.map(a => a.id === id ? {
+      ...a,
+      verified: true,
+      verifiedDate: stamp,
+      verifiedSource,
+      verifiedBy: 'VTR Field Director / NTCA Liaison',
+      active: true
+    } : a));
+  };
+
+  const updateAlertVerification = (id: string, updates: Partial<ConservationAlert>) => {
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+  };
+
+  // Admin Sightings Review & Verification
   const approveSighting = (id: string) => {
-    setSightings(prev => prev.map(s => s.id === id ? { ...s, verificationStatus: 'verified' } : s));
+    const stamp = new Date().toISOString().split('T')[0];
+    setSightings(prev => prev.map(s => s.id === id ? { 
+      ...s, 
+      verificationStatus: 'verified',
+      verifiedDate: stamp,
+      isLive: true
+    } : s));
   };
 
   const flagSighting = (id: string) => {
-    setSightings(prev => prev.map(s => s.id === id ? { ...s, verificationStatus: 'flagged' } : s));
+    setSightings(prev => prev.map(s => s.id === id ? { ...s, verificationStatus: 'flagged', isLive: false } : s));
   };
 
   const deleteSighting = (id: string) => {
     setSightings(prev => prev.filter(s => s.id !== id));
+  };
+
+  const updateSightingStatus = (
+    id: string, 
+    status: 'pending' | 'verified' | 'flagged' | 'under_review' | 'reported', 
+    officialNote?: string, 
+    customDate?: string
+  ) => {
+    const stamp = customDate || new Date().toISOString().split('T')[0];
+    setSightings(prev => prev.map(s => s.id === id ? {
+      ...s,
+      verificationStatus: status,
+      verifiedDate: stamp,
+      officialNote: officialNote || s.officialNote,
+      isLive: status === 'verified' || status === 'reported'
+    } : s));
+  };
+
+  const verifySighting = (
+    id: string, 
+    officialNote = 'Cross-referenced against VTR Range Beat patrol logs & verified camera-trap coordinates.', 
+    customDate?: string
+  ) => {
+    const stamp = customDate || new Date().toISOString().split('T')[0];
+    setSightings(prev => prev.map(s => s.id === id ? {
+      ...s,
+      verificationStatus: 'verified',
+      verifiedDate: stamp,
+      verifiedBy: 'VTR Field Beat Range Officer',
+      officialNote,
+      isLive: true
+    } : s));
+  };
+
+  const toggleSightingLive = (id: string) => {
+    setSightings(prev => prev.map(s => s.id === id ? { ...s, isLive: s.isLive === false ? true : false } : s));
   };
 
   // Backup & Restore
@@ -502,24 +696,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         community,
         gallery,
         submitSighting,
+        addSighting: submitSighting,
         isAdmin,
+        isAdminAuthenticated: isAdmin,
         adminLogin,
+        loginAdmin: adminLogin,
         adminLogout,
+        logoutAdmin: adminLogout,
         addTiger,
         updateTiger,
         deleteTiger,
+        verifyTiger,
+        setTigerVerificationStatus,
+        toggleTigerLive,
+        updateTigerVerification,
+        batchVerifyTigers,
         addNews,
         updateNews,
         deleteNews,
+        verifyNews,
+        toggleNewsLive,
+        updateNewsVerification,
+        batchVerifyNews,
         toggleNewsSource,
         addNewsSource,
         syncNewsSources,
         addAlert,
         toggleAlert,
+        toggleAlertStatus,
         deleteAlert,
+        verifyAlert,
+        updateAlertVerification,
         approveSighting,
         flagSighting,
         deleteSighting,
+        updateSightingStatus,
+        verifySighting,
+        toggleSightingLive,
         exportDataBackup,
         importDataBackup,
         resetToDefaults

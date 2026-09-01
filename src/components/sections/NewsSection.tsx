@@ -34,6 +34,8 @@ export const NewsSection: React.FC = () => {
   const categories = ['all', 'Forest Department', 'NTCA / MoEFCC', 'WII Research', 'Established Media'];
 
   const filteredNews = news.filter(item => {
+    if (item.isLive === false) return false;
+
     const matchesSearch = 
       item.headline.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||

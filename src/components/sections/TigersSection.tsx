@@ -24,6 +24,9 @@ export const TigersSection: React.FC = () => {
   const [filterVerification, setFilterVerification] = useState<string>('all');
 
   const filteredTigers = tigers.filter(t => {
+    // Only show live items on public portal
+    if (t.isLive === false) return false;
+
     const matchesSearch = 
       t.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (t.name && t.name.toLowerCase().includes(searchQuery.toLowerCase())) ||

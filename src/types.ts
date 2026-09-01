@@ -19,6 +19,9 @@ export interface TigerProfile {
   lastVerifiedDate: string;
   sources: string;
   notes: string;
+  isLive?: boolean;
+  verifiedBy?: string;
+  verificationNotes?: string;
 }
 
 export interface NewsArticle {
@@ -34,6 +37,10 @@ export interface NewsArticle {
   retrievedDate: string;
   tags: string[];
   imageUrl?: string;
+  isLive?: boolean;
+  verifiedDate?: string;
+  verifiedBy?: string;
+  officialSourceRef?: string;
 }
 
 export interface NewsSource {
@@ -73,6 +80,10 @@ export interface ConservationAlert {
   source?: string;
   active: boolean;
   hotlineContact?: string;
+  verified?: boolean;
+  verifiedDate?: string;
+  verifiedSource?: string;
+  verifiedBy?: string;
 }
 
 export interface WildlifeSighting {
@@ -95,6 +106,10 @@ export interface WildlifeSighting {
   observer?: string;
   hasPhoto?: boolean;
   photoUrl?: string;
+  isLive?: boolean;
+  verifiedDate?: string;
+  verifiedBy?: string;
+  officialNote?: string;
 }
 
 export type SightingReport = WildlifeSighting;
