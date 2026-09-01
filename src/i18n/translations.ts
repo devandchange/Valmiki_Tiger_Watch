@@ -34,6 +34,11 @@ export const UI_TRANSLATIONS: Record<string, Record<string, string>> = {
     'nav.research': 'Research Papers',
     'nav.about': 'About Platform',
     'nav.contact': 'Contact & Hotlines',
+    'nav.species_spotter': 'Species Spotter',
+    'nav.tiger_worldwide': 'Tiger Worldwide',
+    'nav.cuisine': 'Local Cuisine',
+    'nav.travel_guide': 'Travel & Seasons',
+    'nav.sightseeing': 'Sightseeing & Attractions',
     'nav.more': 'More',
 
     // Common Actions & Buttons
@@ -273,6 +278,11 @@ export const UI_TRANSLATIONS: Record<string, Record<string, string>> = {
     'nav.research': 'शोध पत्र',
     'nav.about': 'मंच के बारे में',
     'nav.contact': 'संपर्क एवं हेल्पलाइन',
+    'nav.species_spotter': 'स्पीशीज स्पॉटर (चेकलिस्ट)',
+    'nav.tiger_worldwide': 'वैश्विक बाघ एवं संरक्षण',
+    'nav.cuisine': 'स्थानीय व्यंजन',
+    'nav.travel_guide': 'यात्रा संदर्शिका व मौसम',
+    'nav.sightseeing': 'दर्शनीय स्थल व अनुभव',
     'nav.more': 'अन्य अनुभाग',
 
     // Common Actions & Buttons
@@ -512,6 +522,11 @@ export const UI_TRANSLATIONS: Record<string, Record<string, string>> = {
     'nav.research': 'تحقیقی مقالے',
     'nav.about': 'پلیٹ فارم کا تعارف',
     'nav.contact': 'رابطہ اور ہیلپ لائن',
+    'nav.species_spotter': 'اسپیشیز سپاٹر (چیک لسٹ)',
+    'nav.tiger_worldwide': 'عالمی شیر و تحفظ',
+    'nav.cuisine': 'مقامی پکوان',
+    'nav.travel_guide': 'سیاحتی رہنمائی و موسم',
+    'nav.sightseeing': 'سیاحتی مقامات',
     'nav.more': 'مزید شعبے',
 
     // Common Actions & Buttons

@@ -32,8 +32,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           {/* Brand & Purpose */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 border border-[#F27D26]/40 p-1 flex items-center justify-center flex-shrink-0">
-                <img src="/icons/icon-192.png" alt="VTW Logo" className="w-full h-full object-contain rounded-full" />
+              <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md bg-[#0B3D2E]">
+                <img src="/icons/icon-192.png" alt="Valmiki Tiger Watch Logo" className="w-full h-full object-contain rounded-full" />
               </div>
               <div>
                 <h3 className="font-sans font-bold text-base text-white tracking-wider uppercase">

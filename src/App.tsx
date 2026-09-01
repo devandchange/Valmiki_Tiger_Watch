@@ -10,6 +10,8 @@ import { Footer } from './components/Footer';
 import { InstallPrompt } from './components/InstallPrompt';
 import { AdminModal } from './components/AdminModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
+import { ConservationAlertBanner } from './components/ConservationAlertBanner';
+import { SpeciesSpotter } from './components/SpeciesSpotter';
 
 // Section Views
 import { HomeSection } from './components/sections/HomeSection';
@@ -30,6 +32,10 @@ import { MapSection } from './components/sections/MapSection';
 import { AboutSection } from './components/sections/AboutSection';
 import { CreditsSection } from './components/sections/CreditsSection';
 import { ContactSection } from './components/sections/ContactSection';
+import { TigerWorldwideSection } from './components/sections/TigerWorldwideSection';
+import { LocalCuisineSection } from './components/sections/LocalCuisineSection';
+import { TravelGuideSection } from './components/sections/TravelGuideSection';
+import { SightseeingSection } from './components/sections/SightseeingSection';
 
 export default function App() {
   const { activeTab, setActiveTab } = useData();
@@ -45,12 +51,16 @@ export default function App() {
     switch (activeTab) {
       case 'home':
         return <HomeSection onOpenInstallGuide={() => setIsInstallOpen(true)} />;
+      case 'tiger-worldwide':
+        return <TigerWorldwideSection />;
       case 'about-vtr':
         return <AboutVTRSection />;
       case 'tigers':
         return <TigersSection />;
       case 'wildlife':
         return <WildlifeSection />;
+      case 'species-spotter':
+        return <SpeciesSpotter />;
       case 'project-tiger':
         return <ProjectTigerSection />;
       case 'conservation':
@@ -63,6 +73,12 @@ export default function App() {
         return <EducationSection />;
       case 'ecotourism':
         return <EcotourismSection />;
+      case 'travel-guide':
+        return <TravelGuideSection />;
+      case 'sightseeing':
+        return <SightseeingSection />;
+      case 'cuisine':
+        return <LocalCuisineSection />;
       case 'community':
         return <CommunitySection />;
       case 'sightings':
@@ -91,6 +107,7 @@ export default function App() {
 
       {/* Main View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+        <ConservationAlertBanner className="mb-6" />
         {renderSection()}
       </main>
 

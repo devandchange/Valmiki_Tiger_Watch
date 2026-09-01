@@ -40,14 +40,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
 
   const navItems = [
     { id: 'home', label: t('nav.home', 'Home') },
+    { id: 'tiger-worldwide', label: `🐅 ${t('nav.tiger_worldwide', 'Tiger Worldwide')}` },
     { id: 'about-vtr', label: t('nav.about_vtr', 'About VTR') },
     { id: 'tigers', label: t('nav.tigers', 'Tigers of VTR') },
     { id: 'news', label: t('nav.news', 'News') },
     { id: 'wildlife', label: t('nav.wildlife', 'Wildlife') },
+    { id: 'species-spotter', label: `🔭 ${t('nav.species_spotter', 'Species Spotter')}` },
     { id: 'project-tiger', label: t('nav.project_tiger', 'Project Tiger') },
     { id: 'conservation', label: t('nav.conservation', 'Conservation') },
     { id: 'map', label: t('nav.map', 'Reserve Map') },
     { id: 'ecotourism', label: t('nav.ecotourism', 'Ecotourism') },
+    { id: 'travel-guide', label: t('nav.travel_guide', 'Travel Guide') },
+    { id: 'sightseeing', label: t('nav.sightseeing', 'Sightseeing') },
+    { id: 'cuisine', label: t('nav.cuisine', 'Local Cuisine') },
     { id: 'community', label: t('nav.community', 'Community') },
     { id: 'sightings', label: t('nav.sightings', 'Sightings') },
     { id: 'education', label: t('nav.education', 'Education') },
@@ -117,11 +122,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
             className="flex items-center gap-3.5 text-left group focus:outline-none"
             id="brand-logo-btn"
           >
-            <div className="w-11 h-11 bg-[#0B3D2E] rounded-full flex items-center justify-center text-[#F27D26] flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform overflow-hidden bg-[#0B3D2E]">
               <img 
                 src="/icons/icon-192.png" 
                 alt="Valmiki Tiger Watch Logo" 
-                className="w-8 h-8 object-contain rounded-full"
+                className="w-full h-full object-contain rounded-full"
               />
             </div>
             <div>

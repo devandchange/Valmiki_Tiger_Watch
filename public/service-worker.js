@@ -1,7 +1,7 @@
 // Valmiki Tiger Watch Service Worker
-// Version: 1.0.4
-const CACHE_NAME = 'vtw-core-v1';
-const DYNAMIC_CACHE = 'vtw-dynamic-v1';
+// Version: 2.4.0
+const CACHE_NAME = 'vtw-core-v6';
+const DYNAMIC_CACHE = 'vtw-dynamic-v6';
 
 const STATIC_ASSETS = [
   '/',
@@ -9,7 +9,10 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/icon-1024.png',
   '/icons/maskable-512.png',
+  '/vtw-logo.svg',
+  '/vtw-logo.png',
   '/favicon.png',
   '/apple-touch-icon.png'
 ];

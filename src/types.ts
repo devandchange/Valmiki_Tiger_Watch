@@ -151,6 +151,110 @@ export interface CommunityInitiative {
   coordinator: string;
 }
 
+export type VerificationStatusTag = 'verified_current' | 'verified_older' | 'recently_updated' | 'unavailable';
+
+export interface VerifiedStatistic {
+  id: string;
+  category: 'global' | 'asia' | 'india' | 'vtr' | 'mortality' | 'habitat';
+  title: string;
+  value: string;
+  numericValue?: number;
+  unit?: string;
+  confidenceRange?: string; // e.g. "3,167–3,925"
+  previousValue?: string;
+  status: VerificationStatusTag;
+  sourceOrganization: string;
+  reportName: string;
+  assessmentYear: number | string;
+  publicationDate: string;
+  lastVerifiedDate: string;
+  officialSourceUrl: string;
+  methodologySummary: string;
+  notes?: string;
+  updateHistory?: {
+    date: string;
+    previousVal: string;
+    newVal: string;
+    verifiedBy: string;
+    source: string;
+  }[];
+}
+
+export interface TigerCountryData {
+  id: string;
+  country: string;
+  continent: 'Asia' | 'Eurasia';
+  estimatedPopulation: string;
+  populationRange?: string;
+  trend: 'Increasing' | 'Stable' | 'Decreasing' | 'Critically Endangered' | 'Extinct in Wild';
+  assessmentYear: number | string;
+  sourceOrg: string;
+  sourceUrl: string;
+  lastVerified: string;
+  majorHabitats: string[];
+  protectedAreas: string[];
+  landscapeHighlights: string;
+  statusTag: VerificationStatusTag;
+}
+
+export interface AllIndiaEstimationEntry {
+  cycle: string;
+  year: number;
+  meanPopulation: number;
+  lowerConfidence?: number;
+  upperConfidence?: number;
+  source: string;
+  reportTitle: string;
+  status: 'Completed Official' | 'Upcoming Assessment';
+}
+
+export interface SightseeingAttraction {
+  id: string;
+  name: string;
+  category: 'safari' | 'temple' | 'river' | 'trail' | 'heritage';
+  distanceFromValmikinagar: string;
+  description: string;
+  visitingInformation: string;
+  timings: string;
+  entryPermit: string;
+  officialSource: string;
+  photoUrl: string;
+  mapLocation: string;
+}
+
+export interface LocalCuisineItem {
+  id: string;
+  name: string;
+  localNameHindi: string;
+  localNameUrdu: string;
+  origin: 'Valmikinagar / Tharu' | 'West Champaran' | 'Bihar' | 'Gandak River Basin';
+  type: 'traditional_heritage' | 'staple_dish' | 'festive_delicacy' | 'beverage';
+  description: string;
+  authenticityDetails: string;
+  isTraditionalFood: boolean;
+  culturalNote: string;
+  photoUrl: string;
+}
+
+export interface TransitInfo {
+  mode: 'road' | 'rail' | 'air' | 'local';
+  title: string;
+  routes: {
+    origin: string;
+    distance: string;
+    duration: string;
+    details: string;
+  }[];
+  nearestPoints: {
+    name: string;
+    distance: string;
+    code?: string;
+    type: string;
+  }[];
+  permitInfo: string;
+  source: string;
+}
+
 export interface GalleryItem {
   id: string;
   title: string;

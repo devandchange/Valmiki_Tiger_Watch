@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { WildlifeSpecies } from '../../types';
+import { SpeciesSpotter } from '../SpeciesSpotter';
 import { 
   Trees, 
   Search, 
@@ -11,11 +12,14 @@ import {
   ShieldCheck,
   TrendingUp,
   TrendingDown,
-  Minus
+  Minus,
+  Binoculars,
+  BookOpen
 } from 'lucide-react';
 
 export const WildlifeSection: React.FC = () => {
   const { wildlife } = useData();
+  const [activeSubTab, setActiveSubTab] = useState<'directory' | 'spotter'>('directory');
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,10 +74,38 @@ export const WildlifeSection: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in pb-8">
       {/* Header Banner */}
-      <div className="bg-[#0B3D2E] text-white rounded-3xl p-6 sm:p-10 border border-[#145A43] shadow-lg space-y-4">
-        <div className="inline-flex items-center space-x-2 bg-[#07271D] border border-amber-500/40 rounded-full px-3 py-1 text-xs text-amber-300 font-mono">
-          <Trees className="w-3.5 h-3.5 text-amber-400" />
-          <span>VTR Terai-Arc Biodiversity Index</span>
+      <div className="bg-[#0B3D2E] text-white rounded-3xl p-6 sm:p-10 border border-[#145A43] shadow-lg space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="inline-flex items-center space-x-2 bg-[#07271D] border border-amber-500/40 rounded-full px-3 py-1 text-xs text-amber-300 font-mono">
+            <Trees className="w-3.5 h-3.5 text-amber-400" />
+            <span>VTR Terai-Arc Biodiversity Index</span>
+          </div>
+
+          {/* Subtab Toggle Buttons */}
+          <div className="flex items-center bg-[#07271D] p-1 rounded-xl border border-emerald-500/40 text-xs font-mono">
+            <button
+              onClick={() => setActiveSubTab('directory')}
+              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                activeSubTab === 'directory'
+                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                  : 'text-emerald-200/70 hover:text-white'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Biodiversity Index</span>
+            </button>
+            <button
+              onClick={() => setActiveSubTab('spotter')}
+              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                activeSubTab === 'spotter'
+                  ? 'bg-amber-500 text-stone-950 font-bold shadow-xs'
+                  : 'text-emerald-200/70 hover:text-white'
+              }`}
+            >
+              <Binoculars className="w-3.5 h-3.5" />
+              <span>Species Spotter Checklist</span>
+            </button>
+          </div>
         </div>
 
         <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white">
@@ -84,6 +116,11 @@ export const WildlifeSection: React.FC = () => {
           Nestled at the confluence of the Bhabar and Terai landscape, Valmiki Tiger Reserve supports a rich mosaic of moist deciduous sal forests, cane brakes, alluvial savannah grasslands, and swift rivers sustaining over 53 mammal, 250 bird, and 30 reptile species.
         </p>
       </div>
+
+      {activeSubTab === 'spotter' ? (
+        <SpeciesSpotter showHeader={false} />
+      ) : (
+        <>
 
       {/* Search & Category Filter */}
       <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -181,6 +218,8 @@ export const WildlifeSection: React.FC = () => {
           </div>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 };

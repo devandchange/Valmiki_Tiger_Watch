@@ -18,8 +18,8 @@ export const InstallPrompt: React.FC<InstallPromptProps> = ({ isOpen, onClose })
         {/* Header */}
         <div className="bg-[#07271D] px-6 py-4 border-b border-emerald-900 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500 p-0.5 shadow">
-              <img src="/icons/icon-192.png" alt="VTW" className="w-full h-full object-cover rounded-[10px]" />
+            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 shadow bg-[#0B3D2E]">
+              <img src="/icons/icon-192.png" alt="Valmiki Tiger Watch Logo" className="w-full h-full object-contain rounded-full" />
             </div>
             <div>
               <h3 className="font-display font-bold text-base text-white">Install Valmiki Tiger Watch</h3>

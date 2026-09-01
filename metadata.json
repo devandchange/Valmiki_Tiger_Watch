@@ -1,6 +1,6 @@
 {
   "name": "Valmiki Tiger Watch",
-  "description": "A conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence.",
+  "description": "An independent conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence.",
   "requestFramePermissions": [
     "geolocation"
   ],

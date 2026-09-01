@@ -1,7 +1,7 @@
 {
   "name": "Valmiki Tiger Watch",
   "short_name": "Tiger Watch",
-  "description": "A conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence.",
+  "description": "An independent conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -15,12 +15,20 @@
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/maskable-512.png",

@@ -5,7 +5,10 @@ import {
   Award, 
   Heart, 
   ShieldCheck, 
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink,
+  Globe,
+  FileCheck
 } from 'lucide-react';
 
 export const CreditsSection: React.FC = () => {
@@ -20,93 +23,179 @@ export const CreditsSection: React.FC = () => {
           <span>{t('credits.title', 'Credits, Attribution & Dedication')}</span>
         </div>
 
-        <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white">
+        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">
           {language === 'hi' 
-            ? 'साभार, प्रमाणिकता एवं समर्पण' 
+            ? 'साभार, प्रमाणिकता एवं रचनाकार परिचय' 
             : language === 'ur'
-            ? 'اعترافِ خدمات، کریڈٹس اور انتساب'
-            : 'Credits, Attribution & Dedication'}
+            ? 'کریڈٹس، سائنسی ذرائع اور خالق کا تعارف'
+            : 'Credits, Scientific Attribution & Creator Spotlight'}
         </h1>
 
         <p className="text-sm sm:text-base text-emerald-100/90 max-w-3xl leading-relaxed">
           {language === 'hi'
-            ? 'वाल्मीकि टाइगर रिजर्व के पारिस्थितिक संरक्षण, शोधकर्ताओं, वन्यजीव जीवविज्ञानियों, वन रक्षकों और दूरदर्शी प्रकृति प्रेमियों के प्रति हार्दिक आभार।'
+            ? 'वाल्मीकि टाइगर वॉच एक स्वतंत्र गैर-सरकारी संरक्षण मंच है। यहाँ इस एप्लिकेशन के रचनाकार, आधिकारिक डेटा स्रोत और अग्रिम पंक्ति के वन रक्षकों के प्रति समर्पण का विवरण दिया गया है।'
             : language === 'ur'
-            ? 'والمیکی ٹائیگر ریزرو کی حفاظت، تحقیق، حیاتیاتی تنوع اور فرنٹ لائن فارسٹ گارڈز کے نام خراج تحسین و اعتراف خدمات۔'
-            : 'Acknowledging the visionary creators, researchers, wildlife biologists, and frontline guardians whose ceaseless devotion protects Valmiki Tiger Reserve.'}
+            ? 'والمیکی ٹائیگر واچ ایک خود مختار ماحولیاتی پلیٹ فارم ہے۔ یہاں ایپ کے تخلیق کار، سائنسی حوالہ جات اور فرنٹ لائن فارسٹ گارڈز کے لیے انتساب پیش ہے۔'
+            : 'Valmiki Tiger Watch is an independent non-governmental conservation platform. Discover the creator behind the initiative, verified institutional scientific sources, and our dedication to frontline forest guardians.'}
         </p>
       </div>
 
-      {/* Creator & Developer Spotlight Card */}
-      <CreatorProfileCard variant="full" />
+      {/* Creator Profile Card (Primary Focus) */}
+      <div className="space-y-4">
+        <CreatorProfileCard variant="full" />
+      </div>
 
-      {/* Institutional & Scientific Acknowledgments */}
+      {/* Official Sources & Useful Government Portals */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-stone-200 shadow-sm space-y-6">
-        <div className="space-y-1">
-          <div className="inline-flex items-center space-x-2 text-xs font-mono uppercase tracking-wider text-emerald-800 font-bold">
-            <ShieldCheck className="w-4 h-4 text-emerald-700" />
-            <span>{language === 'hi' ? 'डेटा प्रामाणिकता' : language === 'ur' ? 'ڈیٹا کی تصدیق' : 'Data Integrity & Attribution'}</span>
+        <div className="flex items-center space-x-3">
+          <Globe className="w-6 h-6 text-[#0B3D2E]" />
+          <div>
+            <h3 className="font-display font-bold text-2xl text-stone-900">
+              {language === 'hi' ? 'आधिकारिक स्रोत एवं उपयोगी लिंक्स' : language === 'ur' ? 'سرکاری ذرائع اور مفید لنکس' : 'Official Sources & Useful Government Portals'}
+            </h3>
+            <p className="text-xs text-stone-500 font-mono">
+              {language === 'hi' ? 'सत्यापनीय राष्ट्रीय एवं अंतरराष्ट्रीय संरक्षण प्राधिकरण' : 'Verifiable National & Global Wildlife Conservation Authorities'}
+            </p>
           </div>
-          <h3 className="font-display font-bold text-2xl text-stone-900">
-            {language === 'hi' ? 'संस्थागत एवं वैज्ञानिक डेटा स्रोत' : language === 'ur' ? 'ادارہ جاتی اور سائنسی ذرائع' : 'Institutional & Scientific Data Sources'}
-          </h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs sm:text-sm text-stone-700">
-          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
-            <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
-              <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
-              <span>National Tiger Conservation Authority (NTCA)</span>
+        {/* Clear Non-Affiliation Declaration */}
+        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 font-mono">
+          <strong>Independent Initiative Notice:</strong> Valmiki Tiger Watch is an independent digital conservation awareness platform created for public education. It is not an official portal of, nor directly affiliated with, the government departments or institutions listed below.
+        </div>
+
+        {/* Institutional & Scientific Data Sources Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs sm:text-sm text-stone-700">
+          {/* NTCA */}
+          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
+                <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
+                <span>NTCA (National Tiger Conservation Authority)</span>
+              </div>
+              <p className="text-stone-600 text-xs leading-relaxed">
+                All-India Tiger Estimation protocols, M-STrIPES guidelines, management effectiveness evaluation (MEE) criteria, and national population assessments.
+              </p>
             </div>
-            <p className="text-stone-600 leading-relaxed">
-              {language === 'hi' 
-                ? 'अखिल भारतीय बाघ आकलन प्रोटोकॉल, M-STrIPES दिशानिर्देश, प्रबंधन प्रभावशीलता मूल्यांकन (MEE) और राष्ट्रीय आबादी अनुमान।'
-                : language === 'ur'
-                ? 'آل انڈیا ٹائیگر تخمینہ پروٹوکول، M-STrIPES ہدایات، اور قومی آبادی جائزے کا طریقہ کار۔'
-                : 'All-India Tiger Estimation protocols, M-STrIPES guidelines, management effectiveness evaluation (MEE) criteria, and national population assessments.'}
-            </p>
+            <a
+              href="https://ntca.gov.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-800 hover:text-emerald-950 pt-2 border-t border-stone-200"
+            >
+              <span>Visit ntca.gov.in</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
 
-          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
-            <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
-              <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
-              <span>Wildlife Institute of India (WII)</span>
+          {/* WII */}
+          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
+                <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
+                <span>Wildlife Institute of India (WII)</span>
+              </div>
+              <p className="text-stone-600 text-xs leading-relaxed">
+                Spatial camera-trap methodologies, Terai Arc Landscape ecological research papers, genetics studies, and herbivore prey density indices.
+              </p>
             </div>
-            <p className="text-stone-600 leading-relaxed">
-              {language === 'hi'
-                ? 'स्थानिक कैमरा-ट्रैप पद्धति, तराई आर्क लैंडस्केप पारिस्थितिक शोध पत्र और शाकाहारी शिकार घनत्व सूचकांक।'
-                : language === 'ur'
-                ? 'کیمرہ ٹریپنگ تکنیک، ترائی آرک لینڈ اسکیپ ماحولیاتی ریسرچ اور شکار کی کثافت کے اشاریے۔'
-                : 'Spatial camera-trap methodologies, Terai Arc Landscape ecological research papers, genetics studies, and herbivore prey density indices.'}
-            </p>
+            <a
+              href="https://wii.gov.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-800 hover:text-emerald-950 pt-2 border-t border-stone-200"
+            >
+              <span>Visit wii.gov.in</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
 
-          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
-            <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
-              <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
-              <span>Environment, Forest & Climate Change Dept, Bihar</span>
+          {/* Bihar Forest Department */}
+          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
+                <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
+                <span>Dept of Forest, Env & Climate Change, Bihar</span>
+              </div>
+              <p className="text-stone-600 text-xs leading-relaxed">
+                Official Valmiki Tiger Reserve notifications, Eco-Development Committee data, forest division circulars, and ecotourism guidelines.
+              </p>
             </div>
-            <p className="text-stone-600 leading-relaxed">
-              {language === 'hi'
-                ? 'आधिकारिक वन रेंज अधिसूचनाएं, पर्यावरण-विकास समिति रिपोर्ट, घास के मैदान प्रबंधन डेटा।'
-                : language === 'ur'
-                ? 'سرکاری رینج نوٹیفکیشنز، ایکو ڈیولپمنٹ کمیٹی رپورٹس اور گھاس کے میدانوں کا انتظام۔'
-                : 'Official range notifications, eco-development committee reports, grassland management data, and wildlife sanctuary boundaries.'}
-            </p>
+            <a
+              href="https://forest.bihar.gov.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-800 hover:text-emerald-950 pt-2 border-t border-stone-200"
+            >
+              <span>Visit forest.bihar.gov.in</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
 
-          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
-            <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
-              <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
-              <span>IUCN Red List & WWF-India TAL Program</span>
+          {/* MoEFCC */}
+          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
+                <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
+                <span>MoEFCC (Govt. of India)</span>
+              </div>
+              <p className="text-stone-600 text-xs leading-relaxed">
+                Ministry of Environment, Forest and Climate Change statutory notifications, Wildlife Protection Act policies, and Project Tiger history.
+              </p>
             </div>
-            <p className="text-stone-600 leading-relaxed">
-              {language === 'hi'
-                ? 'प्रजातियों की संरक्षण स्थिति, सीमा पार कॉरिडोर गतिशीलता और आवास कनेक्टिविटी बेंचमार्क।'
-                : language === 'ur'
-                ? 'اقسام کے تحفظ کی صورتحال، سرحد پار کوریڈور کی نقل و حرکت اور قدرتی مسکن رابطہ۔'
-                : 'Species conservation statuses, transboundary corridor dynamics, and habitat connectivity benchmarks.'}
-            </p>
+            <a
+              href="https://moef.gov.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-800 hover:text-emerald-950 pt-2 border-t border-stone-200"
+            >
+              <span>Visit moef.gov.in</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          {/* Chitwan National Park */}
+          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
+                <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
+                <span>Chitwan National Park, Nepal</span>
+              </div>
+              <p className="text-stone-600 text-xs leading-relaxed">
+                Contiguous UNESCO World Heritage National Park in Nepal forming the transboundary Terai Arc ecological expanse and gene flow corridor.
+              </p>
+            </div>
+            <a
+              href="https://chitwannationalpark.gov.np"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-800 hover:text-emerald-950 pt-2 border-t border-stone-200"
+            >
+              <span>Visit chitwannationalpark.gov.np</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          {/* IUCN Red List */}
+          <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-[#0B3D2E] font-bold text-base">
+                <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
+                <span>IUCN Red List of Threatened Species</span>
+              </div>
+              <p className="text-stone-600 text-xs leading-relaxed">
+                International endangered classifications, species taxonomy (Panthera tigris), CITES Appendix I protections, and global population metrics.
+              </p>
+            </div>
+            <a
+              href="https://www.iucnredlist.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-800 hover:text-emerald-950 pt-2 border-t border-stone-200"
+            >
+              <span>Visit iucnredlist.org</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
         </div>
       </div>
@@ -128,5 +217,3 @@ export const CreditsSection: React.FC = () => {
     </div>
   );
 };
-
-
