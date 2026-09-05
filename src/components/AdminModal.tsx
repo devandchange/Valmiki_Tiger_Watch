@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { TigerProfile, NewsArticle, WildlifeSighting, ConservationAlert, VerificationLevel } from '../types';
+import { TigerProfile, NewsArticle, WildlifeSighting, ConservationAlert, VerificationLevel, VisitorLocation, VerifiedStatistic } from '../types';
 import { 
   Lock, 
   Unlock, 
@@ -29,7 +29,10 @@ import {
   BarChart3,
   Globe2,
   Sparkles,
-  Info
+  Info,
+  MapPin,
+  Compass,
+  Navigation
 } from 'lucide-react';
 
 interface AdminModalProps {
@@ -77,6 +80,15 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     deleteAlert,
     verifyAlert,
     updateAlertVerification,
+    mapLocations,
+    addMapLocation,
+    updateMapLocation,
+    deleteMapLocation,
+    toggleMapLocationLive,
+    resetMapLocations,
+    verifiedStats,
+    updateVerifiedStat,
+    resetVerifiedStats,
     newsSources,
     toggleNewsSource,
     syncNewsSources,
@@ -87,7 +99,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
 
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'stats' | 'sources' | 'system'>('tigers');
+  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'system'>('tigers');
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'pending' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -101,9 +113,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
   const [tigerMarkings, setTigerMarkings] = useState('');
   const [tigerTerritory, setTigerTerritory] = useState('Valmikinagar Core Range');
   const [tigerPhoto, setTigerPhoto] = useState('https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&w=800&q=80');
-  const [tigerVerifStatus, setTigerVerifStatus] = useState<'verified' | 'reported' | 'unverified'>('verified');
+  const [tigerVerifStatus, setTigerVerifStatus] = useState<'verified' | 'reported' | 'estimated' | 'unverified'>('verified');
   const [tigerSource, setTigerSource] = useState(OFFICIAL_SOURCES_PRESETS[0]);
   const [tigerVerifDate, setTigerVerifDate] = useState(new Date().toISOString().split('T')[0]);
+  const [tigerLastDocDate, setTigerLastDocDate] = useState(new Date().toISOString().split('T')[0]);
+  const [tigerStripePattern, setTigerStripePattern] = useState('');
+  const [tigerCondition, setTigerCondition] = useState('Healthy, prime adult');
+  const [tigerCubs, setTigerCubs] = useState('');
+  const [tigerRecentSighting, setTigerRecentSighting] = useState('');
   const [tigerIsLive, setTigerIsLive] = useState(true);
 
   // News form state
@@ -122,8 +139,24 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertDesc, setAlertDesc] = useState('');
   const [alertSev, setAlertSev] = useState<'info' | 'warning' | 'critical'>('warning');
+  const [alertType, setAlertType] = useState<'advisory' | 'wildlife_safety' | 'forest_closure' | 'visitor_notice' | 'emergency'>('advisory');
   const [alertRange, setAlertRange] = useState('All VTR Ranges');
-  const [alertSource, setAlertSource] = useState('VTR Control Cell Official Directive');
+  const [alertAuthority, setAlertAuthority] = useState('VTR Field Directorate, Bettiah');
+  const [alertIsSample, setAlertIsSample] = useState(false);
+
+  // Location form state
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [locName, setLocName] = useState('');
+  const [locNameHi, setLocNameHi] = useState('');
+  const [locRange, setLocRange] = useState('Valmikinagar Range');
+  const [locCategory, setLocCategory] = useState<'gate' | 'river' | 'historical' | 'watchtower' | 'stay' | 'town' | 'zone'>('gate');
+  const [locElevation, setLocElevation] = useState('125 m');
+  const [locLat, setLocLat] = useState('27.4326');
+  const [locLng, setLocLng] = useState('83.8967');
+  const [locHowToReach, setLocHowToReach] = useState('');
+  const [locAttractions, setLocAttractions] = useState('');
+  const [locDesc, setLocDesc] = useState('');
+  const [locIsLive, setLocIsLive] = useState(true);
 
   // Interactive inline editing state
   const [customSourceInputs, setCustomSourceInputs] = useState<Record<string, string>>({});
@@ -207,18 +240,30 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
       safeTerritory: tigerTerritory,
       cameraTrapRecords: 1,
       lastVerifiedDate: tigerVerifDate,
+      lastDocumentedDate: tigerLastDocDate,
       status: 'Resident',
       photoUrl: tigerPhoto,
       notes: 'Monitored under VTW official database protocol.',
       verification: tigerVerifStatus,
       sources: tigerSource,
       isLive: tigerIsLive,
-      verifiedBy: 'National Tiger Conservation Authority (NTCA) / Bihar Forest Dept'
+      verifiedBy: 'National Tiger Conservation Authority (NTCA) / Bihar Forest Dept',
+      fullDossier: {
+        stripePatternId: tigerStripePattern || `STRIPE-${tigerCode.trim().toUpperCase()}`,
+        physicalCondition: tigerCondition,
+        territorySizeKm2: '45-60 sq km',
+        knownCubs: tigerCubs ? tigerCubs.split(',').map(c => c.trim()) : undefined,
+        recentSightingsNote: tigerRecentSighting || undefined,
+        verifiedRecordsCount: 1
+      }
     });
 
     setTigerCode('');
     setTigerName('');
     setTigerMarkings('');
+    setTigerStripePattern('');
+    setTigerCubs('');
+    setTigerRecentSighting('');
     setIsAddingTiger(false);
     showToast(`Tiger ${tigerCode.toUpperCase()} registered and stamped with verified status.`);
   };
@@ -278,15 +323,19 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     addAlert({
       title: alertTitle,
       severity: alertSev,
+      alertType: alertType,
       affectedRange: alertRange,
       date: new Date().toISOString().split('T')[0],
+      issuedDate: new Date().toISOString().split('T')[0],
+      issuingAuthority: alertAuthority,
       description: alertDesc,
-      source: alertSource,
+      source: alertAuthority,
       verified: true,
       verifiedDate: new Date().toISOString().split('T')[0],
-      verifiedSource: alertSource,
+      verifiedSource: alertAuthority,
       verifiedBy: 'VTR Field Directorate',
-      active: true
+      active: true,
+      isSampleData: alertIsSample
     });
 
     setAlertTitle('');
@@ -295,10 +344,41 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     showToast('Verified conservation advisory broadcasted live.');
   };
 
+  // Location Operations
+  const handleCreateLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!locName) return;
+
+    addMapLocation({
+      name: locName,
+      nameHi: locNameHi || locName,
+      nameUr: locName,
+      range: locRange,
+      category: locCategory,
+      elevation: locElevation,
+      coordinates: { lat: parseFloat(locLat) || 27.43, lng: parseFloat(locLng) || 83.9 },
+      coordsDisplay: `${locLat}° N, ${locLng}° E`,
+      howToReach: locHowToReach || 'Via state highway NH-727 connecting to Bettiah/Bagaha.',
+      howToReachHi: locHowToReach || 'बेतिया/बगहा से जोड़ने वाले राष्ट्रीय राजमार्ग NH-727 द्वारा।',
+      attractions: locAttractions ? locAttractions.split(',').map(a => a.trim()) : ['Scenic Forest Point', 'Wildlife Observation'],
+      description: locDesc || 'Official designated visitor destination in Valmiki Tiger Reserve.',
+      descriptionHi: locDesc || 'वाल्मीकि टाइगर रिजर्व का अधिकृत पर्यटक स्थल।',
+      isLive: locIsLive
+    });
+
+    setLocName('');
+    setLocNameHi('');
+    setLocHowToReach('');
+    setLocAttractions('');
+    setLocDesc('');
+    setIsAddingLocation(false);
+    showToast(`Visitor destination "${locName}" created and added to map.`);
+  };
+
   // Stats verification
   const handleVerifyStat = (statId: string) => {
     const today = new Date().toISOString().split('T')[0];
-    setVerifiedCensusStats(prev => prev.map(s => s.id === statId ? { ...s, verifiedDate: today, status: 'verified_current' } : s));
+    updateVerifiedStat(statId, { verifiedDate: today, status: 'verified_current' });
     showToast(`Statistic audit timestamp updated to ${today}.`);
   };
 
@@ -443,7 +523,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                 { id: 'news', label: `📰 News (${news.length})` },
                 { id: 'sightings', label: `👁️ Sightings (${sightings.length})` },
                 { id: 'alerts', label: `⚠️ Advisories (${alerts.length})` },
-                { id: 'stats', label: `📊 Official Census Stats (${verifiedCensusStats.length})` },
+                { id: 'locations', label: `📍 Map & Gates (${mapLocations.length})` },
+                { id: 'stats', label: `📊 Official Census Stats (${verifiedStats.length})` },
                 { id: 'sources', label: `🌐 News Channels (${newsSources.length})` },
                 { id: 'system', label: `⚙️ Persistence & Backup` },
               ].map((tab) => (
@@ -454,6 +535,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                     setIsAddingTiger(false);
                     setIsAddingNews(false);
                     setIsAddingAlert(false);
+                    setIsAddingLocation(false);
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                     activeTab === tab.id 
@@ -573,6 +655,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                           >
                             <option value="verified">Verified Official (NTCA / Forest Dept)</option>
                             <option value="reported">Reported Observation</option>
+                            <option value="estimated">Estimated / Camera Trap Match</option>
                             <option value="unverified">Unverified (Draft Mode)</option>
                           </select>
                         </div>
@@ -594,6 +677,55 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                             type="date"
                             value={tigerVerifDate}
                             onChange={(e) => setTigerVerifDate(e.target.value)}
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Last Documented Date (Camera-Trap)</label>
+                          <input
+                            type="date"
+                            value={tigerLastDocDate}
+                            onChange={(e) => setTigerLastDocDate(e.target.value)}
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Stripe Pattern Reference ID</label>
+                          <input
+                            type="text"
+                            value={tigerStripePattern}
+                            onChange={(e) => setTigerStripePattern(e.target.value)}
+                            placeholder="e.g. VTR-SP-106-FL"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Physical Condition Assessment</label>
+                          <input
+                            type="text"
+                            value={tigerCondition}
+                            onChange={(e) => setTigerCondition(e.target.value)}
+                            placeholder="Healthy, dominant adult male"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-emerald-200 block mb-1">Known Cubs / Offspring (comma-separated)</label>
+                          <input
+                            type="text"
+                            value={tigerCubs}
+                            onChange={(e) => setTigerCubs(e.target.value)}
+                            placeholder="e.g. T-107, Cub-2024-B"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Recent Observation Notes</label>
+                          <input
+                            type="text"
+                            value={tigerRecentSighting}
+                            onChange={(e) => setTigerRecentSighting(e.target.value)}
+                            placeholder="Camera trap grid cell B4-12"
                             className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
                           />
                         </div>
@@ -676,11 +808,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                                     tiger.verification === 'verified'
                                       ? 'bg-emerald-900 text-emerald-200 border border-emerald-500'
+                                      : tiger.verification === 'estimated'
+                                      ? 'bg-sky-950 text-sky-200 border border-sky-500'
                                       : tiger.verification === 'reported'
                                       ? 'bg-amber-900 text-amber-200 border border-amber-500'
                                       : 'bg-stone-800 text-stone-300 border border-stone-600'
                                   }`}>
                                     {tiger.verification === 'verified' && <ShieldCheck className="w-3 h-3 mr-1 text-emerald-400" />}
+                                    {tiger.verification === 'estimated' && <Eye className="w-3 h-3 mr-1 text-sky-400" />}
                                     {tiger.verification === 'reported' && <Clock className="w-3 h-3 mr-1 text-amber-400" />}
                                     {tiger.verification === 'unverified' && <AlertTriangle className="w-3 h-3 mr-1 text-stone-400" />}
                                     {tiger.verification.toUpperCase()}
@@ -751,6 +886,16 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                                       className="px-2 py-1 bg-[#0B3D2E] hover:bg-emerald-800 text-amber-300 rounded-lg text-[11px] font-mono border border-emerald-700"
                                     >
                                       Set Reported
+                                    </button>
+
+                                    <button
+                                      onClick={() => {
+                                        setTigerVerificationStatus(tiger.id, 'estimated', true);
+                                        showToast(`Tiger ${tiger.code} updated to Estimated status.`);
+                                      }}
+                                      className="px-2 py-1 bg-[#0B3D2E] hover:bg-sky-950/60 text-sky-300 rounded-lg text-[11px] font-mono border border-sky-800"
+                                    >
+                                      Set Estimated
                                     </button>
 
                                     <button
@@ -1137,7 +1282,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                             required
                           />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                           <div>
                             <label className="text-emerald-200 block mb-1">Severity Tier</label>
                             <select
@@ -1148,6 +1293,20 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                               <option value="warning">Warning (Amber Alert)</option>
                               <option value="critical">Critical (Red Emergency)</option>
                               <option value="info">Informational (Blue Notice)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-emerald-200 block mb-1">Alert Classification</label>
+                            <select
+                              value={alertType}
+                              onChange={(e) => setAlertType(e.target.value as any)}
+                              className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                            >
+                              <option value="advisory">Advisory</option>
+                              <option value="wildlife_safety">Wildlife Safety</option>
+                              <option value="forest_closure">Forest Closure</option>
+                              <option value="visitor_notice">Visitor Notice</option>
+                              <option value="emergency">Emergency Action</option>
                             </select>
                           </div>
                           <div>
@@ -1163,18 +1322,29 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                             <label className="text-emerald-200 block mb-1">Issuing Authority</label>
                             <input
                               type="text"
-                              value={alertSource}
-                              onChange={(e) => setAlertSource(e.target.value)}
+                              value={alertAuthority}
+                              onChange={(e) => setAlertAuthority(e.target.value)}
                               className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
                             />
                           </div>
                         </div>
-                        <button
-                          type="submit"
-                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-lg text-xs shadow"
-                        >
-                          Verify with Directorate & Broadcast Live
-                        </button>
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                          <label className="flex items-center space-x-2 text-emerald-200 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={alertIsSample}
+                              onChange={(e) => setAlertIsSample(e.target.checked)}
+                              className="rounded text-amber-500 focus:ring-amber-400"
+                            />
+                            <span className="font-mono text-xs">Flag as Simulated / Drill Data (Sample)</span>
+                          </label>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-lg text-xs shadow"
+                          >
+                            Verify with Directorate & Broadcast Live
+                          </button>
+                        </div>
                       </form>
                     </div>
                   )}
@@ -1188,8 +1358,18 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="font-bold text-white text-sm">{a.title}</span>
-                            <span className="text-amber-400 font-mono text-[11px] ml-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-white text-sm">{a.title}</span>
+                              <span className="bg-emerald-950 text-amber-300 font-mono text-[10px] px-2 py-0.5 rounded border border-emerald-700 uppercase">
+                                {a.alertType || 'advisory'}
+                              </span>
+                              {a.isSampleData && (
+                                <span className="bg-amber-950/80 text-amber-300 font-mono text-[9px] px-1.5 py-0.5 rounded border border-amber-600">
+                                  SIMULATED DRILL
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-amber-400 font-mono text-[11px] mt-0.5 block">
                               ({a.severity.toUpperCase()} • {a.affectedRange || 'All Ranges'})
                             </span>
                           </div>
@@ -1221,7 +1401,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                         </p>
 
                         <div className="flex justify-between items-center pt-2 border-t border-emerald-900 text-[11px] font-mono text-emerald-300">
-                          <span>Authority: <strong>{a.source || a.verifiedSource || 'VTR Field Directorate'}</strong></span>
+                          <span>Authority: <strong>{a.issuingAuthority || a.source || a.verifiedSource || 'VTR Field Directorate'}</strong></span>
                           <span>Verified Timestamp: <strong>{a.verifiedDate || a.date}</strong></span>
                         </div>
                       </div>
@@ -1231,7 +1411,237 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
               )}
 
               {/* ============================================================ */}
-              {/* TAB 5: OFFICIAL STATS & CENSUS METRICS AUDIT */}
+              {/* TAB 5: MAP LOCATIONS, GATES & TOURISM NODES */}
+              {/* ============================================================ */}
+              {activeTab === 'locations' && (
+                <div className="space-y-6">
+                  {/* Action Bar */}
+                  <div className="flex flex-wrap justify-between items-center gap-3">
+                    <button
+                      onClick={() => setIsAddingLocation(!isAddingLocation)}
+                      className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs flex items-center gap-1.5 shadow"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>{isAddingLocation ? 'Close Form' : 'Add Visitor Destination / Gate'}</span>
+                    </button>
+                    <div className="flex items-center space-x-3 text-xs font-mono">
+                      <span className="text-emerald-300">
+                        Total Sites: <strong>{mapLocations.length}</strong> (Live: {mapLocations.filter(m => m.isLive !== false).length})
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (confirm('Reset visitor landmarks to default VTR inventory?')) {
+                            resetMapLocations();
+                            showToast('Map landmarks restored to official baseline.');
+                          }
+                        }}
+                        className="px-2.5 py-1 bg-emerald-800 hover:bg-emerald-700 text-emerald-200 rounded text-[11px]"
+                      >
+                        Reset Defaults
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Add Location Form */}
+                  {isAddingLocation && (
+                    <div className="bg-[#07271D] p-5 rounded-2xl border border-amber-500/40 space-y-4 animate-fade-in shadow-xl">
+                      <h3 className="font-display font-bold text-sm text-amber-300 flex items-center gap-2 border-b border-emerald-800 pb-2">
+                        <MapPin className="w-4 h-4" />
+                        Register Official Reserve Entry Gate / Landmark
+                      </h3>
+
+                      <form onSubmit={handleCreateLocation} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Location Name (English) *</label>
+                          <input
+                            type="text"
+                            value={locName}
+                            onChange={(e) => setLocName(e.target.value)}
+                            placeholder="e.g. Manguraha Tourism Gate"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Location Name (Hindi)</label>
+                          <input
+                            type="text"
+                            value={locNameHi}
+                            onChange={(e) => setLocNameHi(e.target.value)}
+                            placeholder="e.g. मंगुराहा पर्यटन प्रवेश द्वार"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Category</label>
+                          <select
+                            value={locCategory}
+                            onChange={(e) => setLocCategory(e.target.value as any)}
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          >
+                            <option value="gate">Entry Gate / Checkpost</option>
+                            <option value="watchtower">Observation Watchtower</option>
+                            <option value="river">River Safari / Water Spot</option>
+                            <option value="stay">Eco Rest House / Hut</option>
+                            <option value="historical">Historical / Cultural Landmark</option>
+                            <option value="town">Transit Hub / Railhead Town</option>
+                            <option value="zone">Tourism Zone</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Forest Range</label>
+                          <input
+                            type="text"
+                            value={locRange}
+                            onChange={(e) => setLocRange(e.target.value)}
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Elevation</label>
+                          <input
+                            type="text"
+                            value={locElevation}
+                            onChange={(e) => setLocElevation(e.target.value)}
+                            placeholder="125 m"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Latitude (° N)</label>
+                          <input
+                            type="text"
+                            value={locLat}
+                            onChange={(e) => setLocLat(e.target.value)}
+                            placeholder="27.4326"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-emerald-200 block mb-1">Longitude (° E)</label>
+                          <input
+                            type="text"
+                            value={locLng}
+                            onChange={(e) => setLocLng(e.target.value)}
+                            placeholder="83.8967"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="text-emerald-200 block mb-1">How to Reach (Road/Transit Guide)</label>
+                          <input
+                            type="text"
+                            value={locHowToReach}
+                            onChange={(e) => setLocHowToReach(e.target.value)}
+                            placeholder="Accessible via Bagaha-Valmikinagar State Highway NH-727."
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div className="sm:col-span-3">
+                          <label className="text-emerald-200 block mb-1">Attractions & Highlights (comma-separated)</label>
+                          <input
+                            type="text"
+                            value={locAttractions}
+                            onChange={(e) => setLocAttractions(e.target.value)}
+                            placeholder="Safari Gate, Forest Rest House, Bird Watching, Sal Canopy"
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div className="sm:col-span-3">
+                          <label className="text-emerald-200 block mb-1">Description</label>
+                          <textarea
+                            rows={2}
+                            value={locDesc}
+                            onChange={(e) => setLocDesc(e.target.value)}
+                            placeholder="Detailed visitor advisory and ecological context..."
+                            className="w-full p-2.5 bg-[#0B3D2E] border border-emerald-700 rounded-lg text-white"
+                          />
+                        </div>
+                        <div className="sm:col-span-3 flex items-center justify-between pt-2">
+                          <label className="flex items-center space-x-2 text-emerald-200 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={locIsLive}
+                              onChange={(e) => setLocIsLive(e.target.checked)}
+                              className="rounded text-amber-500 focus:ring-amber-400"
+                            />
+                            <span className="font-mono text-xs">Publish directly to Interactive Map (Live)</span>
+                          </label>
+                          <button
+                            type="submit"
+                            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs shadow"
+                          >
+                            Save & Add to Reserve Map
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* List Locations */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {mapLocations.map((loc) => {
+                      const isLive = loc.isLive !== false;
+                      return (
+                        <div
+                          key={loc.id}
+                          className="p-4 bg-[#07271D] rounded-2xl border border-emerald-800 space-y-2 text-xs"
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white text-sm">{loc.name}</span>
+                                <span className="bg-emerald-950 text-amber-300 font-mono text-[10px] px-2 py-0.5 rounded border border-emerald-700 uppercase">
+                                  {loc.category}
+                                </span>
+                              </div>
+                              <span className="text-emerald-300 font-mono text-[11px] block mt-0.5">
+                                {loc.range} • {loc.coordsDisplay || `${loc.coordinates.lat}° N, ${loc.coordinates.lng}° E`}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => {
+                                  toggleMapLocationLive(loc.id);
+                                  showToast(`Location "${loc.name}" set to ${!isLive ? 'LIVE' : 'DRAFT'}`);
+                                }}
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                  isLive ? 'bg-emerald-600 text-white' : 'bg-stone-700 text-stone-300'
+                                }`}
+                              >
+                                {isLive ? 'LIVE' : 'DRAFT'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Delete location "${loc.name}"?`)) deleteMapLocation(loc.id);
+                                }}
+                                className="p-1 text-red-400 hover:text-red-300"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <p className="text-emerald-100/80 line-clamp-2 leading-relaxed">
+                            {loc.description}
+                          </p>
+
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {loc.attractions.slice(0, 3).map((a, i) => (
+                              <span key={i} className="px-1.5 py-0.5 bg-emerald-900/60 text-emerald-200 rounded text-[10px] font-mono">
+                                • {a}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ============================================================ */}
+              {/* TAB 6: OFFICIAL STATS & CENSUS METRICS AUDIT */}
               {/* ============================================================ */}
               {activeTab === 'stats' && (
                 <div className="space-y-4">
@@ -1242,13 +1652,24 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                         Official Population Census & Metrics Verification Registry
                       </h3>
                       <p className="text-xs text-emerald-200/80">
-                        Governance and timestamping of official figures published in public reports.
+                        Governance and timestamping of official figures published in public reports. Persisted to database.
                       </p>
                     </div>
+                    <button
+                      onClick={() => {
+                        if (confirm('Reset official statistics to government baseline numbers?')) {
+                          resetVerifiedStats();
+                          showToast('Statistics restored to official baseline.');
+                        }
+                      }}
+                      className="px-2.5 py-1 bg-emerald-800 hover:bg-emerald-700 text-emerald-200 rounded text-[11px] font-mono"
+                    >
+                      Reset Defaults
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {verifiedCensusStats.map((stat) => (
+                    {verifiedStats.map((stat) => (
                       <div
                         key={stat.id}
                         className="p-5 bg-[#07271D] rounded-2xl border border-emerald-800 space-y-3 text-xs"
@@ -1258,7 +1679,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                             Assessment Year: {stat.assessmentYear}
                           </span>
                           <span className="px-2 py-0.5 bg-emerald-900 text-emerald-200 rounded text-[10px] font-mono font-bold border border-emerald-600">
-                            ✓ VERIFIED GOVT
+                            ✓ {stat.status.toUpperCase().replace('_', ' ')}
                           </span>
                         </div>
 

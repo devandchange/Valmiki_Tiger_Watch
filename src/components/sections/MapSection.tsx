@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useData } from '../../context/DataContext';
+import { INITIAL_MAP_LOCATIONS } from '../../data/initialData';
 import { 
   MapPin, 
   Layers, 
@@ -16,176 +18,15 @@ import {
   Info
 } from 'lucide-react';
 
-interface VisitorLocation {
-  id: string;
-  name: string;
-  nameHi: string;
-  nameUr: string;
-  range: string;
-  category: 'gate' | 'river' | 'historical' | 'watchtower' | 'stay';
-  elevation: string;
-  coordinates: { lat: number; lng: number };
-  coordsDisplay: string;
-  howToReach: string;
-  howToReachHi: string;
-  attractions: string[];
-  description: string;
-  descriptionHi: string;
-}
-
 export const MapSection: React.FC = () => {
   const { language, isRtl } = useLanguage();
+  const { mapLocations } = useData();
   const [viewMode, setViewMode] = useState<'spots' | 'zonation'>('spots');
   const [selectedSpotId, setSelectedSpotId] = useState<string>('valmikinagar-gate');
   const [activeZone, setActiveZone] = useState<string>('valmikinagar');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  const visitorLocations: VisitorLocation[] = [
-    {
-      id: 'valmikinagar-gate',
-      name: 'Valmikinagar Main Forest Checkpost & Eco-Park',
-      nameHi: 'वाल्मीकिनगर मुख्य वन चेकपोस्ट एवं ईको-पार्क',
-      nameUr: 'والمیکی نگر مین فارسٹ چیک پوسٹ اور ایکو پارک',
-      range: 'Valmikinagar Range',
-      category: 'gate',
-      elevation: '125 m',
-      coordinates: { lat: 27.4326, lng: 83.8967 },
-      coordsDisplay: '27.4326° N, 83.8967° E',
-      howToReach: 'Via NH-727 from Bagaha (42 km) or Bettiah (95 km). Direct paved state highway.',
-      howToReachHi: 'बगहा से 42 किमी या बेतिया से 95 किमी NH-727 के माध्यम से।',
-      attractions: ['Official Safari Gypsy Bookings', 'Canopy Walk & Boardwalk', 'Botanical Interpretation Garden', 'Nature Souvenir Counter'],
-      description: 'The premier tourism reception center of Valmiki Tiger Reserve. Houses visitor registration counters, certified guide allocation, and the starting point for morning and afternoon open-gypsy jungle safaris.',
-      descriptionHi: 'वाल्मीकि टाइगर रिजर्व का प्रमुख पर्यटन स्वागत केंद्र। यहीं से सफारी जिप्सी और प्रमाणित गाइड मिलते हैं।'
-    },
-    {
-      id: 'gandak-barrage',
-      name: 'Gandak Barrage & Triveni Confluence',
-      nameHi: 'गंडक बराज एवं त्रिवेणी संगम',
-      nameUr: 'گندک بیراج اور تروینی سنگم',
-      range: 'Valmikinagar Range',
-      category: 'river',
-      elevation: '128 m',
-      coordinates: { lat: 27.4431, lng: 83.9035 },
-      coordsDisplay: '27.4431° N, 83.9035° E',
-      howToReach: '2 km north of Valmikinagar Eco-Park on the Indo-Nepal Border road.',
-      howToReachHi: 'वाल्मीकिनगर ईको-पार्क से 2 किमी उत्तर, भारत-नेपाल सीमा मार्ग पर।',
-      attractions: ['Gandak River Motorboat Safari', 'Gharial & Mugger Basking Points', 'Triveni 3-River Sacred Sangam', 'Sunrise Himalayan Panorama'],
-      description: 'Majestic 36-gate international barrage across the torrential Gandak (Narayani) river. Ideal for eco-boating to spot endangered Gharials and waterbirds against the backdrop of snow-dusted Siwalik peaks.',
-      descriptionHi: 'गंडक नदी पर बना अंतरराष्ट्रीय बराज। घड़ियाल दर्शन, मोटरबोट सफारी और हिमालयी नजारों के लिए प्रसिद्ध।'
-    },
-    {
-      id: 'jatashankar-temple',
-      name: 'Jatashankar & Nardevi Temple Trail',
-      nameHi: 'जटाशंकर एवं नरदेवी मंदिर वन मार्ग',
-      nameUr: 'جٹا شنکر اور نردیوی مندر ٹریل',
-      range: 'Valmikinagar Range',
-      category: 'historical',
-      elevation: '165 m',
-      coordinates: { lat: 27.4285, lng: 83.9210 },
-      coordsDisplay: '27.4285° N, 83.9210° E',
-      howToReach: '4 km foot trail through riverine sal forest from Valmikinagar checkpost.',
-      howToReachHi: 'वाल्मीकिनगर चेकपोस्ट से 4 किमी पैदल वन मार्ग।',
-      attractions: ['Ancient Natural Rock Shrine', 'Deep Cane Brakes & Bamboo Thickets', 'Great Indian Hornbill Birding', 'Perennial Mountain Stream'],
-      description: 'Historical natural rock temple nestled inside dense Calamus cane brakes and towering sal canopies. Revered by local Tharu tribes and offers exceptional birdwatching opportunities.',
-      descriptionHi: 'घने बेंत और साल के वनों के बीच स्थित ऐतिहासिक प्राकृतिक मंदिर, पक्षी दर्शन हेतु उत्तम।'
-    },
-    {
-      id: 'manguraha-hub',
-      name: 'Manguraha Range Headquarters & Forest Rest House',
-      nameHi: 'मंगुराहा रेंज मुख्यालय एवं वन विश्राम गृह',
-      nameUr: 'منگوراہا رینج ہیڈ کوارٹر اور فارسٹ ریسٹ ہاؤس',
-      range: 'Manguraha Range',
-      category: 'stay',
-      elevation: '180 m',
-      coordinates: { lat: 27.2831, lng: 84.4512 },
-      coordsDisplay: '27.2831° N, 84.4512° E',
-      howToReach: '28 km from Narkatiaganj railway junction via Gaunaha road.',
-      howToReachHi: 'नरकटियागंज रेलवे स्टेशन से 28 किमी गौनाहा मार्ग द्वारा।',
-      attractions: ['Colonial-era Wooden Rest House', 'Someshwar Foothills Safari Loop', 'Sloth Bear Habitat Trails', 'Peacock & Gaur Sighting Clearings'],
-      description: 'The eastern gateway to VTR. Features scenic forest rest houses surrounded by teak and sal plantations, serving as the base camp for treks into the rugged Someshwar hills.',
-      descriptionHi: 'वीटीआर का पूर्वी प्रवेश द्वार, ऐतिहासिक वन विश्राम गृह और सोमेश्वर पहाड़ियों का आधार शिविर।'
-    },
-    {
-      id: 'someshwar-fort',
-      name: 'Fort Someshwar Trek Trailhead',
-      nameHi: 'सोमेश्वर किला ट्रेक मार्ग',
-      nameUr: 'سومیشور قلعہ ٹریک',
-      range: 'Manguraha Range',
-      category: 'historical',
-      elevation: '865 m (Peak)',
-      coordinates: { lat: 27.3820, lng: 84.4980 },
-      coordsDisplay: '27.3820° N, 84.4980° E',
-      howToReach: 'Authorized forest escort trek from Manguraha Range beat (approx. 14 km round trip).',
-      howToReachHi: 'मंगुराहा से अधिकृत वन गाइड के साथ 14 किमी का पहाड़ी ट्रेक।',
-      attractions: ['Highest Elevation in Bihar (865m)', 'Ancient Hilltop Fort Ruins', 'Panoramic Views of Annapurna & Dhaulagiri', 'Sub-Himalayan Flora'],
-      description: 'The highest geographical ridge in Bihar along the Indo-Nepal international boundary. Offers breathtaking views of snow-capped Himalayan summits on clear winter mornings. Requires prior forest permission.',
-      descriptionHi: 'बिहार की सर्वोच्च चोटी (865 मी.), प्राचीन किला अवशेष और हिमालय की धौलागिरि चोटियों का विहंगम दृश्य।'
-    },
-    {
-      id: 'madanpur-wetland',
-      name: 'Madanpur Range Wetland & Grassland Complex',
-      nameHi: 'मदनपुर रेंज आर्द्रभूमि एवं घास के मैदान',
-      nameUr: 'مدن پور ویٹ لینڈ اور گراس لینڈ',
-      range: 'Madanpur Range',
-      category: 'watchtower',
-      elevation: '110 m',
-      coordinates: { lat: 27.2450, lng: 84.1870 },
-      coordsDisplay: '27.2450° N, 84.1870° E',
-      howToReach: '18 km from Bagaha town along the Gandak embankment road.',
-      howToReachHi: 'बगहा शहर से 18 किमी गंडक तटबंध मार्ग द्वारा।',
-      attractions: ['Alluvial Savannah Grasslands', 'Oxbow Lakes (Chaur) Birding', 'Transient Rhino Transit Corridor', 'Sunset Tiger Watchtower'],
-      description: 'Rich wetland and alluvial tall-grass complex where the Gandak floodplain meets dense sal forests. High density of waterbirds, swamp deer, hog deer, and dispersing large carnivores.',
-      descriptionHi: 'बाढ़ के मैदान और आर्द्रभूमि क्षेत्र, प्रवासी जलपक्षियों और दलदली हिरणों का प्राकृतिक आवास।'
-    },
-    {
-      id: 'gobardhana-watchtower',
-      name: 'Gobardhana Watch Tower & Eco-Rest Complex',
-      nameHi: 'गोबरधना वॉच टॉवर एवं ईको-विश्राम परिसर',
-      nameUr: 'گوبردھنا واچ ٹاور اور ایکو ریسٹ کمپلیکس',
-      range: 'Gobardhana Range',
-      category: 'watchtower',
-      elevation: '145 m',
-      coordinates: { lat: 27.3120, lng: 84.3410 },
-      coordsDisplay: '27.3120° N, 84.3410° E',
-      howToReach: 'Via Ramnagar-Gobardhana rural road (24 km from Ramnagar).',
-      howToReachHi: 'रामनगर से 24 किमी गोबरधना पक्की सड़क द्वारा।',
-      attractions: ['3-Tier Wildlife Observation Tower', 'Perennial Forest Stream (Pandai)', 'Indian Gaur & Chital Waterhole Viewing', 'Eco-Cottages'],
-      description: 'Strategically located high watchtower overlooking natural salt-licks and Pandai river ravines. Prime zone for viewing herds of Indian Gaur (Bison) and evening herbivore congregations.',
-      descriptionHi: 'पांडई नदी के पास स्थित 3-मंजिला वॉच टॉवर, भारतीय गौर (बाइसन) और हिरणों के दर्शन हेतु आदर्श।'
-    },
-    {
-      id: 'bhikhna-thori',
-      name: 'Bhikhna Thori Border Gorges',
-      nameHi: 'भीखना ठोरी बॉर्डर गॉर्ज एवं कंकड़ घाटी',
-      nameUr: 'بھیکھنا ٹھوری بارڈر گھاٹی',
-      range: 'Manguraha Range',
-      category: 'river',
-      elevation: '210 m',
-      coordinates: { lat: 27.3620, lng: 84.6120 },
-      coordsDisplay: '27.3620° N, 84.6120° E',
-      howToReach: 'Accessible from Gaunaha via forest permit route.',
-      howToReachHi: 'गौनाहा से वन विभाग के परमिट मार्ग द्वारा।',
-      attractions: ['Sandstone River Canyons', 'Historic Indo-Nepal Border Pillar', 'Spring Water Outcrops', 'Wild Orchids & Fern Glades'],
-      description: 'A scenic river gorge where the Pandai river enters Bihar from Nepal through narrow sandstone cliffs. Famous for natural cold springs and unique river gravel formations.',
-      descriptionHi: 'प्राकृतिक बलुआ पत्थर की घाटियां जहां से पांडई नदी नेपाल से बिहार में प्रवेश करती है।'
-    },
-    {
-      id: 'valmiki-vihar',
-      name: 'Valmiki Vihar Tourist Lodge & Safari Counter',
-      nameHi: 'वाल्मीकि विहार पर्यटक आवास एवं सफारी काउंटर',
-      nameUr: 'والمیکی وہار ٹورسٹ لاج',
-      range: 'Valmikinagar Range',
-      category: 'stay',
-      elevation: '126 m',
-      coordinates: { lat: 27.4360, lng: 83.8950 },
-      coordsDisplay: '27.4360° N, 83.8950° E',
-      howToReach: 'Located adjacent to Gandak Barrage approach in Valmikinagar town.',
-      howToReachHi: 'वाल्मीकिनगर मुख्य चौक, गंडक बराज के पास स्थित।',
-      attractions: ['BSTDC Official Tourist Hotel', 'Restaurant & Conference Hall', 'Direct Safari Vehicle Boarding', 'Gandak Riverfront Promenade'],
-      description: 'The flagship government tourist lodge operated by Bihar State Tourism Development Corporation (BSTDC). Features modern AC rooms, authentic local cuisine, and direct safari pickup.',
-      descriptionHi: 'बिहार राज्य पर्यटन विकास निगम (BSTDC) द्वारा संचालित मुख्य पर्यटक होटल एवं भोजनालय।'
-    }
-  ];
+  const visitorLocations = (mapLocations && mapLocations.length > 0 ? mapLocations : INITIAL_MAP_LOCATIONS).filter(loc => loc.isLive !== false);
 
   const filteredSpots = visitorLocations.filter(spot => {
     if (categoryFilter === 'all') return true;
@@ -200,6 +41,9 @@ export const MapSection: React.FC = () => {
       case 'historical': return Mountain;
       case 'watchtower': return Eye;
       case 'stay': return Trees;
+      case 'gate': return Navigation;
+      case 'town': return Compass;
+      case 'zone': return Layers;
       default: return Compass;
     }
   };

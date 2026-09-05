@@ -12,46 +12,75 @@ export interface TigerProfile {
   safeTerritory: string; // Generalized beat name, e.g. "Gonauli - Madanpur Sector"
   cameraTrapRecords: number;
   lastSightingDate?: string;
+  lastDocumentedDate?: string; // Last documented date
   status: 'Resident' | 'Transient' | 'Breeding Female' | 'Sub-Adult';
   familyLineage?: string;
-  verification: 'verified' | 'reported' | 'unverified';
+  verification: 'verified' | 'reported' | 'estimated' | 'unverified';
   photoUrl: string;
   lastVerifiedDate: string;
   sources: string;
   notes: string;
+  fullDossier?: string;
   isLive?: boolean;
   verifiedBy?: string;
   verificationNotes?: string;
 }
 
+export type NewsTopicCategory = 
+  | 'all'
+  | 'vtr'
+  | 'bihar'
+  | 'india'
+  | 'tiger_conservation'
+  | 'wildlife'
+  | 'biodiversity'
+  | 'human_wildlife_conflict'
+  | 'research'
+  | 'official_updates';
+
 export interface NewsArticle {
   id: string;
   headline: string;
   publicationDate: string;
-  source: string;
-  sourceLink: string;
+  publicationTime?: string;
+  source: string; // Newspaper / Source name e.g. Times of India, The Hindu, Dainik Jagran
+  sourceLink: string; // Working link to original article
+  externalUrl?: string; // Direct link to original article
   sourceCategory: 'Forest Department' | 'NTCA / MoEFCC' | 'WII Research' | 'Established Media' | string;
+  topicCategory?: NewsTopicCategory | string;
   summary: string;
+  keyTakeaways?: string[];
   content?: string;
   verificationStatus: VerificationLevel;
   retrievedDate: string;
   tags: string[];
   imageUrl?: string;
   isLive?: boolean;
+  isPinned?: boolean;
+  pinned?: boolean;
+  isFeatured?: boolean;
+  featured?: boolean;
+  status?: 'approved' | 'rejected' | 'pending';
+  sourceAttribution?: string;
   verifiedDate?: string;
   verifiedBy?: string;
   officialSourceRef?: string;
+  language?: 'en' | 'hi' | 'ur';
 }
 
 export interface NewsSource {
   id: string;
   name: string;
   url: string;
-  type: 'rss' | 'api' | 'gov_portal' | 'manual' | 'research' | 'media';
+  rssUrl?: string;
+  type: 'rss' | 'api' | 'gov_portal' | 'manual' | 'research' | 'media' | 'newspaper';
   enabled: boolean;
   trustLevel: 'official' | 'research' | 'media';
   lastChecked: string;
-  checkStatus: 'active' | 'synced' | 'pending';
+  checkStatus: 'active' | 'synced' | 'pending' | 'error';
+  category?: string;
+  isAutoSync?: boolean;
+  language?: 'en' | 'hi' | 'ur';
 }
 
 export interface WildlifeSpecies {
@@ -73,17 +102,40 @@ export interface ConservationAlert {
   title: string;
   severity: 'critical' | 'warning' | 'advisory' | 'seasonal' | 'info';
   date: string;
+  issuedDate?: string;
   affectedRange?: string;
   affectedZone?: string;
   description: string;
   guidance?: string;
   source?: string;
+  issuingAuthority?: string;
   active: boolean;
   hotlineContact?: string;
   verified?: boolean;
   verifiedDate?: string;
   verifiedSource?: string;
   verifiedBy?: string;
+  alertType?: 'advisory' | 'wildlife_safety' | 'forest_closure' | 'visitor_notice' | 'emergency';
+  isSampleData?: boolean;
+}
+
+export interface VisitorLocation {
+  id: string;
+  name: string;
+  nameHi: string;
+  nameUr: string;
+  range: string;
+  category: 'gate' | 'river' | 'historical' | 'watchtower' | 'stay' | 'town' | 'zone';
+  elevation: string;
+  coordinates: { lat: number; lng: number };
+  coordsDisplay: string;
+  howToReach: string;
+  howToReachHi: string;
+  attractions: string[];
+  description: string;
+  descriptionHi: string;
+  isLive?: boolean;
+  verifiedSource?: string;
 }
 
 export interface WildlifeSighting {
@@ -115,16 +167,43 @@ export interface WildlifeSighting {
 export type SightingReport = WildlifeSighting;
 
 
+export type ResearchCategory =
+  | 'Tiger Conservation Research'
+  | 'Wildlife & Biodiversity'
+  | 'Habitat & Forest Conservation'
+  | 'Human-Wildlife Conflict'
+  | 'Tiger Population & Monitoring'
+  | 'Wildlife Protection & Management'
+  | 'Eco-Tourism & Conservation'
+  | 'Community Participation'
+  | 'Climate Change & Wildlife'
+  | 'Relevant Academic Research'
+  // Legacy aliases for backward compatibility
+  | 'Tiger Population'
+  | 'Biodiversity & Flora'
+  | 'Human-Wildlife Coexistence'
+  | 'Transboundary Ecology';
+
 export interface ResearchReport {
   id: string;
   title: string;
   authors: string;
   organization: string;
   year: number;
-  category: 'Tiger Population' | 'Biodiversity & Flora' | 'Human-Wildlife Coexistence' | 'Transboundary Ecology';
+  publicationDate?: string;
+  category: ResearchCategory;
   abstract: string;
   keyFindings: string[];
-  downloadUrl?: string;
+  relevance?: string; // Relevance to tiger conservation
+  source?: string; // Source / Publisher name
+  doi?: string; // Official DOI or publication identifier
+  officialUrl?: string; // Official link
+  downloadUrl?: string; // Download / full text link
+  publicationType?: 'vtw_original' | 'external';
+  status?: 'published' | 'draft';
+  language?: 'en' | 'hi' | 'ur' | 'bilingual';
+  tags?: string[];
+  coverImage?: string;
   citation: string;
   verified: boolean;
 }

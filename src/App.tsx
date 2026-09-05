@@ -12,6 +12,7 @@ import { AdminModal } from './components/AdminModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { ConservationAlertBanner } from './components/ConservationAlertBanner';
 import { SpeciesSpotter } from './components/SpeciesSpotter';
+import { MobileBottomNav } from './components/MobileBottomNav';
 
 // Section Views
 import { HomeSection } from './components/sections/HomeSection';
@@ -38,7 +39,7 @@ import { TravelGuideSection } from './components/sections/TravelGuideSection';
 import { SightseeingSection } from './components/sections/SightseeingSection';
 
 export default function App() {
-  const { activeTab, setActiveTab } = useData();
+  const { activeTab, openMobileNav } = useData();
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isInstallOpen, setIsInstallOpen] = useState(false);
 
@@ -106,13 +107,16 @@ export default function App() {
       <Navbar onOpenAdmin={() => setIsAdminOpen(true)} onOpenInstall={() => setIsInstallOpen(true)} />
 
       {/* Main View Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-20 lg:pb-8">
         <ConservationAlertBanner className="mb-6" />
         {renderSection()}
       </main>
 
       {/* Global Footer */}
       <Footer onOpenAdmin={() => setIsAdminOpen(true)} />
+
+      {/* Mobile Sticky Bottom Navigation Dock */}
+      <MobileBottomNav onOpenMenu={openMobileNav} />
 
       {/* PWA Install Modal */}
       <InstallPrompt isOpen={isInstallOpen} onClose={() => setIsInstallOpen(false)} />

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
+import { MobileNavDrawer } from './MobileNavDrawer';
 import { 
   ShieldAlert, 
   Download, 
@@ -29,12 +30,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
     installPwa, 
     alerts,
     openSearchModal,
-    isAdmin
+    isAdmin,
+    isMobileNavOpen,
+    openMobileNav,
+    closeMobileNav
   } = useData();
 
   const { t, isRtl } = useLanguage();
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const activeAlertsCount = alerts.filter(a => a.active).length;
 
@@ -62,7 +64,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
 
   const handleNavClick = (tabId: string) => {
     setActiveTab(tabId);
-    setMobileMenuOpen(false);
+    closeMobileNav();
   };
 
   return (
@@ -259,79 +261,34 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
 
             {/* Mobile Menu Hamburger */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-[#0B3D2E] hover:bg-[#F5F1E6] transition-colors"
+              onClick={() => {
+                if (isMobileNavOpen) {
+                  closeMobileNav();
+                } else {
+                  openMobileNav();
+                }
+              }}
+              className="lg:hidden p-2 rounded-xl text-[#0B3D2E] hover:bg-[#F5F1E6] active:bg-[#e8e2d4] transition-colors relative"
               id="mobile-menu-toggle"
               aria-label="Toggle navigation menu"
+              aria-expanded={isMobileNavOpen}
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMobileNavOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {activeAlertsCount > 0 && !isMobileNavOpen && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#F27D26] animate-pulse ring-2 ring-white" />
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-[#0B3D2E]/10 px-4 pt-3 pb-6 space-y-4">
-          {/* Mobile Language Switcher */}
-          <div className="bg-[#F5F1E6] p-2.5 rounded-xl border border-[#0B3D2E]/15 flex items-center justify-between">
-            <span className="text-xs font-bold text-[#0B3D2E]">{t('lang.select', 'Language')}:</span>
-            <LanguageSelector variant="header" />
-          </div>
-
-          <button
-            onClick={() => {
-              setMobileMenuOpen(false);
-              openSearchModal();
-            }}
-            className="w-full flex items-center justify-between bg-[#F5F1E6] hover:bg-[#eae4d5] border border-[#0B3D2E]/20 rounded-xl px-3.5 py-2.5 text-xs text-[#0B3D2E] transition-all shadow-xs"
-          >
-            <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-[#0B3D2E]" />
-              <span className="font-medium text-stone-600">
-                {t('search.input_placeholder', 'Search tigers, news, guides...')}
-              </span>
-            </div>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-200 text-stone-600 font-bold">
-              SEARCH
-            </span>
-          </button>
-
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`text-left px-3 py-2 rounded-lg transition-colors font-bold uppercase tracking-wider text-[11px] ${
-                  activeTab === item.id
-                    ? 'bg-[#0B3D2E] text-[#F27D26]'
-                    : 'text-[#0B3D2E]/80 hover:bg-[#F5F1E6]'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="pt-3 border-t border-[#0B3D2E]/10 flex flex-wrap gap-2 justify-between items-center text-xs">
-            <button
-              onClick={() => handleNavClick('alerts')}
-              className="text-[#F27D26] font-bold flex items-center space-x-1"
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span>{t('nav.alerts', 'Advisories')} ({activeAlertsCount})</span>
-            </button>
-
-            <button
-              onClick={() => { setMobileMenuOpen(false); onOpenAdmin(); }}
-              className="text-[#0B3D2E] font-semibold flex items-center space-x-1"
-            >
-              <Lock className="w-3.5 h-3.5 text-[#F27D26]" />
-              <span>{t('app.admin', 'Admin Console')}</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Modern Accessible Mobile Bottom-Sheet Drawer */}
+      <MobileNavDrawer
+        isOpen={isMobileNavOpen}
+        onClose={closeMobileNav}
+        onOpenAdmin={onOpenAdmin}
+        onOpenInstall={handleOpenInstall}
+      />
     </header>
   );
 };

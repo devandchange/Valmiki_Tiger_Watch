@@ -106,9 +106,10 @@ export const TigersSection: React.FC = () => {
               className="bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none"
             >
               <option value="all">All Records</option>
-              <option value="verified">Verified Official Data</option>
+              <option value="verified">Verified Official (NTCA/Govt)</option>
+              <option value="estimated">Estimated (Camera Trap Match)</option>
               <option value="reported">Reported Observation</option>
-              <option value="unverified">Unverified</option>
+              <option value="unverified">Unverified (Pending Review)</option>
             </select>
           </div>
         </div>
@@ -145,10 +146,12 @@ export const TigersSection: React.FC = () => {
                 <div className="absolute bottom-3 left-3">
                   <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow ${
                     tiger.verification === 'verified' ? 'bg-emerald-600 text-white' :
+                    tiger.verification === 'estimated' ? 'bg-sky-600 text-white' :
                     tiger.verification === 'reported' ? 'bg-amber-600 text-white' :
                     'bg-stone-600 text-white'
                   }`}>
-                    {tiger.verification === 'verified' ? '✓ Verified Data' :
+                    {tiger.verification === 'verified' ? '✓ Verified Official' :
+                     tiger.verification === 'estimated' ? '⚡ Estimated Match' :
                      tiger.verification === 'reported' ? '• Reported Observation' :
                      '? Unverified'}
                   </span>
@@ -253,8 +256,65 @@ export const TigersSection: React.FC = () => {
                   <span className="font-bold text-emerald-800 text-sm">{selectedTiger.cameraTrapRecords} Captures</span>
                 </div>
                 <div className="bg-stone-50 p-3 rounded-xl border border-stone-200">
-                  <span className="text-stone-500 block font-mono">Verification</span>
-                  <span className="font-bold text-stone-900 text-sm capitalize">{selectedTiger.verification}</span>
+                  <span className="text-stone-500 block font-mono">Verification Status</span>
+                  <span className={`font-bold text-xs uppercase px-1.5 py-0.5 rounded inline-block mt-0.5 ${
+                    selectedTiger.verification === 'verified' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                    selectedTiger.verification === 'estimated' ? 'bg-sky-100 text-sky-800 border border-sky-300' :
+                    selectedTiger.verification === 'reported' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                    'bg-stone-200 text-stone-700'
+                  }`}>
+                    {selectedTiger.verification}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tiger Dossier & Camera-Trap Details */}
+              <div className="bg-amber-50/50 border border-amber-200/80 rounded-2xl p-4.5 space-y-3 text-xs">
+                <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                  <span className="font-bold text-stone-900 flex items-center gap-1.5 font-mono">
+                    <FileText className="w-3.5 h-3.5 text-amber-700" />
+                    Official Wildlife Dossier & Camera-Trap Telemetry
+                  </span>
+                  {selectedTiger.lastDocumentedDate && (
+                    <span className="font-mono text-[11px] text-stone-600">
+                      Last Photographed: <strong>{selectedTiger.lastDocumentedDate}</strong>
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <span className="text-stone-500 font-mono block">Stripe Pattern Reference ID:</span>
+                    <span className="font-mono font-bold text-stone-900 bg-white px-2 py-0.5 rounded border border-amber-200 inline-block mt-0.5">
+                      {selectedTiger.fullDossier?.stripePatternId || selectedTiger.code}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-stone-500 font-mono block">Physical Health & Dominance:</span>
+                    <span className="font-semibold text-stone-800 block mt-0.5">
+                      {selectedTiger.fullDossier?.physicalCondition || 'Healthy adult specimen'}
+                    </span>
+                  </div>
+                  {selectedTiger.fullDossier?.knownOffspring && selectedTiger.fullDossier.knownOffspring.length > 0 && (
+                    <div className="sm:col-span-2">
+                      <span className="text-stone-500 font-mono block">Known Offspring / Documented Cubs:</span>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {selectedTiger.fullDossier.knownOffspring.map((cub, i) => (
+                          <span key={i} className="bg-emerald-100/90 text-emerald-800 text-[11px] font-mono px-2 py-0.5 rounded-lg border border-emerald-300">
+                            🐅 {cub}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedTiger.fullDossier?.recentSightingsNote && (
+                    <div className="sm:col-span-2 bg-white/80 p-2.5 rounded-xl border border-amber-200/60">
+                      <span className="text-stone-500 font-mono block text-[11px]">Latest Verified Field Observation Note:</span>
+                      <p className="text-stone-800 italic mt-0.5">
+                        "{selectedTiger.fullDossier.recentSightingsNote}"
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

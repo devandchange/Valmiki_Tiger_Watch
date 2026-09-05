@@ -17,7 +17,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
   };
 
   return (
-    <footer className="bg-[#0B3D2E] text-[#F5F1E6] border-t border-[#0B3D2E]/20 pt-12 pb-8 mt-16">
+    <footer className="bg-[#0B3D2E] text-[#F5F1E6] border-t border-[#0B3D2E]/20 pt-12 pb-24 lg:pb-8 mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Language Selector Banner in Footer */}
         <div className="mb-8 p-4 rounded-2xl bg-black/20 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HOW_TO_REACH_DATA } from '../../data/tigerWorldwideData';
 import { useLanguage } from '../../context/LanguageContext';
+import { useData } from '../../context/DataContext';
 import { 
   Compass, 
   MapPin, 
@@ -15,12 +16,21 @@ import {
   ShieldCheck, 
   ExternalLink,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  Utensils,
+  Trees,
+  ShieldAlert,
+  FileText,
+  AlertTriangle,
+  ChevronRight
 } from 'lucide-react';
 
 export const TravelGuideSection: React.FC = () => {
   const { language } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'how-to-reach' | 'best-time' | 'safari-timings'>('how-to-reach');
+  const { setActiveTab: setGlobalActiveTab } = useData();
+  const [activeTab, setActiveTab] = useState<
+    'how-to-reach' | 'best-time' | 'safari-timings' | 'rules-regulations' | 'local-cuisine' | 'flora-fauna'
+  >('how-to-reach');
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
@@ -63,9 +73,12 @@ export const TravelGuideSection: React.FC = () => {
       {/* Navigation Pills */}
       <div className="flex flex-wrap gap-2">
         {[
-          { id: 'how-to-reach', label: '🚗 How to Reach (Transit Routes)', icon: Car },
-          { id: 'best-time', label: '📅 Best Time to Visit & Weather', icon: Calendar },
-          { id: 'safari-timings', label: '🕒 Safari Timings & Entry Zones', icon: Clock }
+          { id: 'how-to-reach', label: '🚗 How to Reach', icon: Car },
+          { id: 'best-time', label: '📅 Best Time to Visit', icon: Calendar },
+          { id: 'safari-timings', label: '🕒 Safari Timings & Gates', icon: Clock },
+          { id: 'rules-regulations', label: '⚖️ Rules & Regulations', icon: ShieldAlert },
+          { id: 'local-cuisine', label: '🍲 Local Cuisine Highlights', icon: Utensils },
+          { id: 'flora-fauna', label: '🌿 Flora & Fauna Highlights', icon: Trees }
         ].map((tab) => {
           const Icon = tab.icon;
           return (
@@ -244,6 +257,255 @@ export const TravelGuideSection: React.FC = () => {
                 <span>Book on BSTDC</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: RULES & REGULATIONS */}
+      {activeTab === 'rules-regulations' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-4">
+              <div>
+                <span className="text-[10px] font-mono text-red-700 uppercase font-bold tracking-widest block">
+                  Wildlife Protection Act (1972) • VTR Code of Conduct
+                </span>
+                <h3 className="font-serif text-2xl font-bold text-[#0B3D2E]">
+                  Park Rules, Safety Regulations & Visitor Guidelines
+                </h3>
+              </div>
+              <span className="bg-red-50 text-red-800 text-xs font-mono font-bold px-3 py-1 rounded-full border border-red-200">
+                Mandatory Compliance
+              </span>
+            </div>
+
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+              Valmiki Tiger Reserve is an inviolate wildlife sanctuary and critical tiger habitat. Every visitor must adhere strictly to the following statutory guidelines to ensure both human safety and the tranquility of wildlife.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Rule 1 */}
+              <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
+                  <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                  <span>1. Zero Single-Use Plastic & No Littering</span>
+                </div>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  VTR is a strict <strong>Plastic-Free Zone</strong>. Carrying single-use plastic bags, disposable water bottles, or throwing snack wrappers from safari gypsies is strictly prohibited. Violations attract on-the-spot penalties up to ₹5,000.
+                </p>
+              </div>
+
+              {/* Rule 2 */}
+              <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
+                  <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <span>2. Vehicle Speed Limit & No Alighting</span>
+                </div>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Safari vehicles must adhere to a strict <strong>20 km/h speed limit</strong>. Visitors are strictly forbidden from disembarking from gypsies inside the forest, except at designated forest rest beat towers with escort guides.
+                </p>
+              </div>
+
+              {/* Rule 3 */}
+              <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+                  <span>3. Wildlife Safe Distance (20m Rule)</span>
+                </div>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Always maintain a minimum distance of <strong>20 meters</strong> from tigers, leopards, elephants, and rhinos. Never encircle an animal or block its natural escape corridor.
+                </p>
+              </div>
+
+              {/* Rule 4 */}
+              <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
+                  <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span>4. Sunset Curfew & No Night Safaris</span>
+                </div>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  All safari vehicles must exit the core sanctuary gates <strong>30 minutes before sunset</strong>. Private nocturnal drives inside the core jungle are strictly prohibited under national conservation protocols.
+                </p>
+              </div>
+
+              {/* Rule 5 */}
+              <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
+                  <FileText className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                  <span>5. No Flash Photography or Drones</span>
+                </div>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Flash photography causes severe distress and temporary blindness to nocturnal carnivores and is barred. Aerial drone operations require prior written authorization from the Principal Chief Conservator of Forests (Wildlife).
+                </p>
+              </div>
+
+              {/* Rule 6 */}
+              <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
+                  <Info className="w-4 h-4 text-stone-600 flex-shrink-0" />
+                  <span>6. Strict Forest Silence & Attire</span>
+                </div>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Keep mobile phones on silent mode. Shouting, blowing vehicle horns, or playing music is prohibited. Wear neutral, forest-friendly earthy tones (olive, khaki, beige, brown) to blend seamlessly with the jungle.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: LOCAL CUISINE */}
+      {activeTab === 'local-cuisine' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-4">
+              <div>
+                <span className="text-[10px] font-mono text-[#F27D26] uppercase font-bold tracking-widest block">
+                  West Champaran & Tharu Tribal Flavors
+                </span>
+                <h3 className="font-serif text-2xl font-bold text-[#0B3D2E]">
+                  Authentic Local Cuisine & Culinary Heritage
+                </h3>
+              </div>
+              <button
+                onClick={() => setGlobalActiveTab('cuisine')}
+                className="px-4 py-2 bg-[#0B3D2E] hover:bg-emerald-900 text-white rounded-xl text-xs font-bold font-mono transition-colors flex items-center gap-1.5"
+              >
+                <span>Full Recipe & Heritage Catalog</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+              Visiting Valmiki is an immersion in rich rustic culinary culture. West Champaran is globally celebrated for its slow-cooked earthen-pot delicacies and indigenous Tharu forest harvests.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="p-5 bg-[#F5F1E6]/80 rounded-2xl border border-[#0B3D2E]/10 space-y-3">
+                <div className="text-2xl">🍲</div>
+                <h4 className="font-serif font-bold text-base text-[#0B3D2E]">Champaran Ahuna Mutton</h4>
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Slow cooked inside unglazed earthen pots (*handis*) sealed with kneaded dough, simmered gently over slow wood or charcoal embers with whole garlic bulbs and pure cold-pressed mustard oil.
+                </p>
+              </div>
+
+              <div className="p-5 bg-[#F5F1E6]/80 rounded-2xl border border-[#0B3D2E]/10 space-y-3">
+                <div className="text-2xl">🫓</div>
+                <h4 className="font-serif font-bold text-base text-[#0B3D2E]">Litti Chokha with Desi Ghee</h4>
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Whole-wheat dough balls filled with spicy roasted gram flour (*sattu*), carom seeds, and mustard oil, roasted on cow-dung fire embers and dipped in aromatic desi ghee, served with smoky mashed baingan-tamatar chokha.
+                </p>
+              </div>
+
+              <div className="p-5 bg-[#F5F1E6]/80 rounded-2xl border border-[#0B3D2E]/10 space-y-3">
+                <div className="text-2xl">🌾</div>
+                <h4 className="font-serif font-bold text-base text-[#0B3D2E]">Tharu Tribal Forest Delicacies</h4>
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Indigenous forest tribal delicacies including <strong>Sidha</strong> (steamed rice flour parcels), <strong>Ghonghi</strong> (riverine snails sautéed in spices), and fresh freshwater Gandak river fish.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: FLORA & FAUNA HIGHLIGHTS */}
+      {activeTab === 'flora-fauna' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-4">
+              <div>
+                <span className="text-[10px] font-mono text-emerald-800 uppercase font-bold tracking-widest block">
+                  Terai Arc Landscape Ecological Riches
+                </span>
+                <h3 className="font-serif text-2xl font-bold text-[#0B3D2E]">
+                  Biodiversity, Flora & Fauna of Valmiki
+                </h3>
+              </div>
+              <button
+                onClick={() => setGlobalActiveTab('wildlife')}
+                className="px-4 py-2 bg-[#0B3D2E] hover:bg-emerald-900 text-white rounded-xl text-xs font-bold font-mono transition-colors flex items-center gap-1.5"
+              >
+                <span>Explore Full Wildlife Species List</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Flora Column */}
+              <div className="p-6 bg-emerald-50/50 rounded-2xl border border-emerald-200 space-y-4">
+                <div className="flex items-center gap-2 text-emerald-950 font-bold text-lg font-serif">
+                  <Trees className="w-5 h-5 text-emerald-700" />
+                  <span>Botanical & Forest Ecosystem (Flora)</span>
+                </div>
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Valmiki represents an ecotone between the bhabar tract and the alluvial terai plains. The botanical composition includes:
+                </p>
+                <ul className="space-y-2 text-xs text-stone-800">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0"></span>
+                    <div>
+                      <strong>Sal Forests (*Shorea robusta*):</strong> Forms towering, dense canopies dominating nearly 70% of the reserve&apos;s moist deciduous woodlands.
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0"></span>
+                    <div>
+                      <strong>Riverine Woodlands:</strong> Khair (*Acacia catechu*) and Sissoo (*Dalbergia sissoo*) flourishing on the Gandak alluvial floodplains.
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0"></span>
+                    <div>
+                      <strong>Grasslands & Cane Brakes:</strong> Elephant grass (*Saccharum spontaneum*) reaching 4-5m height and wild cane (*Calamus tenuis*) providing critical predator cover.
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0"></span>
+                    <div>
+                      <strong>Medicinal Trees:</strong> Harra, Bahera, Amla (Triphala constituents), Semal (Silk Cotton), and sacred peepal trees.
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Fauna Column */}
+              <div className="p-6 bg-amber-50/50 rounded-2xl border border-amber-200 space-y-4">
+                <div className="flex items-center gap-2 text-stone-900 font-bold text-lg font-serif">
+                  <span className="text-xl">🐅</span>
+                  <span>Mammals, Birds & Aquatic Wildlife (Fauna)</span>
+                </div>
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Home to over 53 mammal species, 250+ avifaunal species, and rare aquatic reptiles:
+                </p>
+                <ul className="space-y-2 text-xs text-stone-800">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 flex-shrink-0"></span>
+                    <div>
+                      <strong>Apex Carnivores:</strong> Royal Bengal Tiger (54 verified individuals), Indian Leopard (*Panthera pardus*), Dhole (Asiatic Wild Dog), and Sloth Bear.
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 flex-shrink-0"></span>
+                    <div>
+                      <strong>Mega-Herbivores:</strong> Indian Gaur (Bison - world&apos;s largest bovine), Sambar, Spotted Deer (Chital), Barking Deer, and Wild Boar.
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 flex-shrink-0"></span>
+                    <div>
+                      <strong>Aquatic Sanctuary:</strong> Critically endangered <strong>Gharial</strong> and Mugger crocodile breeding colony in the Gandak River.
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 flex-shrink-0"></span>
+                    <div>
+                      <strong>Avian Wonders:</strong> Great Indian Hornbill, Kalij Pheasant, Crested Serpent Eagle, Bengal Florican, and migratory river lapwings.
+                    </div>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

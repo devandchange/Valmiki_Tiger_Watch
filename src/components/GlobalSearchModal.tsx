@@ -224,11 +224,11 @@ export const GlobalSearchModal: React.FC = () => {
     {
       id: 'sec-credits',
       type: 'section',
-      title: 'Nazish Asad — Creator & Developer (Credits)',
-      subtitle: 'Platform attribution, dedication, technical craftsmanship, and data references',
-      badge: 'Credits',
-      badgeColor: 'bg-purple-600/10 text-purple-600 border-purple-500/30',
-      icon: <Award className="w-4 h-4 text-purple-600" />,
+      title: 'Nazish Asad — Environmental & Wildlife Conservation Activist (Creator)',
+      subtitle: 'Creator profile, conservation mission, independent awareness initiative, and references',
+      badge: 'Creator',
+      badgeColor: 'bg-amber-600/10 text-amber-600 border-amber-500/30',
+      icon: <Award className="w-4 h-4 text-amber-600" />,
       action: () => setActiveTab('credits')
     },
     {

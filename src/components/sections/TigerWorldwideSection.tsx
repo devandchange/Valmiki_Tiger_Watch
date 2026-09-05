@@ -37,7 +37,7 @@ export const TigerWorldwideSection: React.FC = () => {
   const { t, language, isRtl } = useLanguage();
 
   const [activeSubTab, setActiveSubTab] = useState<
-    'worldwide' | 'asia' | 'india' | 'bengal-tiger' | 'data-centre' | 'protection' | 'sources'
+    'worldwide' | 'asia' | 'india' | 'bengal-tiger' | 'valmiki' | 'data-centre' | 'protection' | 'sources'
   >('worldwide');
 
   const [selectedCountryId, setSelectedCountryId] = useState<string>('trc-india');
@@ -142,6 +142,119 @@ export const TigerWorldwideSection: React.FC = () => {
         </div>
       </section>
 
+      {/* ========================================================================= */}
+      {/* TIGER CONSERVATION HIERARCHY STEPPER */}
+      {/* Worldwide -> Asia -> India -> Bengal Tiger -> Valmiki Tiger Reserve */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#0B3D2E]/15 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-mono uppercase tracking-widest text-[#0B3D2E] font-bold flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-[#F27D26]" />
+            {language === 'hi' ? 'बाघ संरक्षण पदानुक्रम (Hierarchy)' : language === 'ur' ? 'شیر کے تحفظ کا سلسلہ وار ڈھانچہ' : 'Species & Conservation Hierarchy'}
+          </span>
+          <span className="text-[10px] text-stone-500 font-mono hidden sm:inline">
+            Click any level to inspect verified data
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
+          {/* Level 1: Worldwide */}
+          <button
+            onClick={() => setActiveSubTab('worldwide')}
+            className={`p-3 rounded-xl text-left transition-all border flex flex-col justify-between space-y-2 ${
+              activeSubTab === 'worldwide'
+                ? 'bg-[#0B3D2E] text-white border-[#0B3D2E] shadow-md ring-2 ring-[#0B3D2E]/20'
+                : 'bg-stone-50 hover:bg-stone-100 text-stone-800 border-stone-200'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs font-mono font-bold">
+              <span>1. Worldwide</span>
+              <Globe className="w-3.5 h-3.5 opacity-80" />
+            </div>
+            <div>
+              <div className="font-bold text-sm leading-tight">Global Wild Tigers</div>
+              <div className="text-[11px] opacity-80 font-mono mt-0.5">4,500 – 5,575 est.</div>
+            </div>
+          </button>
+
+          {/* Level 2: Asia */}
+          <button
+            onClick={() => setActiveSubTab('asia')}
+            className={`p-3 rounded-xl text-left transition-all border flex flex-col justify-between space-y-2 ${
+              activeSubTab === 'asia'
+                ? 'bg-[#0B3D2E] text-white border-[#0B3D2E] shadow-md ring-2 ring-[#0B3D2E]/20'
+                : 'bg-stone-50 hover:bg-stone-100 text-stone-800 border-stone-200'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs font-mono font-bold">
+              <span>2. Asia</span>
+              <Compass className="w-3.5 h-3.5 opacity-80" />
+            </div>
+            <div>
+              <div className="font-bold text-sm leading-tight">13 Range Countries</div>
+              <div className="text-[11px] opacity-80 font-mono mt-0.5">Terai & Asian Habitats</div>
+            </div>
+          </button>
+
+          {/* Level 3: India */}
+          <button
+            onClick={() => setActiveSubTab('india')}
+            className={`p-3 rounded-xl text-left transition-all border flex flex-col justify-between space-y-2 ${
+              activeSubTab === 'india'
+                ? 'bg-[#0B3D2E] text-white border-[#0B3D2E] shadow-md ring-2 ring-[#0B3D2E]/20'
+                : 'bg-stone-50 hover:bg-stone-100 text-stone-800 border-stone-200'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs font-mono font-bold">
+              <span>3. India</span>
+              <Award className="w-3.5 h-3.5 opacity-80" />
+            </div>
+            <div>
+              <div className="font-bold text-sm leading-tight">3,682 Tigers (&gt;75%)</div>
+              <div className="text-[11px] opacity-80 font-mono mt-0.5">55+ Reserves (NTCA)</div>
+            </div>
+          </button>
+
+          {/* Level 4: Bengal Tiger */}
+          <button
+            onClick={() => setActiveSubTab('bengal-tiger')}
+            className={`p-3 rounded-xl text-left transition-all border flex flex-col justify-between space-y-2 ${
+              activeSubTab === 'bengal-tiger'
+                ? 'bg-[#0B3D2E] text-white border-[#0B3D2E] shadow-md ring-2 ring-[#0B3D2E]/20'
+                : 'bg-stone-50 hover:bg-stone-100 text-stone-800 border-stone-200'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs font-mono font-bold">
+              <span>4. Bengal Tiger</span>
+              <Sparkles className="w-3.5 h-3.5 opacity-80" />
+            </div>
+            <div>
+              <div className="font-bold text-sm leading-tight">P. tigris tigris</div>
+              <div className="text-[11px] opacity-80 font-mono mt-0.5">Schedule I / Flagship</div>
+            </div>
+          </button>
+
+          {/* Level 5: Valmiki Reserve */}
+          <button
+            onClick={() => setActiveSubTab('valmiki')}
+            className={`p-3 rounded-xl text-left transition-all border flex flex-col justify-between space-y-2 col-span-2 sm:col-span-1 ${
+              activeSubTab === 'valmiki'
+                ? 'bg-[#0B3D2E] text-white border-[#0B3D2E] shadow-md ring-2 ring-[#0B3D2E]/20'
+                : 'bg-emerald-50/70 hover:bg-emerald-100/70 text-emerald-950 border-emerald-300/80'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs font-mono font-bold">
+              <span className="text-emerald-800">5. Valmiki Reserve</span>
+              <Trees className="w-3.5 h-3.5 text-emerald-700" />
+            </div>
+            <div>
+              <div className="font-bold text-sm leading-tight text-[#0B3D2E]">54 Tigers (2022)</div>
+              <div className="text-[11px] opacity-80 font-mono mt-0.5">Bihar&apos;s Only Reserve</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Sub-Navigation Tabs Ribbon */}
       <div className="bg-white rounded-2xl p-2 border border-[#0B3D2E]/15 shadow-sm overflow-x-auto scrollbar-none">
         <div className="flex items-center gap-1.5 min-w-max">
@@ -150,6 +263,7 @@ export const TigerWorldwideSection: React.FC = () => {
             { id: 'asia', label: language === 'hi' ? '🌏 एशिया के बाघ' : language === 'ur' ? '🌏 ایشیا کے شیر' : '🌏 Tigers of Asia' },
             { id: 'india', label: language === 'hi' ? '🇮🇳 भारत के बाघ (NTCA)' : language === 'ur' ? '🇮🇳 بھارت کے شیر (NTCA)' : '🇮🇳 Tigers of India' },
             { id: 'bengal-tiger', label: language === 'hi' ? '🐅 रॉयल बंगाल टाइगर' : language === 'ur' ? '🐅 رائل بنگال ٹائیگر' : '🐅 Bengal Tiger' },
+            { id: 'valmiki', label: language === 'hi' ? '🌲 वाल्मीकि रिजर्व फोकस' : language === 'ur' ? '🌲 والمیکی فوکس' : '🌲 Valmiki Reserve Focus' },
             { id: 'data-centre', label: language === 'hi' ? '📊 डेटा सेंटर' : language === 'ur' ? '📊 ڈیٹا سینٹر' : '📊 Tiger Data Centre' },
             { id: 'protection', label: language === 'hi' ? '🛡️ संरक्षण एवं प्रोजेक्ट टाइगर' : language === 'ur' ? '🛡️ پروجیکٹ ٹائیگر' : '🛡️ Tiger Protection' },
             { id: 'sources', label: language === 'hi' ? '📚 स्रोत एवं नीति' : language === 'ur' ? '📚 ذرائع و پالیسی' : '📚 Sources & Policy' }
@@ -793,6 +907,158 @@ export const TigerWorldwideSection: React.FC = () => {
               <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
                 In landscapes like Valmiki where forest reserves abut agricultural fringe villages, coexistence is maintained through <strong>rapid response rescue teams, solar energized fencing, livestock predation compensation funds</strong>, and proactive forest guard deployment during harvest seasons.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SECTION 4.5: VALMIKI TIGER RESERVE (VTR) FOCUS */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'valmiki' && (
+        <div className="space-y-8 animate-fade-in">
+          {/* VTR Focus Hero Card */}
+          <div className="bg-[#0B3D2E] text-white rounded-3xl p-6 sm:p-10 border border-[#145A43] shadow-lg relative overflow-hidden space-y-6">
+            <div className="relative z-10 space-y-3">
+              <div className="inline-flex items-center gap-2 bg-[#07271D] border border-amber-500/40 rounded-full px-3.5 py-1 text-xs text-amber-300 font-mono">
+                <Trees className="w-3.5 h-3.5 text-amber-400" />
+                <span>Level 5 of Conservation Hierarchy • Valmiki Tiger Reserve</span>
+              </div>
+              <h2 className="font-serif text-3xl sm:text-4xl font-extrabold text-white">
+                🌲 Valmiki Tiger Reserve: Bihar&apos;s Crown Wildlife Sanctuary
+              </h2>
+              <p className="text-sm sm:text-base text-emerald-100/90 max-w-3xl leading-relaxed">
+                Nestled on the foothills of the Shivalik Himalayas along the Indo-Nepal border, Valmiki Tiger Reserve spans 899.38 sq km and forms the easternmost boundary of the globally significant Terai Arc Landscape (TAL). Contiguous with Nepal’s Chitwan National Park and Parsa Wildlife Reserve, it forms a massive 3,000+ sq km transboundary protected tiger landscape.
+              </p>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 relative z-10">
+              <div className="bg-[#07271D]/90 p-3.5 rounded-2xl border border-amber-500/30">
+                <span className="text-[10px] font-mono text-emerald-300 uppercase block">Tiger Population</span>
+                <span className="font-serif text-2xl font-bold text-amber-300">54 Verified</span>
+                <span className="text-[10px] text-emerald-200/70 block mt-0.5">NTCA / WII 2022</span>
+              </div>
+              <div className="bg-[#07271D]/90 p-3.5 rounded-2xl border border-amber-500/30">
+                <span className="text-[10px] font-mono text-emerald-300 uppercase block">Total Area</span>
+                <span className="font-serif text-2xl font-bold text-white">899.38 sq km</span>
+                <span className="text-[10px] text-emerald-200/70 block mt-0.5">Core: 598.45 sq km</span>
+              </div>
+              <div className="bg-[#07271D]/90 p-3.5 rounded-2xl border border-amber-500/30">
+                <span className="text-[10px] font-mono text-emerald-300 uppercase block">Active Camera Traps</span>
+                <span className="font-serif text-2xl font-bold text-amber-300">500+ Pairs</span>
+                <span className="text-[10px] text-emerald-200/70 block mt-0.5">Grid automated</span>
+              </div>
+              <div className="bg-[#07271D]/90 p-3.5 rounded-2xl border border-amber-500/30">
+                <span className="text-[10px] font-mono text-emerald-300 uppercase block">Transboundary Link</span>
+                <span className="font-serif text-2xl font-bold text-white">Chitwan (Nepal)</span>
+                <span className="text-[10px] text-emerald-200/70 block mt-0.5">Contiguous Corridor</span>
+              </div>
+            </div>
+
+            {/* Quick Action Navigation */}
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                onClick={() => setActiveTab('tigers')}
+                className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors shadow"
+              >
+                <Eye className="w-4 h-4" />
+                <span>Explore Individual VTR Tiger Register (54+ Profiles)</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('map')}
+                className="px-4 py-2.5 bg-[#07271D] hover:bg-[#0c3629] text-emerald-200 border border-emerald-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
+              >
+                <MapPin className="w-4 h-4" />
+                <span>View Interactive Forest Map & Ranges</span>
+              </button>
+            </div>
+          </div>
+
+          {/* VTR Conservation Pillars Breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Pillar 1 */}
+            <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                📈
+              </div>
+              <h3 className="font-serif font-bold text-lg text-stone-900">Population Recovery Journey</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                In 2006, VTR had only 8 to 10 tigers facing severe poaching pressures. Through relentless anti-poaching operations, habitat restoration, and enhanced prey densities, the population rebounded to 28 in 2014, 31 in 2018, and reached an all-time peak of <strong>54 verified adult tigers in 2022</strong>.
+              </p>
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-100 text-[11px] font-mono text-emerald-800">
+                Growth Rate: +575% recovery over 16 years
+              </div>
+            </div>
+
+            {/* Pillar 2 */}
+            <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                📷
+              </div>
+              <h3 className="font-serif font-bold text-lg text-stone-900">Camera-Trap Grid & M-STrIPES</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                VTR is mapped into 2x2 km survey grids. Over 500 pairs of motion-sensor infrared camera traps capture both flanks of tigers. Stripe patterns are digitized and indexed into photographic capture-recapture databases to monitor territory turnover and cub survival.
+              </p>
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-100 text-[11px] font-mono text-amber-800">
+                Software: M-STrIPES digital patrol tracking
+              </div>
+            </div>
+
+            {/* Pillar 3 */}
+            <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
+                🌐
+              </div>
+              <h3 className="font-serif font-bold text-lg text-stone-900">Transboundary Indo-Nepal Link</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Tigers routinely cross the international border between Valmiki and Nepal&apos;s Chitwan National Park. Regular bilateral meetings between Bihar Forest Department and Nepal National Parks staff coordinate synchronized camera trapping and curb cross-border wildlife crime.
+              </p>
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-100 text-[11px] font-mono text-blue-800">
+                Corridor: Gandak River & Someshwar Hills
+              </div>
+            </div>
+
+            {/* Pillar 4 */}
+            <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold">
+                🌱
+              </div>
+              <h3 className="font-serif font-bold text-lg text-stone-900">Rich Terai Biodiversity</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                VTR harbors diverse co-predators including <strong>Indian Leopards, Dholes (Wild Dogs), and Sloth Bears</strong>. Herbivore prey bases include Chital, Sambar, Barking Deer, Gaur (Indian Bison), and Wild Boar, supported by moist moist-deciduous Sal forests and alluvial riverine floodplains.
+              </p>
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-100 text-[11px] font-mono text-purple-800">
+                Over 250+ bird species & 53 mammal species
+              </div>
+            </div>
+
+            {/* Pillar 5 */}
+            <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 text-red-800 flex items-center justify-center font-bold">
+                ⚠️
+              </div>
+              <h3 className="font-serif font-bold text-lg text-stone-900">Conservation Threats & Mitigation</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Key threats include the railway line passing through Madanpur range, annual monsoon flooding from the Gandak River basin, and agricultural edge encounters where tigers seek shelter in tall sugarcane fields. Solar fencing and rapid reaction rescue teams mitigate conflict.
+              </p>
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-100 text-[11px] font-mono text-red-800">
+                24x7 Quick Response Teams (QRT) active
+              </div>
+            </div>
+
+            {/* Pillar 6 */}
+            <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                🤝
+              </div>
+              <h3 className="font-serif font-bold text-lg text-stone-900">Tharu Community Stewardship</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Indigenous Tharu and Oraon tribal communities living along the fringes serve as forest watchers, ecotourism safari guides, and intelligence informants. Eco-development committees (EDCs) ensure conservation directly benefits local village livelihoods.
+              </p>
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-100 text-[11px] font-mono text-emerald-800">
+                40+ Active Eco-Development Committees
+              </div>
             </div>
           </div>
         </div>
