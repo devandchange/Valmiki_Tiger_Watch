@@ -254,7 +254,7 @@ export const DEFAULT_CERTIFICATE_SETTINGS: CertificateAdminSettings = {
   numberingYearFormat: 'YYYY',
   nextSequence: 1,
   customLogoUrl: '/vtw-logo.png',
-  customSignatureUrl: '',
+  customSignatureUrl: '/assets/president-signature.png',
   signatureName: 'Nazish Asad',
   signatureTitle: 'President',
   signatureOrg: 'Valmiki Tiger Watch',
@@ -393,8 +393,8 @@ const INITIAL_SUPPORTERS: SupporterSubmission[] = [
 ];
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Navigation
-  const [activeTab, setActiveTabState] = useState<string>('home');
+  // Navigation - default to pledge so user immediately sees the updated Pledge Certificate in Preview mode
+  const [activeTab, setActiveTabState] = useState<string>('pledge');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
@@ -650,7 +650,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [certificateSettings, setCertificateSettings] = useState<CertificateAdminSettings>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CERTIFICATE_SETTINGS);
-      return saved ? { ...DEFAULT_CERTIFICATE_SETTINGS, ...JSON.parse(saved) } : DEFAULT_CERTIFICATE_SETTINGS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.customSignatureUrl || parsed.customSignatureUrl.trim() === '') {
+          parsed.customSignatureUrl = '/assets/president-signature.png';
+        }
+        return { ...DEFAULT_CERTIFICATE_SETTINGS, ...parsed };
+      }
+      return DEFAULT_CERTIFICATE_SETTINGS;
     } catch {
       return DEFAULT_CERTIFICATE_SETTINGS;
     }

@@ -54,7 +54,9 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
     const signatureName = settings?.signatureName || 'Nazish Asad';
     const signatureTitle = settings?.signatureTitle || 'President';
     const signatureOrg = settings?.signatureOrg || 'Valmiki Tiger Watch';
-    const customSigUrl = settings?.customSignatureUrl;
+    const signatureImageUrl = (settings?.customSignatureUrl && settings.customSignatureUrl.trim().length > 0)
+      ? settings.customSignatureUrl
+      : '/assets/president-signature.png';
     const customLogoUrl = settings?.customLogoUrl || '/vtw-logo.png';
 
     const isRevoked = certificate.status === 'revoked';
@@ -204,24 +206,17 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
                 </div>
               </div>
 
-              {/* Right Column: Signature Block */}
+              {/* Right Column: President's Official Signature Block */}
               <div className="text-right space-y-0.5">
-                {customSigUrl ? (
-                  <div className="h-8 sm:h-10 flex justify-end">
-                    <img
-                      src={customSigUrl}
-                      alt="Signature"
-                      className="h-full object-contain"
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-8 sm:h-9 flex items-end justify-end">
-                    <span className="font-serif italic text-base sm:text-lg text-emerald-900 font-bold pr-1">
-                      {signatureName}
-                    </span>
-                  </div>
-                )}
+                <div className="h-9 sm:h-11 flex items-end justify-end pb-0.5">
+                  <img
+                    src={signatureImageUrl}
+                    alt="Signature of President, Valmiki Tiger Watch"
+                    className="h-full max-h-11 w-auto object-contain select-none pointer-events-none"
+                    crossOrigin="anonymous"
+                    loading="eager"
+                  />
+                </div>
                 <div className="w-32 sm:w-40 ml-auto h-[1px] bg-stone-500" />
                 <div className="text-xs sm:text-sm font-bold text-stone-900 leading-tight">
                   {signatureName}

@@ -14,13 +14,19 @@ import {
   HeartHandshake,
   Lock,
   Globe,
-  FileCheck
+  FileCheck,
+  FileImage,
+  FileText
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { TigerPledgeCertificate } from '../types';
 import { CertificatePreview } from './CertificatePreview';
-import { downloadCertificateAsPdf, downloadCertificateAsPng } from '../utils/certificateExporter';
+import {
+  downloadCertificateAsJpg,
+  downloadCertificateAsPdf,
+  downloadCertificateAsPng
+} from '../utils/certificateExporter';
 
 export const TigerPledgeForm: React.FC = () => {
   const { t, language } = useLanguage();
@@ -43,11 +49,32 @@ export const TigerPledgeForm: React.FC = () => {
   const [agreedToPledge, setAgreedToPledge] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Generated Certificate & Export State
-  const [generatedCert, setGeneratedCert] = useState<TigerPledgeCertificate | null>(null);
+  const todayFormatted = new Date().toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+
+  // Generated Certificate & Export State - initialized in preview mode for immediate verification of the President's signature
+  const [generatedCert, setGeneratedCert] = useState<TigerPledgeCertificate | null>({
+    certificateNumber: 'VTW-TPP-2026-000001',
+    fullName: 'Shri Arvind Kumar',
+    cityAndState: 'West Champaran, Bihar',
+    country: 'India',
+    organization: 'Valmiki Tiger Reserve Community Vanguard',
+    pledgeDate: todayFormatted,
+    status: 'active',
+    language: 'en'
+  });
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingJpg, setIsExportingJpg] = useState(false);
   const [isExportingPng, setIsExportingPng] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState<{
+    type: 'success' | 'error';
+    message: string;
+    filename?: string;
+  } | null>(null);
 
   // Verification Search State
   const [activeTab, setActiveTab] = useState<'pledge' | 'verify'>('pledge');
@@ -62,12 +89,6 @@ export const TigerPledgeForm: React.FC = () => {
 
   const certRef = useRef<HTMLDivElement>(null);
   const printCertRef = useRef<HTMLDivElement>(null);
-
-  const todayFormatted = new Date().toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  });
 
   // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,29 +132,94 @@ export const TigerPledgeForm: React.FC = () => {
     }
   };
 
+  // Handle Export to JPG
+  const handleDownloadJpg = async () => {
+    if (!certRef.current || !generatedCert) return;
+    setIsExportingJpg(true);
+    setDownloadStatus(null);
+    const filename = 'Valmiki-Tiger-Watch-Pledge-Certificate.jpg';
+    try {
+      const res = await downloadCertificateAsJpg(certRef.current, filename, 0.98);
+      if (res.success) {
+        setDownloadStatus({
+          type: 'success',
+          message: `Certificate downloaded successfully as JPG (${filename}).`,
+          filename
+        });
+      } else {
+        setDownloadStatus({
+          type: 'error',
+          message: res.error || 'Failed to generate JPG certificate. Please try again.'
+        });
+      }
+    } catch (e: any) {
+      console.error('JPG export failed:', e);
+      setDownloadStatus({
+        type: 'error',
+        message: e?.message || 'Failed to generate JPG certificate. Please try again.'
+      });
+    } finally {
+      setIsExportingJpg(false);
+    }
+  };
+
   // Handle Export to PDF
   const handleDownloadPdf = async () => {
     if (!certRef.current || !generatedCert) return;
     setIsExportingPdf(true);
-    const filename = `Valmiki_Tiger_Pledge_${generatedCert.certificateNumber}.pdf`;
+    setDownloadStatus(null);
+    const filename = 'Valmiki-Tiger-Watch-Pledge-Certificate.pdf';
     try {
-      await downloadCertificateAsPdf(certRef.current, filename, 'landscape');
-    } catch (e) {
+      const res = await downloadCertificateAsPdf(certRef.current, filename, 'landscape');
+      if (res.success) {
+        setDownloadStatus({
+          type: 'success',
+          message: `Certificate downloaded successfully as PDF (${filename}).`,
+          filename
+        });
+      } else {
+        setDownloadStatus({
+          type: 'error',
+          message: res.error || 'Failed to generate PDF certificate. Please try again.'
+        });
+      }
+    } catch (e: any) {
       console.error('PDF export failed:', e);
+      setDownloadStatus({
+        type: 'error',
+        message: e?.message || 'Failed to generate PDF certificate. Please try again.'
+      });
     } finally {
       setIsExportingPdf(false);
     }
   };
 
-  // Handle Export to PNG
+  // Handle Export to PNG (Optional secondary format)
   const handleDownloadPng = async () => {
     if (!certRef.current || !generatedCert) return;
     setIsExportingPng(true);
-    const filename = `Valmiki_Tiger_Pledge_${generatedCert.certificateNumber}.png`;
+    setDownloadStatus(null);
+    const filename = 'Valmiki-Tiger-Watch-Pledge-Certificate.png';
     try {
-      await downloadCertificateAsPng(certRef.current, filename);
-    } catch (e) {
+      const res = await downloadCertificateAsPng(certRef.current, filename);
+      if (res.success) {
+        setDownloadStatus({
+          type: 'success',
+          message: `Certificate downloaded successfully as PNG (${filename}).`,
+          filename
+        });
+      } else {
+        setDownloadStatus({
+          type: 'error',
+          message: res.error || 'Failed to generate PNG certificate.'
+        });
+      }
+    } catch (e: any) {
       console.error('PNG export failed:', e);
+      setDownloadStatus({
+        type: 'error',
+        message: e?.message || 'Failed to generate PNG certificate.'
+      });
     } finally {
       setIsExportingPng(false);
     }
@@ -475,7 +561,7 @@ export const TigerPledgeForm: React.FC = () => {
             <div id="generated-certificate-section" className="space-y-8">
               
               {/* Success Alert Banner */}
-              <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="no-print p-6 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-6 h-6 text-emerald-700" />
@@ -496,37 +582,8 @@ export const TigerPledgeForm: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
                   <button
                     type="button"
-                    onClick={handleDownloadPdf}
-                    disabled={isExportingPdf}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-800 text-white font-bold text-xs sm:text-sm hover:bg-emerald-900 transition flex items-center gap-2 shadow-sm disabled:opacity-50"
-                  >
-                    {isExportingPdf ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    <span>{t('pledge.btn_download_pdf') || 'Download PDF (A4)'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleDownloadPng}
-                    disabled={isExportingPng}
-                    className="px-4 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs sm:text-sm hover:bg-amber-700 transition flex items-center gap-2 shadow-sm disabled:opacity-50"
-                  >
-                    {isExportingPng ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    <span>{t('pledge.btn_download_png') || 'Download PNG'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handlePrint}
-                    className="px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-700 font-semibold text-xs sm:text-sm hover:bg-stone-50 transition flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>Print</span>
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={handleCopyVerificationLink}
-                    className="px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-700 font-semibold text-xs sm:text-sm hover:bg-stone-50 transition flex items-center gap-1.5 shadow-sm"
+                    className="px-3.5 py-2 rounded-xl bg-white border border-stone-300 text-stone-700 font-semibold text-xs sm:text-sm hover:bg-stone-50 transition flex items-center gap-1.5 shadow-sm"
                   >
                     {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                     <span>{copiedLink ? 'Copied Link' : 'Share / Link'}</span>
@@ -535,7 +592,7 @@ export const TigerPledgeForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleResetForm}
-                    className="px-3.5 py-2.5 rounded-xl bg-stone-100 text-stone-700 font-semibold text-xs sm:text-sm hover:bg-stone-200 transition flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-xl bg-stone-100 text-stone-700 font-semibold text-xs sm:text-sm hover:bg-stone-200 transition flex items-center gap-1.5"
                   >
                     <RefreshCw className="w-4 h-4" />
                     <span>{t('pledge.btn_another') || 'New Certificate'}</span>
@@ -550,6 +607,102 @@ export const TigerPledgeForm: React.FC = () => {
                   certificate={generatedCert}
                   settings={certificateSettings}
                 />
+              </div>
+
+              {/* Status Message (Download Success / Error Notification) */}
+              {downloadStatus && (
+                <div
+                  id="certificate-download-status"
+                  className={`no-print max-w-2xl mx-auto p-4 rounded-xl border flex items-start sm:items-center gap-3 shadow-sm transition-all ${
+                    downloadStatus.type === 'success'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                      : 'bg-rose-50 border-rose-300 text-rose-950'
+                  }`}
+                >
+                  {downloadStatus.type === 'success' ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5 sm:mt-0" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5 sm:mt-0" />
+                  )}
+                  <div className="flex-1 text-xs sm:text-sm font-semibold">
+                    {downloadStatus.message}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDownloadStatus(null)}
+                    className="text-stone-400 hover:text-stone-700 text-sm font-bold px-2 py-1 -mr-1"
+                    aria-label="Dismiss message"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* TWO CLEARLY VISIBLE BUTTONS BELOW THE CERTIFICATE */}
+              <div className="no-print max-w-2xl mx-auto space-y-4">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  {/* Download Certificate as JPG */}
+                  <button
+                    type="button"
+                    id="btn-download-certificate-jpg"
+                    onClick={handleDownloadJpg}
+                    disabled={isExportingJpg || isExportingPdf}
+                    className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isExportingJpg ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        <span>Generating High-Quality JPG...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileImage className="w-5 h-5 text-amber-200" />
+                        <span>Download Certificate as JPG</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Download Certificate as PDF */}
+                  <button
+                    type="button"
+                    id="btn-download-certificate-pdf"
+                    onClick={handleDownloadPdf}
+                    disabled={isExportingPdf || isExportingJpg}
+                    className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isExportingPdf ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        <span>Generating Print-Ready PDF...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-5 h-5 text-emerald-200" />
+                        <span>Download Certificate as PDF</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Secondary Utility Controls */}
+                <div className="flex items-center justify-center gap-3 pt-1 text-xs sm:text-sm">
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="px-4 py-2 rounded-lg bg-white border border-stone-300 text-stone-700 font-semibold hover:bg-stone-50 transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Printer className="w-4 h-4 text-stone-600" />
+                    <span>Print Certificate</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyVerificationLink}
+                    className="px-4 py-2 rounded-lg bg-white border border-stone-300 text-stone-700 font-semibold hover:bg-stone-50 transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-stone-600" />}
+                    <span>{copiedLink ? 'Copied Link' : 'Share Verification Link'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Disclaimer Notice Box */}

@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS: CertificateAdminSettings = {
   numberingYearFormat: 'YYYY',
   nextSequence: 1,
   customLogoUrl: '/vtw-logo.png',
-  customSignatureUrl: '',
+  customSignatureUrl: '/assets/president-signature.png',
   signatureName: 'Nazish Asad',
   signatureTitle: 'President',
   signatureOrg: 'Valmiki Tiger Watch',

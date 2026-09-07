@@ -57,7 +57,9 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
   const [signatureName, setSignatureName] = useState(certificateSettings.signatureName || 'Nazish Asad');
   const [signatureTitle, setSignatureTitle] = useState(certificateSettings.signatureTitle || 'President');
   const [signatureOrg, setSignatureOrg] = useState(certificateSettings.signatureOrg || 'Valmiki Tiger Watch');
-  const [customSignatureUrl, setCustomSignatureUrl] = useState(certificateSettings.customSignatureUrl || '');
+  const [customSignatureUrl, setCustomSignatureUrl] = useState(
+    certificateSettings.customSignatureUrl || '/assets/president-signature.png'
+  );
   const [customLogoUrl, setCustomLogoUrl] = useState(certificateSettings.customLogoUrl || '/vtw-logo.png');
   const [certificatePrefix, setCertificatePrefix] = useState(certificateSettings.numberingPrefix || certificateSettings.certificatePrefix || 'VTW-TPP');
 
@@ -145,7 +147,7 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
     setSignatureName('Nazish Asad');
     setSignatureTitle('President');
     setSignatureOrg('Valmiki Tiger Watch');
-    setCustomSignatureUrl('');
+    setCustomSignatureUrl('/assets/president-signature.png');
     setCustomLogoUrl('/vtw-logo.png');
     setCertificatePrefix('VTW-TPP');
     showToast('Reset settings to standard defaults');
