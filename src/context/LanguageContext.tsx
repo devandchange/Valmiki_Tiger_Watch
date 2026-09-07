@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { UI_TRANSLATIONS } from '../i18n/translations';
 
 export type Language = 'en' | 'hi' | 'ur';
 
@@ -28,8 +29,6 @@ interface LanguageContextType {
 const STORAGE_KEY = 'vtw_language_preference';
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-
-import { UI_TRANSLATIONS } from '../i18n/translations';
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {

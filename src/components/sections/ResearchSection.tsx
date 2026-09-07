@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { ResearchReport, ResearchCategory } from '../../types';
+import { ResearchReport, ResearchCategory, PublicationStatus } from '../../types';
 import { 
   BookOpen, 
   FileText, 
@@ -19,12 +19,17 @@ import {
   Globe,
   Tag,
   Eye,
+  EyeOff,
   X,
   Sparkles,
   Info,
   Building2,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  AlertTriangle,
+  FileCheck,
+  Link as LinkIcon
 } from 'lucide-react';
 
 const RESEARCH_CATEGORIES: ResearchCategory[] = [
@@ -41,11 +46,24 @@ const RESEARCH_CATEGORIES: ResearchCategory[] = [
 ];
 
 export const ResearchSection: React.FC = () => {
-  const { research, isAdmin, addResearch, updateResearch, deleteResearch, toggleResearchStatus } = useData();
+  const { 
+    research = [], 
+    isAdmin, 
+    addResearch, 
+    updateResearch, 
+    deleteResearch, 
+    toggleResearchStatus,
+    setResearchStatus,
+    verifyAndPublishResearch,
+    unpublishResearch,
+    rejectResearch
+  } = useData();
+  const safeResearch = research || [];
   const { language, isRtl, t } = useLanguage();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'vtw_original' | 'external'>('all');
+  const [adminStatusFilter, setAdminStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'oldest' | 'title' | 'category'>('recent');
   
@@ -54,6 +72,11 @@ export const ResearchSection: React.FC = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<ResearchReport | null>(null);
   const [copiedCitationId, setCopiedCitationId] = useState<string | null>(null);
+  
+  // Quick Verification Modal State
+  const [verifyingReport, setVerifyingReport] = useState<ResearchReport | null>(null);
+  const [verifySourceUrl, setVerifySourceUrl] = useState('');
+  const [verifyNotes, setVerifyNotes] = useState('');
 
   // Form State for Admin Editor
   const [formTitle, setFormTitle] = useState('');
@@ -66,11 +89,16 @@ export const ResearchSection: React.FC = () => {
   const [formKeyFindings, setFormKeyFindings] = useState('');
   const [formRelevance, setFormRelevance] = useState('');
   const [formSource, setFormSource] = useState('');
+  const [formOriginalSourceLink, setFormOriginalSourceLink] = useState('');
   const [formDoi, setFormDoi] = useState('');
   const [formOfficialUrl, setFormOfficialUrl] = useState('');
   const [formDownloadUrl, setFormDownloadUrl] = useState('');
   const [formPublicationType, setFormPublicationType] = useState<'vtw_original' | 'external'>('external');
-  const [formStatus, setFormStatus] = useState<'published' | 'draft'>('published');
+  const [formStatus, setFormStatus] = useState<PublicationStatus>('pending_verification');
+  const [formVerified, setFormVerified] = useState(false);
+  const [formVerifiedBy, setFormVerifiedBy] = useState('');
+  const [formVerifiedDate, setFormVerifiedDate] = useState('');
+  const [formVerificationNotes, setFormVerificationNotes] = useState('');
   const [formLanguage, setFormLanguage] = useState<'en' | 'hi' | 'ur' | 'bilingual'>('en');
   const [formTags, setFormTags] = useState('');
   const [formCitation, setFormCitation] = useState('');
@@ -88,11 +116,16 @@ export const ResearchSection: React.FC = () => {
     setFormKeyFindings('');
     setFormRelevance('');
     setFormSource('');
+    setFormOriginalSourceLink('');
     setFormDoi('');
     setFormOfficialUrl('');
     setFormDownloadUrl('');
     setFormPublicationType('external');
-    setFormStatus('published');
+    setFormStatus('pending_verification'); // Strict: Defaults to Pending Verification
+    setFormVerified(false); // Strict: Not verified until source checked
+    setFormVerifiedBy('');
+    setFormVerifiedDate('');
+    setFormVerificationNotes('');
     setFormLanguage('en');
     setFormTags('');
     setFormCitation('');
@@ -112,11 +145,16 @@ export const ResearchSection: React.FC = () => {
     setFormKeyFindings(report.keyFindings.join('\n'));
     setFormRelevance(report.relevance || '');
     setFormSource(report.source || '');
+    setFormOriginalSourceLink(report.originalSourceLink || report.officialUrl || '');
     setFormDoi(report.doi || '');
     setFormOfficialUrl(report.officialUrl || '');
     setFormDownloadUrl(report.downloadUrl || '');
     setFormPublicationType(report.publicationType || 'external');
     setFormStatus(report.status || 'published');
+    setFormVerified(report.verified ?? (report.status === 'published'));
+    setFormVerifiedBy(report.verifiedBy || '');
+    setFormVerifiedDate(report.verifiedDate || '');
+    setFormVerificationNotes(report.verificationNotes || '');
     setFormLanguage(report.language || 'en');
     setFormTags((report.tags || []).join(', '));
     setFormCitation(report.citation);
@@ -140,10 +178,12 @@ export const ResearchSection: React.FC = () => {
       .map(t => t.trim())
       .filter(Boolean);
 
+    const effectiveVerified = formVerified && formStatus === 'published';
+
     const payload: Omit<ResearchReport, 'id'> = {
       title: formTitle.trim(),
       authors: formAuthors.trim(),
-      organization: formOrganization.trim() || 'Wildlife Conservation Consortium',
+      organization: formOrganization.trim() || 'Wildlife Conservation Institution',
       year: Number(formYear) || new Date().getFullYear(),
       publicationDate: formPubDate,
       category: formCategory,
@@ -151,15 +191,19 @@ export const ResearchSection: React.FC = () => {
       keyFindings: findingsArray.length > 0 ? findingsArray : ['Documented empirical findings.'],
       relevance: formRelevance.trim(),
       source: formSource.trim(),
+      originalSourceLink: formOriginalSourceLink.trim() || formOfficialUrl.trim(),
       doi: formDoi.trim(),
-      officialUrl: formOfficialUrl.trim(),
-      downloadUrl: formDownloadUrl.trim() || formOfficialUrl.trim(),
+      officialUrl: formOfficialUrl.trim() || formOriginalSourceLink.trim(),
+      downloadUrl: formDownloadUrl.trim() || formOfficialUrl.trim() || formOriginalSourceLink.trim(),
       publicationType: formPublicationType,
       status: formStatus,
+      verified: effectiveVerified,
+      verifiedBy: effectiveVerified ? (formVerifiedBy.trim() || 'VTW Scientific Council') : undefined,
+      verifiedDate: effectiveVerified ? (formVerifiedDate || new Date().toISOString().split('T')[0]) : undefined,
+      verificationNotes: formVerificationNotes.trim() || undefined,
       language: formLanguage,
       tags: tagsArray,
-      citation: formCitation.trim() || `${formAuthors.trim()} (${formYear}). ${formTitle.trim()}. ${formSource.trim() || formOrganization.trim()}.`,
-      verified: true
+      citation: formCitation.trim() || `${formAuthors.trim()} (${formYear}). ${formTitle.trim()}. ${formSource.trim() || formOrganization.trim()}.`
     };
 
     if (editingReport) {
@@ -174,6 +218,18 @@ export const ResearchSection: React.FC = () => {
     setIsEditorOpen(false);
   };
 
+  const handleQuickVerifyConfirm = () => {
+    if (!verifyingReport) return;
+    verifyAndPublishResearch(
+      verifyingReport.id,
+      verifySourceUrl.trim() || verifyingReport.originalSourceLink || verifyingReport.officialUrl || '',
+      verifyNotes.trim() || 'Source cross-referenced against institutional archives and peer-reviewed records.'
+    );
+    setVerifyingReport(null);
+    setVerifySourceUrl('');
+    setVerifyNotes('');
+  };
+
   const handleCopyCitation = (report: ResearchReport) => {
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(report.citation);
@@ -184,10 +240,21 @@ export const ResearchSection: React.FC = () => {
 
   // Filtered and sorted reports
   const filteredReports = useMemo(() => {
-    return research
+    return safeResearch
       .filter(r => {
-        // Hide drafts from visitors unless admin
-        if (!isAdmin && r.status === 'draft') return false;
+        // Strict integrity requirement: Public visitors see ONLY approved, published & verified publications
+        if (!isAdmin) {
+          if (r.status !== 'published' || !r.verified) return false;
+        } else {
+          // Admin status filter
+          if (adminStatusFilter !== 'all') {
+            if (adminStatusFilter === 'published' && (r.status !== 'published' || !r.verified)) return false;
+            if (adminStatusFilter === 'pending_verification' && r.status !== 'pending_verification') return false;
+            if (adminStatusFilter === 'draft' && r.status !== 'draft') return false;
+            if (adminStatusFilter === 'unpublished' && r.status !== 'unpublished') return false;
+            if (adminStatusFilter === 'rejected' && r.status !== 'rejected') return false;
+          }
+        }
 
         const q = searchQuery.toLowerCase().trim();
         const matchesSearch = !q || 
@@ -195,10 +262,10 @@ export const ResearchSection: React.FC = () => {
           r.authors.toLowerCase().includes(q) ||
           r.organization.toLowerCase().includes(q) ||
           r.abstract.toLowerCase().includes(q) ||
+          (r.doi && r.doi.toLowerCase().includes(q)) ||
           (r.tags && r.tags.some(tag => tag.toLowerCase().includes(q)));
 
         const matchesCat = selectedCategory === 'all' || r.category === selectedCategory;
-
         const matchesType = selectedType === 'all' || (r.publicationType || 'external') === selectedType;
 
         return matchesSearch && matchesCat && matchesType;
@@ -218,7 +285,7 @@ export const ResearchSection: React.FC = () => {
         }
         return 0;
       });
-  }, [research, searchQuery, selectedCategory, selectedType, sortBy, isAdmin]);
+  }, [safeResearch, searchQuery, selectedCategory, selectedType, sortBy, isAdmin, adminStatusFilter]);
 
   return (
     <div className="space-y-8 animate-fade-in pb-12" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -299,7 +366,7 @@ export const ResearchSection: React.FC = () => {
                   selectedType === 'all' ? 'bg-[#0B3D2E] text-white shadow-sm' : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
-                All Literature ({research.length})
+                All Literature ({safeResearch.length})
               </button>
               <button
                 onClick={() => setSelectedType('vtw_original')}
@@ -333,6 +400,49 @@ export const ResearchSection: React.FC = () => {
           </div>
         </div>
 
+        {/* Admin Verification & Status Filter Row (Admin Only) */}
+        {isAdmin && (
+          <div className="p-3 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center space-x-2 text-xs font-bold text-amber-950 font-mono">
+                <ShieldCheck className="w-4 h-4 text-amber-700" />
+                <span>Editorial Pipeline & Verification Status Filter:</span>
+              </div>
+              <span className="text-[11px] text-amber-800">
+                Visitors only see verified & published papers
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              {[
+                { key: 'all', label: 'All Records', count: safeResearch.length },
+                { key: 'published', label: 'Verified & Published', count: safeResearch.filter(r => r.status === 'published' && r.verified).length },
+                { key: 'pending_verification', label: 'Pending Verification', count: safeResearch.filter(r => r.status === 'pending_verification').length },
+                { key: 'draft', label: 'Drafts', count: safeResearch.filter(r => r.status === 'draft').length },
+                { key: 'unpublished', label: 'Unpublished', count: safeResearch.filter(r => r.status === 'unpublished').length },
+                { key: 'rejected', label: 'Rejected', count: safeResearch.filter(r => r.status === 'rejected').length }
+              ].map(st => (
+                <button
+                  key={st.key}
+                  onClick={() => setAdminStatusFilter(st.key)}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition cursor-pointer flex items-center space-x-1.5 ${
+                    adminStatusFilter === st.key
+                      ? 'bg-amber-800 text-white shadow-sm font-semibold'
+                      : 'bg-white text-stone-700 hover:bg-amber-100/70 border border-amber-200'
+                  }`}
+                >
+                  <span>{st.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    adminStatusFilter === st.key ? 'bg-amber-950 text-amber-200' : 'bg-stone-100 text-stone-600'
+                  }`}>
+                    {st.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 10 Category Horizontal Pills */}
         <div className="pt-2 border-t border-stone-100">
           <div className="flex items-center space-x-1.5 rtl:space-x-reverse overflow-x-auto pb-2 scrollbar-thin">
@@ -349,7 +459,7 @@ export const ResearchSection: React.FC = () => {
             </button>
 
             {RESEARCH_CATEGORIES.map((cat) => {
-              const count = research.filter(r => r.category === cat).length;
+              const count = safeResearch.filter(r => r.category === cat).length;
               return (
                 <button
                   key={cat}
@@ -435,22 +545,89 @@ export const ResearchSection: React.FC = () => {
                     </span>
                   )}
 
-                  {report.status === 'draft' && (
-                    <span className="bg-amber-500 text-stone-950 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Draft
+                  {/* Scientific Verification Status Badge */}
+                  {report.status === 'published' && report.verified ? (
+                    <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-md flex items-center space-x-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-700" />
+                      <span>Verified & Published</span>
                     </span>
-                  )}
+                  ) : report.status === 'pending_verification' ? (
+                    <span className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-md flex items-center space-x-1">
+                      <Clock className="w-3 h-3 text-amber-700" />
+                      <span>Pending Verification</span>
+                    </span>
+                  ) : report.status === 'draft' ? (
+                    <span className="bg-stone-200 text-stone-800 border border-stone-300 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-md flex items-center space-x-1">
+                      <FileText className="w-3 h-3 text-stone-600" />
+                      <span>Draft</span>
+                    </span>
+                  ) : report.status === 'unpublished' ? (
+                    <span className="bg-slate-100 text-slate-700 border border-slate-300 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-md flex items-center space-x-1">
+                      <EyeOff className="w-3 h-3 text-slate-500" />
+                      <span>Unpublished</span>
+                    </span>
+                  ) : report.status === 'rejected' ? (
+                    <span className="bg-rose-100 text-rose-900 border border-rose-300 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-md flex items-center space-x-1">
+                      <AlertTriangle className="w-3 h-3 text-rose-700" />
+                      <span>Rejected</span>
+                    </span>
+                  ) : null}
                 </div>
 
-                <div className="flex items-center space-x-3 text-xs text-stone-500 font-mono">
+                <div className="flex flex-wrap items-center space-x-3 text-xs text-stone-500 font-mono">
                   <span className="flex items-center">
                     <Calendar className="w-3.5 h-3.5 mr-1 text-stone-400" />
                     {report.publicationDate || report.year}
                   </span>
 
-                  {/* Admin Actions */}
+                  {/* Admin Verification & Lifecycle Controls */}
                   {isAdmin && (
-                    <div className="flex items-center space-x-1.5 ml-2 border-l border-stone-200 pl-2">
+                    <div className="flex flex-wrap items-center gap-1.5 ml-2 border-l border-stone-200 pl-2">
+                      {!(report.status === 'published' && report.verified) && (
+                        <button
+                          onClick={() => {
+                            setVerifyingReport(report);
+                            setVerifySourceUrl(report.originalSourceLink || report.officialUrl || '');
+                            setVerifyNotes(report.verificationNotes || 'Source authenticated against institutional scientific records.');
+                          }}
+                          className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-[11px] font-bold flex items-center space-x-1 cursor-pointer shadow-xs transition"
+                          title="Verify source and publish to public view"
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>Verify & Publish</span>
+                        </button>
+                      )}
+
+                      {report.status === 'published' && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Unpublish publication "${report.title}"? It will no longer be visible to public visitors.`)) {
+                              unpublishResearch(report.id);
+                            }
+                          }}
+                          className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-bold flex items-center space-x-1 cursor-pointer shadow-xs transition"
+                          title="Unpublish publication"
+                        >
+                          <EyeOff className="w-3 h-3" />
+                          <span>Unpublish</span>
+                        </button>
+                      )}
+
+                      {report.status !== 'rejected' && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Reject unverified entry "${report.title}"?`)) {
+                              rejectResearch(report.id, 'Entry does not meet scientific verification thresholds.');
+                            }
+                          }}
+                          className="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-lg text-[11px] font-medium flex items-center space-x-1 cursor-pointer transition"
+                          title="Reject entry"
+                        >
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Reject</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => openEditModal(report)}
                         className="p-1 text-stone-500 hover:text-emerald-700 rounded hover:bg-stone-100"
@@ -460,12 +637,12 @@ export const ResearchSection: React.FC = () => {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm(`Delete paper: "${report.title}"?`)) {
+                          if (confirm(`Permanently delete publication: "${report.title}"? This is recommended for fabricated or false entries.`)) {
                             deleteResearch(report.id);
                           }
                         }}
                         className="p-1 text-stone-500 hover:text-red-600 rounded hover:bg-red-50"
-                        title="Delete Paper"
+                        title="Delete False/Fabricated Paper"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -641,7 +818,31 @@ export const ResearchSection: React.FC = () => {
                 <div><strong>Year of Publication:</strong> {activeReportForDetails.year} ({activeReportForDetails.publicationDate})</div>
                 {activeReportForDetails.source && <div><strong>Publisher / Source:</strong> {activeReportForDetails.source}</div>}
                 {activeReportForDetails.doi && <div><strong>DOI:</strong> {activeReportForDetails.doi}</div>}
+                {activeReportForDetails.originalSourceLink && (
+                  <div>
+                    <strong>Original Source: </strong>
+                    <a
+                      href={activeReportForDetails.originalSourceLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-700 underline hover:text-emerald-900"
+                    >
+                      {activeReportForDetails.originalSourceLink}
+                    </a>
+                  </div>
+                )}
               </div>
+
+              {activeReportForDetails.verified && (
+                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center space-x-2 text-xs text-emerald-900">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+                  <div>
+                    <span className="font-bold">Peer-Reviewed / Institutional Verification: </span>
+                    <span>{activeReportForDetails.verificationNotes || 'Validated against institutional scientific database'}</span>
+                    {activeReportForDetails.verifiedBy && <span className="text-emerald-700"> (Verified by: {activeReportForDetails.verifiedBy})</span>}
+                  </div>
+                </div>
+              )}
 
               {activeReportForDetails.relevance && (
                 <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-1">
@@ -806,15 +1007,35 @@ export const ResearchSection: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-bold text-stone-700">Publication Status</label>
+                    <label className="font-bold text-stone-700">Publication Status *</label>
                     <select
                       value={formStatus}
                       onChange={(e: any) => setFormStatus(e.target.value)}
                       className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#0B3D2E]"
                     >
-                      <option value="published">Published (Visible to public)</option>
-                      <option value="draft">Draft (Admin only)</option>
+                      <option value="pending_verification">Pending Verification (Default for new submissions)</option>
+                      <option value="draft">Draft (Admin internal review)</option>
+                      <option value="published">Verified & Published (Publicly Visible)</option>
+                      <option value="unpublished">Unpublished (Hidden from public)</option>
+                      <option value="rejected">Rejected (Unverified / Non-genuine)</option>
                     </select>
+                  </div>
+
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="font-bold text-stone-700 flex items-center justify-between">
+                      <span className="flex items-center space-x-1.5">
+                        <LinkIcon className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>Original Official Source Link (NTCA / WII / Journal Repository URL) *</span>
+                      </span>
+                      <span className="text-[11px] font-normal text-amber-700">Required for verification</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={formOriginalSourceLink}
+                      onChange={(e) => setFormOriginalSourceLink(e.target.value)}
+                      placeholder="https://ntca.gov.in/... or https://wii.gov.in/... or https://doi.org/..."
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#0B3D2E]"
+                    />
                   </div>
 
                   <div className="space-y-1">
@@ -840,7 +1061,7 @@ export const ResearchSection: React.FC = () => {
                   </div>
 
                   <div className="space-y-1 md:col-span-2">
-                    <label className="font-bold text-stone-700">Official Portal / Full Text URL</label>
+                    <label className="font-bold text-stone-700">Official Portal / Alternate Download URL</label>
                     <input
                       type="url"
                       value={formOfficialUrl}
@@ -848,6 +1069,56 @@ export const ResearchSection: React.FC = () => {
                       placeholder="https://ntca.gov.in or https://wii.gov.in"
                       className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#0B3D2E]"
                     />
+                  </div>
+
+                  {/* Verification Integrity Controls */}
+                  <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl md:col-span-2 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center space-x-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-800" />
+                        <span className="font-bold text-xs uppercase tracking-wider text-emerald-950 font-mono">
+                          Scientific Authenticity & Source Verification
+                        </span>
+                      </div>
+                      <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border border-emerald-300">
+                        <input
+                          type="checkbox"
+                          checked={formVerified}
+                          onChange={(e) => setFormVerified(e.target.checked)}
+                          className="w-4 h-4 text-emerald-700 rounded focus:ring-emerald-500"
+                        />
+                        <span className="text-xs font-bold text-stone-900">Mark as Verified</span>
+                      </label>
+                    </div>
+
+                    <p className="text-[11px] text-stone-600 leading-relaxed">
+                      Verification Policy: Confirm that title, lead authors, institutional affiliation, and source link have been cross-checked with official databases (NTCA, WII, MoEFCC, or peer-reviewed journals). Do not fabricate replacement content.
+                    </p>
+
+                    {formVerified && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-emerald-200/80">
+                        <div className="space-y-1">
+                          <label className="font-bold text-[11px] text-stone-700">Verified By</label>
+                          <input
+                            type="text"
+                            value={formVerifiedBy}
+                            onChange={(e) => setFormVerifiedBy(e.target.value)}
+                            placeholder="e.g., NTCA / WII Tiger Monitoring Cell"
+                            className="w-full p-2 bg-white border border-emerald-300 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="font-bold text-[11px] text-stone-700">Verification Dossier Notes</label>
+                          <input
+                            type="text"
+                            value={formVerificationNotes}
+                            onChange={(e) => setFormVerificationNotes(e.target.value)}
+                            placeholder="e.g., Cross-checked against NTCA 5th Cycle Status of Tigers in India 2022-23"
+                            className="w-full p-2 bg-white border border-emerald-300 rounded-lg text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1 md:col-span-2">
@@ -952,6 +1223,90 @@ export const ResearchSection: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Verification & Publish Modal */}
+      {verifyingReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-stone-200 shadow-2xl p-6 sm:p-7 space-y-4">
+            <div className="flex items-start justify-between gap-3 border-b border-stone-100 pb-3">
+              <div>
+                <span className="text-[11px] font-mono text-emerald-800 font-bold uppercase tracking-wider flex items-center space-x-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Admin Source Verification</span>
+                </span>
+                <h3 className="font-display font-bold text-lg text-stone-900 mt-1">
+                  Verify & Publish Research
+                </h3>
+              </div>
+              <button
+                onClick={() => setVerifyingReport(null)}
+                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-full"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 text-xs space-y-1">
+              <div className="font-bold text-stone-900">{verifyingReport.title}</div>
+              <div className="text-stone-600">Authors: {verifyingReport.authors}</div>
+              <div className="text-stone-500 font-mono">{verifyingReport.organization} ({verifyingReport.year || verifyingReport.publicationDate})</div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-stone-800 flex items-center space-x-1">
+                  <LinkIcon className="w-3 h-3 text-emerald-700" />
+                  <span>Original Official Source Link (Required) *</span>
+                </label>
+                <input
+                  type="url"
+                  value={verifySourceUrl}
+                  onChange={(e) => setVerifySourceUrl(e.target.value)}
+                  placeholder="https://ntca.gov.in/... or official journal repository link"
+                  className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:ring-2 focus:ring-[#0B3D2E]"
+                />
+                <span className="text-[10px] text-stone-500">
+                  Provide the official institutional URL or DOI to ensure scientific authenticity.
+                </span>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-stone-800">Verification Notes / Reference</label>
+                <input
+                  type="text"
+                  value={verifyNotes}
+                  onChange={(e) => setVerifyNotes(e.target.value)}
+                  placeholder="e.g., Authenticated against official NTCA census gazette"
+                  className="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:ring-2 focus:ring-[#0B3D2E]"
+                />
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-950 flex items-start space-x-2">
+                <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                <span>
+                  Confirming will set this publication to <strong>Verified & Published</strong>, making it visible to public visitors. Do not verify fabricated or unverified papers.
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-stone-100 flex justify-end space-x-2">
+              <button
+                onClick={() => setVerifyingReport(null)}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleQuickVerifyConfirm}
+                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center space-x-1.5 cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Confirm & Publish</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

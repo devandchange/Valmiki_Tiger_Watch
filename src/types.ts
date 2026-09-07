@@ -1,5 +1,8 @@
 export type VerificationLevel = 'verified_govt' | 'peer_reviewed' | 'established_media' | 'reputable_media' | 'field_verified' | 'unverified';
 
+export type NewsVerificationStatus = VerificationLevel;
+export type NewsSourceCategory = 'Forest Department' | 'NTCA / MoEFCC' | 'WII Research' | 'Established Media';
+
 export type IUCNStatus = 'CR' | 'EN' | 'VU' | 'NT' | 'LC';
 
 export interface TigerProfile {
@@ -184,6 +187,13 @@ export type ResearchCategory =
   | 'Human-Wildlife Coexistence'
   | 'Transboundary Ecology';
 
+export type PublicationStatus =
+  | 'draft'
+  | 'pending_verification'
+  | 'published' // Verified / Published
+  | 'rejected'
+  | 'unpublished';
+
 export interface ResearchReport {
   id: string;
   title: string;
@@ -198,14 +208,18 @@ export interface ResearchReport {
   source?: string; // Source / Publisher name
   doi?: string; // Official DOI or publication identifier
   officialUrl?: string; // Official link
+  originalSourceLink?: string; // Admin-verified original source link
   downloadUrl?: string; // Download / full text link
   publicationType?: 'vtw_original' | 'external';
-  status?: 'published' | 'draft';
+  status: PublicationStatus;
   language?: 'en' | 'hi' | 'ur' | 'bilingual';
   tags?: string[];
   coverImage?: string;
   citation: string;
-  verified: boolean;
+  verified: boolean; // Strictly true only if source has been verified
+  verifiedBy?: string;
+  verifiedDate?: string;
+  verificationNotes?: string;
 }
 
 export interface EducationItem {
@@ -358,4 +372,250 @@ export interface GalleryItem {
   photographer: string;
   year: string;
   imageUrl: string;
+}
+
+export type VolunteerInterestArea =
+  | 'Tiger Conservation'
+  | 'Wildlife Awareness'
+  | 'Biodiversity'
+  | 'Environmental Education'
+  | 'Community Outreach'
+  | 'Research & Documentation'
+  | 'Photography / Media'
+  | 'Eco-Tourism Awareness'
+  | 'Social Media / Digital Support'
+  | 'Other';
+
+export interface VolunteerSubmission {
+  id: string;
+  fullName: string;
+  email: string;
+  mobile: string;
+  cityDistrict: string;
+  state: string;
+  country: string;
+  preferredLanguage: string;
+  areasOfInterest: VolunteerInterestArea[];
+  relevantSkills: string;
+  availability: string;
+  whyVolunteer: string;
+  consentContact: boolean;
+  submittedAt: string;
+  status: 'pending' | 'reviewed' | 'contacted' | 'approved';
+  notes?: string;
+  syncedToGoogleForm?: boolean;
+}
+
+export type SupporterOption =
+  | 'Conservation Awareness'
+  | 'Wildlife Education'
+  | 'Research Support'
+  | 'Community Outreach'
+  | 'Digital / Technical Support'
+  | 'Media & Publicity'
+  | 'Voluntary Contribution'
+  | 'Other';
+
+export interface SupporterSubmission {
+  id: string;
+  fullName: string;
+  email: string;
+  mobile: string;
+  cityDistrict: string;
+  state: string;
+  country: string;
+  preferredLanguage: string;
+  supportOptions: SupporterOption[];
+  messageComments: string;
+  consentContact: boolean;
+  submittedAt: string;
+  status: 'pending' | 'acknowledged' | 'engaged';
+  notes?: string;
+  syncedToGoogleForm?: boolean;
+}
+
+export interface AppIntegrationSettings {
+  volunteerGoogleFormUrl: string;
+  supporterGoogleFormUrl: string;
+  googleDriveFolderUrl: string;
+  contactEmail: string;
+  isVolunteerRegistrationEnabled: boolean;
+  isSupporterRegistrationEnabled: boolean;
+  submissionMode: 'direct_google_form' | 'in_app_with_sync';
+  volunteerConfirmationMessage: string;
+  supporterConfirmationMessage: string;
+  lastUpdated?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'assistant' | 'system';
+  text: string;
+  timestamp: string;
+  sourceAttribution?: string;
+  suggestedActions?: { label: string; tab?: string; externalUrl?: string; actionType?: 'open_volunteer' | 'open_supporter' | 'navigate' }[];
+  isError?: boolean;
+}
+
+export interface ChatbotAdminSettings {
+  isEnabled: boolean;
+  modelName: string;
+  systemPrompt: string;
+  welcomeMessageEn: string;
+  welcomeMessageHi: string;
+  welcomeMessageUr: string;
+  suggestedQuestions: string[];
+  enableSourceAttribution: boolean;
+  temperature: number;
+  lastUpdated?: string;
+}
+
+// ==========================================
+// VTR REAL-TIME WEATHER TYPES
+// ==========================================
+export interface WeatherConditionInfo {
+  code: number;
+  label: { en: string; hi: string; ur: string };
+  iconType: 'clear-day' | 'clear-night' | 'cloudy' | 'partly-cloudy-day' | 'partly-cloudy-night' | 'rain' | 'heavy-rain' | 'thunderstorm' | 'fog' | 'snow';
+}
+
+export interface WeatherAlert {
+  id: string;
+  severity: 'advisory' | 'warning' | 'severe';
+  type: 'heavy_rainfall' | 'thunderstorm' | 'extreme_heat' | 'strong_winds' | 'poor_visibility';
+  title: { en: string; hi: string; ur: string };
+  description: { en: string; hi: string; ur: string };
+  forestImpact: { en: string; hi: string; ur: string };
+  triggeredAt: string;
+}
+
+export interface CurrentWeatherData {
+  temperatureC: number;
+  apparentTemperatureC: number;
+  relativeHumidity: number;
+  precipitationMm: number;
+  rainProbability: number;
+  weatherCode: number;
+  condition: WeatherConditionInfo;
+  windSpeedKmH: number;
+  windDirectionDeg: number;
+  windCompass: string;
+  visibilityMeters: number | null;
+  uvIndex: number | null;
+  isDay: boolean;
+  timestamp: string;
+}
+
+export interface HourlyForecastItem {
+  time: string;
+  hourDisplay: string;
+  temperatureC: number;
+  rainProbability: number;
+  precipitationMm: number;
+  weatherCode: number;
+  condition: WeatherConditionInfo;
+  relativeHumidity: number;
+  windSpeedKmH: number;
+}
+
+export interface DailyForecastItem {
+  date: string;
+  dayName: { en: string; hi: string; ur: string };
+  tempMaxC: number;
+  tempMinC: number;
+  weatherCode: number;
+  condition: WeatherConditionInfo;
+  rainProbabilityMax: number;
+  precipitationSumMm: number;
+  windSpeedMaxKmH: number;
+  uvIndexMax: number | null;
+  sunrise: string;
+  sunset: string;
+}
+
+export interface VTRZoneCoordinate {
+  id: string;
+  name: string;
+  rangeName: string;
+  latitude: number;
+  longitude: number;
+  elevationMeters: number;
+  description: string;
+}
+
+export interface VTRWeatherResponse {
+  success: boolean;
+  location: {
+    name: string;
+    zoneId: string;
+    zoneName: string;
+    rangeName: string;
+    district: string;
+    state: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+    elevationMeters: number;
+  };
+  current: CurrentWeatherData;
+  hourly: HourlyForecastItem[];
+  daily: DailyForecastItem[];
+  alerts: WeatherAlert[];
+  lastUpdated: string;
+  apiSourceTime: string;
+  dataSource: string;
+  dataSourceUrl: string;
+  cached: boolean;
+  stale?: boolean;
+  error?: string;
+}
+
+export interface WeatherAdminSettings {
+  provider: 'open-meteo' | 'custom';
+  apiKey?: string;
+  defaultZoneId: string;
+  refreshIntervalMinutes: number;
+  enableWeatherAlerts: boolean;
+  enableWeatherCard: boolean;
+  dataSourceAttribution: string;
+  lastUpdated?: string;
+}
+
+export interface TigerPledgeCertificate {
+  id: string;
+  certificateNumber: string; // e.g. VTW-TPP-2026-000001
+  fullName: string;
+  cityAndState: string;
+  country: string;
+  email?: string; // Optional, private, never displayed publicly
+  organization?: string; // Optional organisation / institution
+  pledgeDate: string; // ISO date string
+  pledgeFormattedDate?: string;
+  language: 'en' | 'hi' | 'ur';
+  status: 'valid' | 'revoked';
+  revokedAt?: string;
+  revocationReason?: string;
+  issuedAt: string;
+  createdAt?: string;
+  verificationHash?: string;
+}
+
+export interface CertificateAdminSettings {
+  numberingPrefix: string; // e.g. 'VTW-TPP'
+  certificatePrefix?: string; // optional alias
+  numberingYearFormat: 'YYYY' | 'YY';
+  nextSequence: number;
+  customLogoUrl?: string;
+  customSignatureUrl?: string;
+  signatureName: string;
+  signatureTitle: string;
+  signatureOrg: string;
+  designTheme: 'royal-emerald-gold' | 'classic-parchment' | 'heritage-green';
+  borderStyle: 'ornate-double' | 'geometric-gold' | 'classical-filigree';
+  headerText: { en: string; hi: string; ur: string };
+  titleText: { en: string; hi: string; ur: string };
+  presentedToText: { en: string; hi: string; ur: string };
+  pledgeBodyText: { en: string; hi: string; ur: string };
+  disclaimerText: { en: string; hi: string; ur: string };
+  lastUpdated?: string;
 }

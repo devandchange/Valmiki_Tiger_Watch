@@ -30,7 +30,8 @@ import {
   Footprints,
   Eye,
   Layers,
-  HeartHandshake
+  HeartHandshake,
+  CloudSun
 } from 'lucide-react';
 
 interface MobileNavDrawerProps {
@@ -54,7 +55,9 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
     isOnline, 
     canInstallPwa, 
     installPwa, 
-    isAdmin 
+    isAdmin,
+    openVolunteerModal,
+    openSupporterModal
   } = useData();
 
   const { language, setLanguage, languages, t, isRtl } = useLanguage();
@@ -173,6 +176,14 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
           icon: Compass,
           badge: 'Essential',
           badgeColor: 'bg-amber-100 text-amber-800'
+        },
+        {
+          id: 'weather',
+          title: t('nav.weather', 'VTR Real-Time Weather'),
+          desc: language === 'hi' ? 'वाल्मीकि नगर व सभी रेंजों का लाइव मौसम, 7-दिवसीय व घंटावार पूर्वानुमान' : language === 'ur' ? 'والمیکی نگر اور رینجز کا اصل موسمی مشاہدہ، 7 روزہ اور فی گھنٹہ پیشن گوئی' : 'Real-time weather, 7-day outlook & hourly forest forecast',
+          icon: CloudSun,
+          badge: 'Live Forecast',
+          badgeColor: 'bg-emerald-100 text-emerald-800'
         },
         {
           id: 'ecotourism',
@@ -434,6 +445,47 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
 
             {/* Scrollable Body Containing All Major Sections */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5 scrollbar-thin">
+              {/* Community Action Prompts: Volunteer & Supporter */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => {
+                    openVolunteerModal();
+                    onClose();
+                  }}
+                  id="drawer-volunteer-btn"
+                  className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 active:scale-98 text-stone-950 font-bold rounded-2xl shadow-sm text-left flex flex-col justify-between transition-all"
+                >
+                  <span className="text-xl mb-1">🤝</span>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wider font-extrabold leading-tight">
+                      BECOME A VOLUNTEER
+                    </div>
+                    <div className="text-[9px] text-stone-900/80 font-medium">
+                      Join Field & Digital Teams
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    openSupporterModal();
+                    onClose();
+                  }}
+                  id="drawer-supporter-btn"
+                  className="p-3 bg-gradient-to-br from-emerald-800 to-emerald-950 active:scale-98 text-white font-bold rounded-2xl shadow-sm text-left flex flex-col justify-between border border-emerald-700/50 transition-all"
+                >
+                  <span className="text-xl mb-1">🛡️</span>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wider font-extrabold leading-tight text-emerald-200">
+                      BECOME A SUPPORTER
+                    </div>
+                    <div className="text-[9px] text-emerald-300/80 font-medium">
+                      Pledge Conservation Aid
+                    </div>
+                  </div>
+                </button>
+              </div>
+
               {/* Home Quick Jump Card */}
               <button
                 onClick={() => handleSelectTab('home')}

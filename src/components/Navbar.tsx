@@ -11,7 +11,9 @@ import {
   Search, 
   WifiOff, 
   Lock, 
-  Layers
+  Layers,
+  HeartHandshake,
+  ShieldCheck
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -33,10 +35,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
     isAdmin,
     isMobileNavOpen,
     openMobileNav,
-    closeMobileNav
+    closeMobileNav,
+    openVolunteerModal,
+    openSupporterModal,
+    weatherData
   } = useData();
 
-  const { t, isRtl } = useLanguage();
+  const { t, isRtl, language } = useLanguage();
 
   const activeAlertsCount = alerts.filter(a => a.active).length;
 
@@ -46,6 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
     { id: 'about-vtr', label: t('nav.about_vtr', 'About VTR') },
     { id: 'tigers', label: t('nav.tigers', 'Tigers of VTR') },
     { id: 'news', label: t('nav.news', 'News') },
+    { id: 'research', label: t('nav.research', 'Research & Papers') },
     { id: 'wildlife', label: t('nav.wildlife', 'Wildlife') },
     { id: 'species-spotter', label: `🔭 ${t('nav.species_spotter', 'Species Spotter')}` },
     { id: 'project-tiger', label: t('nav.project_tiger', 'Project Tiger') },
@@ -53,6 +59,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
     { id: 'map', label: t('nav.map', 'Reserve Map') },
     { id: 'ecotourism', label: t('nav.ecotourism', 'Ecotourism') },
     { id: 'travel-guide', label: t('nav.travel_guide', 'Travel Guide') },
+    { id: 'weather', label: `⛅ ${t('nav.weather', 'VTR Weather')}` },
+    { id: 'pledge', label: `📜 ${t('nav.pledge', 'Pledge to Protect Tigers')}` },
     { id: 'sightseeing', label: t('nav.sightseeing', 'Sightseeing') },
     { id: 'cuisine', label: t('nav.cuisine', 'Local Cuisine') },
     { id: 'community', label: t('nav.community', 'Community') },
@@ -80,11 +88,47 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
           <span className="hidden sm:inline text-[#F5F1E6]/70">{t('app.location', 'Valmiki Tiger Reserve, West Champaran, Bihar')}</span>
         </div>
 
-        <div className="flex items-center space-x-3 sm:space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Become a Volunteer Button */}
+          <button
+            onClick={openVolunteerModal}
+            id="top-ribbon-volunteer-btn"
+            className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+            title="Join Valmiki Tiger Watch as a Volunteer"
+          >
+            <HeartHandshake className="w-3 h-3 mr-1 text-stone-950" />
+            <span>BECOME A VOLUNTEER</span>
+          </button>
+
+          {/* Become a Supporter Button */}
+          <button
+            onClick={openSupporterModal}
+            id="top-ribbon-supporter-btn"
+            className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-0.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+            title="Pledge Support for Valmiki Tiger Reserve"
+          >
+            <ShieldCheck className="w-3 h-3 mr-1 text-emerald-200" />
+            <span>BECOME A SUPPORTER</span>
+          </button>
+
           {/* Top Language Selector */}
           <div className="flex items-center">
             <LanguageSelector variant="compact" />
           </div>
+
+          {/* VTR Live Weather Quick Glance */}
+          {weatherData?.current && (
+            <button
+              onClick={() => handleNavClick('weather')}
+              className="hidden md:inline-flex items-center gap-1.5 bg-[#07271D] hover:bg-[#093527] text-stone-200 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] transition-colors"
+              title="Valmiki Tiger Reserve Weather"
+            >
+              <span className="text-amber-400 font-bold">{Math.round(weatherData.current.temperature)}°C</span>
+              <span className="text-stone-300">
+                {language === 'hi' ? weatherData.current.condition.hi : language === 'ur' ? weatherData.current.condition.ur : weatherData.current.condition.en}
+              </span>
+            </button>
+          )}
 
           {!isOnline && (
             <span className="inline-flex items-center text-[#F27D26] bg-[#07271D] px-2 py-0.5 rounded text-[10px] border border-[#F27D26]/40">
@@ -142,8 +186,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
           </button>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-4 xl:gap-5 text-[11px] font-bold uppercase tracking-widest text-[#0B3D2E]/70">
-            {navItems.slice(0, 7).map((item) => (
+          <nav className="hidden lg:flex items-center gap-3.5 xl:gap-4.5 text-[11px] font-bold uppercase tracking-widest text-[#0B3D2E]/70">
+            {navItems.slice(0, 8).map((item) => (
               <button
                 key={item.id}
                 id={`nav-link-${item.id}`}
@@ -165,7 +209,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
                 <Layers className="w-3.5 h-3.5" />
               </button>
               <div className={`absolute ${isRtl ? 'left-0' : 'right-0'} mt-2 w-56 bg-white border border-[#0B3D2E]/15 rounded-xl shadow-xl py-2 hidden group-hover:block z-50`}>
-                {navItems.slice(7).map((item) => (
+                {navItems.slice(8).map((item) => (
                   <button
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}

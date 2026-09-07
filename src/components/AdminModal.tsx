@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { TigerProfile, NewsArticle, WildlifeSighting, ConservationAlert, VerificationLevel, VisitorLocation, VerifiedStatistic } from '../types';
+import { VolunteersSupportersTab } from './admin/VolunteersSupportersTab';
+import { IntegrationsAiTab } from './admin/IntegrationsAiTab';
+import { WeatherAdminTab } from './admin/WeatherAdminTab';
+import { CertificatesAdminTab } from './admin/CertificatesAdminTab';
 import { 
   Lock, 
   Unlock, 
@@ -92,6 +96,9 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     newsSources,
     toggleNewsSource,
     syncNewsSources,
+    volunteerSubmissions = [],
+    supporterSubmissions = [],
+    certificates = [],
     exportDataBackup,
     importDataBackup,
     resetToDefaults
@@ -99,7 +106,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
 
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'system'>('tigers');
+  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'volunteers' | 'integrations' | 'weather' | 'certificates' | 'system'>('tigers');
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'pending' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -522,6 +529,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                 { id: 'tigers', label: `🐅 Tigers (${tigers.length})` },
                 { id: 'news', label: `📰 News (${news.length})` },
                 { id: 'sightings', label: `👁️ Sightings (${sightings.length})` },
+                { id: 'volunteers', label: `🤝 Submissions (${volunteerSubmissions.length + supporterSubmissions.length})` },
+                { id: 'integrations', label: `🔗 Forms, Drive & AI` },
+                { id: 'weather', label: `⛅ Weather Config` },
+                { id: 'certificates', label: `📜 Tiger Pledge Certs (${certificates.length})` },
                 { id: 'alerts', label: `⚠️ Advisories (${alerts.length})` },
                 { id: 'locations', label: `📍 Map & Gates (${mapLocations.length})` },
                 { id: 'stats', label: `📊 Official Census Stats (${verifiedStats.length})` },
@@ -1772,6 +1783,34 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* ============================================================ */}
+              {/* TAB: VOLUNTEERS & SUPPORTERS SUBMISSIONS */}
+              {/* ============================================================ */}
+              {activeTab === 'volunteers' && (
+                <VolunteersSupportersTab showToast={showToast} />
+              )}
+
+              {/* ============================================================ */}
+              {/* TAB: INTEGRATIONS, GOOGLE FORMS, DRIVE & AI SETTINGS */}
+              {/* ============================================================ */}
+              {activeTab === 'integrations' && (
+                <IntegrationsAiTab showToast={showToast} />
+              )}
+
+              {/* ============================================================ */}
+              {/* TAB: REAL-TIME WEATHER CONFIGURATION */}
+              {/* ============================================================ */}
+              {activeTab === 'weather' && (
+                <WeatherAdminTab showToast={showToast} />
+              )}
+
+              {/* ============================================================ */}
+              {/* TAB: TIGER PROTECTION PLEDGE CERTIFICATES */}
+              {/* ============================================================ */}
+              {activeTab === 'certificates' && (
+                <CertificatesAdminTab showToast={showToast} />
               )}
 
               {/* ============================================================ */}

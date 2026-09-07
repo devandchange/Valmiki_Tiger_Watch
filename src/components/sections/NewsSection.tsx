@@ -42,8 +42,8 @@ const NEWS_TOPICS = [
 
 export const NewsSection: React.FC = () => {
   const { 
-    news, 
-    newsSources, 
+    news = [], 
+    newsSources = [], 
     syncNewsSources, 
     selectedNews, 
     setSelectedNews,
@@ -61,6 +61,9 @@ export const NewsSection: React.FC = () => {
     toggleAutoUpdate
   } = useData();
 
+  const safeNews = news || [];
+  const safeNewsSources = newsSources || [];
+
   const { language, isRtl, t } = useLanguage();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,9 +79,15 @@ export const NewsSection: React.FC = () => {
   const [activeArticleForModal, setActiveArticleForModal] = useState<NewsArticle | null>(null);
   const [adminViewTab, setAdminViewTab] = useState<'all' | 'pending'>('all');
 
-  // Sync state
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+  // Refresh state for "↻ REFRESH NEWS"
+  const [refreshState, setRefreshState] = useState<'idle' | 'refreshing' | 'success' | 'error'>('idle');
+  const [refreshNotification, setRefreshNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  // Backward compatibility alias for isSyncing
+  const isSyncing = refreshState === 'refreshing';
 
   // Editor Form State
   const [formHeadline, setFormHeadline] = useState('');
@@ -102,19 +111,53 @@ export const NewsSection: React.FC = () => {
   const [newSourceRss, setNewSourceRss] = useState('');
   const [newSourceLanguage, setNewSourceLanguage] = useState<'en' | 'hi' | 'ur'>('hi');
 
-  const handleSyncSources = async () => {
-    setIsSyncing(true);
-    setSyncStatusMsg(null);
+  // Explicit Refresh News Trigger with 3-state cycle & notifications
+  const handleRefreshNews = async () => {
+    if (refreshState === 'refreshing') return; // Prevent repeated taps while in progress
+
+    setRefreshState('refreshing');
+    setRefreshNotification(null);
+
     try {
       const result = await syncNewsSources();
-      setSyncStatusMsg(result.message);
-    } catch {
-      setSyncStatusMsg('Live sync check complete. All feeds are synchronized.');
-    } finally {
-      setIsSyncing(false);
-      setTimeout(() => setSyncStatusMsg(null), 6000);
+      if (result && result.success !== false) {
+        setRefreshState('success');
+        setRefreshNotification({
+          type: 'success',
+          message: result.addedCount > 0
+            ? `✓ News Updated: Retrieved ${result.addedCount} new genuine article${result.addedCount > 1 ? 's' : ''} from Times of India, The Hindu, Dainik Jagran, Hindustan & Forest Department. Original publication dates preserved, latest news displayed first.`
+            : '✓ News Updated: All configured newspapers and official forest department feeds checked. All verified publications are up to date.'
+        });
+
+        // Return button to available state after 3.5s
+        setTimeout(() => {
+          setRefreshState('idle');
+        }, 3500);
+      } else {
+        setRefreshState('error');
+        setRefreshNotification({
+          type: 'error',
+          message: result?.message || 'Unable to connect to live news sources. Keeping previously verified news visible.'
+        });
+
+        setTimeout(() => {
+          setRefreshState('idle');
+        }, 4500);
+      }
+    } catch (err: any) {
+      setRefreshState('error');
+      setRefreshNotification({
+        type: 'error',
+        message: 'Unable to connect to live news sources. Keeping previously verified news visible.'
+      });
+
+      setTimeout(() => {
+        setRefreshState('idle');
+      }, 4500);
     }
   };
+
+  const handleSyncSources = handleRefreshNews;
 
   const openCreateModal = () => {
     setEditingArticle(null);
@@ -250,7 +293,7 @@ export const NewsSection: React.FC = () => {
   const { featuredArticles, regularArticles, pendingArticles } = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
-    const filtered = news.filter(item => {
+    const filtered = safeNews.filter(item => {
       // Admin pending filter
       if (adminViewTab === 'pending') {
         return item.status === 'pending';
@@ -404,26 +447,63 @@ export const NewsSection: React.FC = () => {
               <span>Sources ({newsSources.length})</span>
             </button>
 
-            {/* Manual Sync Button */}
+            {/* ↻ REFRESH NEWS Button with state cycle */}
             <button
-              onClick={handleSyncSources}
-              disabled={isSyncing}
-              className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 text-xs font-bold rounded-xl flex items-center space-x-2 shadow transition-all disabled:opacity-50 cursor-pointer"
+              id="refresh-news-button"
+              onClick={handleRefreshNews}
+              disabled={refreshState === 'refreshing'}
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-2 transition-all shadow-md cursor-pointer select-none ${
+                refreshState === 'refreshing'
+                  ? 'bg-amber-500 text-stone-950 opacity-90 cursor-wait'
+                  : refreshState === 'success'
+                  ? 'bg-emerald-500 text-stone-950 font-extrabold shadow-emerald-500/20'
+                  : 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 hover:shadow-lg active:scale-95'
+              }`}
+              aria-label="Refresh News"
+              title="Fetch latest verified tiger conservation news from Times of India, The Hindu, Dainik Jagran, Hindustan & Forest Department"
             >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? 'Fetching News...' : 'Refresh News'}</span>
+              {refreshState === 'refreshing' ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-stone-950 flex-shrink-0" />
+                  <span>⟳ Updating News...</span>
+                </>
+              ) : refreshState === 'success' ? (
+                <>
+                  <Check className="w-4 h-4 text-stone-950 stroke-[3] flex-shrink-0" />
+                  <span>✓ News Updated</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 text-stone-950 flex-shrink-0" />
+                  <span>↻ REFRESH NEWS</span>
+                </>
+              )}
             </button>
           </div>
         </div>
 
-        {/* Sync Status Notification */}
-        {syncStatusMsg && (
-          <div className="bg-[#07271D] border border-emerald-600/50 p-3.5 rounded-2xl text-xs text-emerald-200 font-mono flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span>{syncStatusMsg}</span>
+        {/* Sync / Refresh Status Notification Banner */}
+        {refreshNotification && (
+          <div
+            className={`p-4 rounded-2xl text-xs sm:text-sm font-mono flex items-center justify-between border shadow-sm transition-all animate-fade-in ${
+              refreshNotification.type === 'success'
+                ? 'bg-emerald-950/90 border-emerald-500/60 text-emerald-200'
+                : 'bg-red-950/90 border-red-500/60 text-red-200'
+            }`}
+          >
+            <div className="flex items-center space-x-2.5">
+              {refreshNotification.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              )}
+              <span className="leading-relaxed">{refreshNotification.message}</span>
             </div>
-            <button onClick={() => setSyncStatusMsg(null)} className="text-emerald-400 hover:text-white">
+            <button
+              onClick={() => setRefreshNotification(null)}
+              className="text-stone-400 hover:text-white ml-3 p-1 rounded-md hover:bg-white/10 transition"
+              aria-label="Close notification"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -601,10 +681,19 @@ export const NewsSection: React.FC = () => {
                     {item.headline}
                   </h2>
 
-                  <div className="text-xs text-emerald-200/90 font-mono flex items-center space-x-2">
-                    <span className="font-bold text-amber-300">{item.source}</span>
-                    <span>•</span>
-                    <span>{item.sourceCategory}</span>
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                    <div className="flex items-center space-x-1.5 text-amber-300 font-bold bg-white/10 px-2.5 py-1 rounded-lg">
+                      <Newspaper className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{item.source}</span>
+                    </div>
+                    <span className="bg-emerald-950/90 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/40">
+                      Category: {item.sourceCategory}
+                    </span>
+                    {item.topicCategory && (
+                      <span className="text-white/70 bg-black/30 px-2 py-1 rounded-lg">
+                        {item.topicCategory.replace(/_/g, ' ')}
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-xs sm:text-sm text-stone-200 leading-relaxed line-clamp-3">
@@ -617,6 +706,23 @@ export const NewsSection: React.FC = () => {
                       <p className="text-emerald-100">{item.keyTakeaways[0]}</p>
                     </div>
                   )}
+
+                  {/* Original Source Link */}
+                  {(item.externalUrl || item.sourceLink || item.officialSourceRef) && (
+                    <div className="text-[11px] font-mono text-emerald-200/90 flex items-center space-x-1.5 pt-1">
+                      <span className="text-white/60">Original Source Link:</span>
+                      <a
+                        href={item.externalUrl || item.sourceLink || item.officialSourceRef}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amber-300 hover:text-amber-200 underline font-semibold flex items-center space-x-1 truncate max-w-[280px]"
+                        title={item.externalUrl || item.sourceLink || item.officialSourceRef}
+                      >
+                        <span>{item.source}</span>
+                        <ExternalLink className="w-3 h-3 ml-0.5 inline flex-shrink-0" />
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-white/10 flex flex-wrap justify-between items-center gap-3 relative z-10">
@@ -627,21 +733,22 @@ export const NewsSection: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => setSelectedNews(item)}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition"
+                      className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Summary</span>
                     </button>
 
-                    {(item.externalUrl || item.officialSourceRef) && (
+                    {(item.externalUrl || item.sourceLink || item.officialSourceRef) && (
                       <a
-                        href={item.externalUrl || item.officialSourceRef}
+                        href={item.externalUrl || item.sourceLink || item.officialSourceRef}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-4 py-1.5 bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs rounded-xl flex items-center space-x-1.5 transition shadow-sm"
+                        className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs rounded-xl flex items-center space-x-1.5 transition shadow-sm cursor-pointer"
+                        title={`Read full article on ${item.source}`}
                       >
-                        <span>Read on {item.source}</span>
-                        <ExternalLink className="w-3 h-3" />
+                        <span>Read Full News</span>
+                        <ExternalLink className="w-3.5 h-3.5 ml-0.5" />
                       </a>
                     )}
                   </div>
@@ -692,12 +799,16 @@ export const NewsSection: React.FC = () => {
                 className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md border border-stone-200 p-6 sm:p-7 flex flex-col justify-between transition-all hover:border-[#0B3D2E] space-y-4 group"
               >
                 <div className="space-y-3">
-                  {/* Header Badges */}
+                  {/* Header Badges: Verification, Source Name & Category */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-stone-100">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       {getVerificationBadge(item.verificationStatus)}
-                      <span className="text-[11px] font-mono text-stone-500 font-bold bg-stone-100 px-2.5 py-0.5 rounded-md">
-                        {item.source}
+                      <span className="text-[11px] font-mono text-stone-800 font-bold bg-stone-100 px-2.5 py-0.5 rounded-md flex items-center space-x-1">
+                        <Newspaper className="w-3 h-3 text-stone-500" />
+                        <span>{item.source}</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+                        Category: {item.sourceCategory}
                       </span>
                     </div>
 
@@ -766,6 +877,23 @@ export const NewsSection: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Original Source Link */}
+                  {(item.externalUrl || item.sourceLink || item.officialSourceRef) && (
+                    <div className="text-[11px] font-mono text-stone-500 flex items-center space-x-1.5 pt-1">
+                      <span className="text-stone-400">Original Source Link:</span>
+                      <a
+                        href={item.externalUrl || item.sourceLink || item.officialSourceRef}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-700 hover:text-emerald-900 underline font-semibold flex items-center space-x-1 truncate max-w-[260px]"
+                        title={item.externalUrl || item.sourceLink || item.officialSourceRef}
+                      >
+                        <span>{item.source}</span>
+                        <ExternalLink className="w-3 h-3 ml-0.5 inline flex-shrink-0" />
+                      </a>
+                    </div>
+                  )}
+
                   {/* Tags */}
                   {item.tags && item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
@@ -798,14 +926,15 @@ export const NewsSection: React.FC = () => {
                       <span>Summary</span>
                     </button>
 
-                    {(item.externalUrl || item.officialSourceRef) && (
+                    {(item.externalUrl || item.sourceLink || item.officialSourceRef) && (
                       <a
-                        href={item.externalUrl || item.officialSourceRef}
+                        href={item.externalUrl || item.sourceLink || item.officialSourceRef}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3.5 py-1.5 bg-[#0B3D2E] hover:bg-emerald-900 text-white rounded-xl font-semibold text-xs flex items-center space-x-1.5 transition shadow-sm"
+                        className="px-3.5 py-1.5 bg-[#0B3D2E] hover:bg-emerald-900 text-white rounded-xl font-bold text-xs flex items-center space-x-1.5 transition shadow-sm cursor-pointer"
+                        title={`Read full article on ${item.source}`}
                       >
-                        <span>Read on {item.source}</span>
+                        <span>Read Full News</span>
                         <ExternalLink className="w-3.5 h-3.5 ml-1" />
                       </a>
                     )}
@@ -854,13 +983,29 @@ export const NewsSection: React.FC = () => {
 
             <div className="space-y-4 text-xs sm:text-sm text-stone-700">
               <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-1.5 font-mono text-xs">
-                <div><strong>Published Date:</strong> {selectedNews.publicationDate}</div>
-                <div><strong>Reporting Source:</strong> {selectedNews.source} ({selectedNews.sourceCategory})</div>
+                <div><strong>Headline:</strong> {selectedNews.headline}</div>
+                <div><strong>Source / Newspaper:</strong> {selectedNews.source}</div>
+                <div><strong>Publication Date:</strong> {selectedNews.publicationDate}</div>
+                <div><strong>Category:</strong> {selectedNews.sourceCategory}</div>
                 {selectedNews.verifiedBy && <div><strong>Validation Authority:</strong> {selectedNews.verifiedBy}</div>}
+                {(selectedNews.externalUrl || selectedNews.sourceLink || selectedNews.officialSourceRef) && (
+                  <div className="pt-1 flex items-center space-x-1.5 truncate">
+                    <strong>Original Source Link:</strong>
+                    <a
+                      href={selectedNews.externalUrl || selectedNews.sourceLink || selectedNews.officialSourceRef}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-700 underline font-semibold truncate hover:text-emerald-900 flex items-center space-x-1"
+                    >
+                      <span className="truncate">{selectedNews.externalUrl || selectedNews.sourceLink || selectedNews.officialSourceRef}</span>
+                      <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 inline ml-1" />
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
-                <strong className="text-stone-900 block text-sm font-semibold">Executive Conservation Summary:</strong>
+                <strong className="text-stone-900 block text-sm font-semibold">Short Summary:</strong>
                 <p className="leading-relaxed bg-white p-4 rounded-2xl border border-stone-200">{selectedNews.summary}</p>
               </div>
 
@@ -879,18 +1024,18 @@ export const NewsSection: React.FC = () => {
             <div className="pt-4 border-t border-stone-200 flex justify-between items-center gap-3">
               <button
                 onClick={() => setSelectedNews(null)}
-                className="px-4 py-2 bg-stone-100 text-stone-700 font-bold rounded-xl text-xs hover:bg-stone-200 transition"
+                className="px-4 py-2.5 bg-stone-100 text-stone-700 font-bold rounded-xl text-xs hover:bg-stone-200 transition cursor-pointer"
               >
                 Close
               </button>
-              {(selectedNews.externalUrl || selectedNews.officialSourceRef) && (
+              {(selectedNews.externalUrl || selectedNews.sourceLink || selectedNews.officialSourceRef) && (
                 <a
-                  href={selectedNews.externalUrl || selectedNews.officialSourceRef}
+                  href={selectedNews.externalUrl || selectedNews.sourceLink || selectedNews.officialSourceRef}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-[#0B3D2E] text-white font-bold rounded-xl text-xs hover:bg-emerald-900 transition flex items-center space-x-1.5 shadow-md"
+                  className="px-5 py-2.5 bg-[#0B3D2E] text-white font-bold rounded-xl text-xs hover:bg-emerald-900 transition flex items-center space-x-1.5 shadow-md cursor-pointer"
                 >
-                  <span>Read Full Article on {selectedNews.source}</span>
+                  <span>Read Full News</span>
                   <ExternalLink className="w-4 h-4 ml-1" />
                 </a>
               )}

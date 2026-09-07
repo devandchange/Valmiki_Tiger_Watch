@@ -2,14 +2,14 @@ import React from 'react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
-import { Shield, Phone, MapPin, ArrowUp, Lock } from 'lucide-react';
+import { Shield, Phone, MapPin, ArrowUp, Lock, HeartHandshake, ShieldCheck, Award } from 'lucide-react';
 
 interface FooterProps {
   onOpenAdmin: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
-  const { setActiveTab } = useData();
+  const { setActiveTab, openVolunteerModal, openSupporterModal } = useData();
   const { t, language } = useLanguage();
 
   const scrollToTop = () => {
@@ -94,6 +94,16 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
                   • {t('nav.ecotourism', 'Responsible Safari & Eco-Tourism')}
                 </button>
               </li>
+              <li>
+                <button onClick={() => setActiveTab('weather')} className="hover:text-[#F27D26] transition-colors">
+                  • ⛅ {t('nav.weather', 'VTR Real-Time Weather')}
+                </button>
+              </li>
+              <li>
+                <button onClick={() => setActiveTab('pledge')} className="hover:text-[#F27D26] transition-colors">
+                  • 📜 {t('nav.pledge', 'Pledge to Protect Tigers (Certificate)')}
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -131,6 +141,32 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               <li>
                 <button onClick={() => setActiveTab('credits')} className="hover:text-[#F27D26] transition-colors">
                   • {t('nav.credits', 'Credits & Attribution')}
+                </button>
+              </li>
+              <li className="pt-2 flex flex-col gap-1.5">
+                <button
+                  onClick={() => setActiveTab('pledge')}
+                  id="footer-pledge-btn"
+                  className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold rounded-lg text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                >
+                  <Award className="w-3.5 h-3.5 text-stone-950" />
+                  <span>TAKE TIGER PLEDGE</span>
+                </button>
+                <button
+                  onClick={openVolunteerModal}
+                  id="footer-volunteer-btn"
+                  className="px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-400 font-bold rounded-lg text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 border border-stone-700 transition-all cursor-pointer shadow-xs"
+                >
+                  <HeartHandshake className="w-3.5 h-3.5 text-amber-400" />
+                  <span>BECOME A VOLUNTEER</span>
+                </button>
+                <button
+                  onClick={openSupporterModal}
+                  id="footer-supporter-btn"
+                  className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 border border-emerald-600 transition-all cursor-pointer shadow-xs"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>BECOME A SUPPORTER</span>
                 </button>
               </li>
             </ul>

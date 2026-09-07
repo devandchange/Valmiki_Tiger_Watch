@@ -21,7 +21,8 @@ import {
   Layers,
   Trees,
   Footprints,
-  CornerDownLeft
+  CornerDownLeft,
+  CloudSun
 } from 'lucide-react';
 import { TigerProfile, NewsArticle, EducationItem, WildlifeSpecies } from '../types';
 
@@ -240,6 +241,16 @@ export const GlobalSearchModal: React.FC = () => {
       badgeColor: 'bg-slate-600/10 text-slate-600 border-slate-500/30',
       icon: <BookOpen className="w-4 h-4 text-slate-600" />,
       action: () => setActiveTab('research')
+    },
+    {
+      id: 'sec-weather',
+      type: 'section',
+      title: t('nav.weather', 'VTR Weather & Forecast (Valmiki Nagar)'),
+      subtitle: 'Real-time temperature, rainfall, 7-day forecast, humidity, wind, and safari weather advisory',
+      badge: 'Weather',
+      badgeColor: 'bg-emerald-600/10 text-emerald-700 border-emerald-500/30',
+      icon: <CloudSun className="w-4 h-4 text-emerald-600" />,
+      action: () => setActiveTab('weather')
     }
   ], [t, setActiveTab]);
 

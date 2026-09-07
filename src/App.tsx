@@ -10,6 +10,9 @@ import { Footer } from './components/Footer';
 import { InstallPrompt } from './components/InstallPrompt';
 import { AdminModal } from './components/AdminModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
+import { VolunteerModal } from './components/VolunteerModal';
+import { SupporterModal } from './components/SupporterModal';
+import { ChatbotWidget } from './components/ChatbotWidget';
 import { ConservationAlertBanner } from './components/ConservationAlertBanner';
 import { SpeciesSpotter } from './components/SpeciesSpotter';
 import { MobileBottomNav } from './components/MobileBottomNav';
@@ -37,11 +40,23 @@ import { TigerWorldwideSection } from './components/sections/TigerWorldwideSecti
 import { LocalCuisineSection } from './components/sections/LocalCuisineSection';
 import { TravelGuideSection } from './components/sections/TravelGuideSection';
 import { SightseeingSection } from './components/sections/SightseeingSection';
+import { WeatherSection } from './components/sections/WeatherSection';
+import { TigerPledgeForm } from './components/TigerPledgeForm';
 
 export default function App() {
-  const { activeTab, openMobileNav } = useData();
+  const { activeTab, setActiveTab, openMobileNav } = useData();
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isInstallOpen, setIsInstallOpen] = useState(false);
+
+  // Check URL query parameters for certificate verification or pledge tab
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('cert') || params.get('tab') === 'pledge') {
+        setActiveTab('pledge');
+      }
+    } catch (e) {}
+  }, []);
 
   // Scroll to top when tab changes
   useEffect(() => {
@@ -76,6 +91,10 @@ export default function App() {
         return <EcotourismSection />;
       case 'travel-guide':
         return <TravelGuideSection />;
+      case 'weather':
+        return <WeatherSection />;
+      case 'pledge':
+        return <TigerPledgeForm />;
       case 'sightseeing':
         return <SightseeingSection />;
       case 'cuisine':
@@ -126,6 +145,15 @@ export default function App() {
 
       {/* Global Search Component Modal (⌘K / Ctrl+K) */}
       <GlobalSearchModal />
+
+      {/* Volunteer Registration Modal */}
+      <VolunteerModal />
+
+      {/* Supporter Registration Modal */}
+      <SupporterModal />
+
+      {/* Grounded AI Assistant Floating Chatbot */}
+      <ChatbotWidget />
     </div>
   );
 }

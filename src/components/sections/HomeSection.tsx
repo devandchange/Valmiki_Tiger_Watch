@@ -18,8 +18,14 @@ import {
   Download,
   Activity,
   Calendar,
-  Layers
+  Layers,
+  FileText,
+  HeartHandshake,
+  ShieldCheck,
+  Award,
+  Bot
 } from 'lucide-react';
+import { WeatherCard } from '../weather/WeatherCard';
 
 interface HomeSectionProps {
   onOpenInstallGuide: () => void;
@@ -30,19 +36,29 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onOpenInstallGuide }) 
     setActiveTab, 
     tigers, 
     news, 
+    research,
     alerts, 
     wildlife, 
     sightings,
     setSelectedTiger,
     setSelectedNews,
     canInstallPwa,
-    installPwa
+    installPwa,
+    openVolunteerModal,
+    openSupporterModal,
+    openChatbot
   } = useData();
 
   const { t, language, isRtl } = useLanguage();
 
-  const activeAlerts = alerts.filter(a => a.active);
-  const rawFeatured = tigers[0] || {
+  const safeAlerts = alerts || [];
+  const safeTigers = tigers || [];
+  const safeNews = news || [];
+  const safeWildlife = wildlife || [];
+  const safeResearch = research || [];
+
+  const activeAlerts = safeAlerts.filter(a => a?.active);
+  const rawFeatured = safeTigers[0] || {
     id: 'vtr-t07',
     code: 'VTR-T07',
     name: 'Someshwar Dominant',
@@ -59,9 +75,9 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onOpenInstallGuide }) 
     notes: 'Resident dominant male in VTR Northern belt'
   };
   const featuredTiger = getLocalizedTiger(rawFeatured, language);
-  const featuredTigers = tigers.slice(0, 3).map(tg => getLocalizedTiger(tg, language));
-  const latestNews = news.slice(0, 3);
-  const keyWildlife = wildlife.slice(0, 4);
+  const featuredTigers = safeTigers.slice(0, 3).map(tg => getLocalizedTiger(tg, language));
+  const latestNews = safeNews.slice(0, 3);
+  const keyWildlife = safeWildlife.slice(0, 4);
 
   return (
     <div className="space-y-12 animate-fade-in pb-8">
@@ -293,6 +309,9 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onOpenInstallGuide }) 
         </div>
       </section>
 
+      {/* VTR Real-Time Weather Section */}
+      <WeatherCard />
+
       {/* Featured Tigers Gallery Section */}
       <section className="space-y-6">
         <div className="flex flex-wrap justify-between items-end gap-2 border-b border-[#0B3D2E]/15 pb-4">
@@ -423,6 +442,48 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onOpenInstallGuide }) 
             </div>
           ))}
         </div>
+
+        {/* Research & Scientific Papers Spotlight Card */}
+        <div 
+          onClick={() => setActiveTab('research')}
+          className="bg-[#0B3D2E]/5 hover:bg-[#0B3D2E]/10 border border-[#0B3D2E]/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer transition-all hover:border-[#0B3D2E]"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-[#0B3D2E] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+              <FileText className="w-6 h-6 text-[#F27D26]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#F27D26]">
+                  {language === 'hi' ? 'वैज्ञानिक अध्ययन' : language === 'ur' ? 'سائنسی مقالہ جات' : 'Academic & Field Archive'}
+                </span>
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-mono px-2 py-0.5 rounded font-bold">
+                  {research?.length || 0} {language === 'hi' ? 'शोध पत्र' : language === 'ur' ? 'مقالے' : 'Studies'}
+                </span>
+              </div>
+              <h3 className="font-serif font-bold text-base sm:text-lg text-[#0B3D2E]">
+                {language === 'hi' ? 'अनुसंधान एवं वैज्ञानिक प्रकाशन (Research & Publications)' : language === 'ur' ? 'تحقیق اور سائنسی اشاعتیں' : 'Research & Scientific Publications'}
+              </h3>
+              <p className="text-xs text-[#1A1A1A]/70 line-clamp-1 mt-0.5">
+                {language === 'hi'
+                  ? 'एनटीसीए (NTCA), डब्ल्यूआईआई (WII) एवं विवि अध्ययन: कैमरा ट्रैप, बाघ जनगणना और संरक्षण रणनीतियाँ'
+                  : language === 'ur'
+                  ? 'این ٹی سی اے، ڈبلیو آئی آئی اور کیمبرج یونیورسٹی کے سائنسی مقالہ جات اور مردم شماری'
+                  : 'Peer-reviewed research, NTCA census data, WII camera-trap telemetry, and conservation studies'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveTab('research');
+            }}
+            className="w-full sm:w-auto px-4 py-2 bg-[#0B3D2E] hover:bg-[#07271D] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5 flex-shrink-0 shadow-xs"
+          >
+            <span>{language === 'hi' ? 'सभी शोध पत्र देखें' : language === 'ur' ? 'تمام مقالے دیکھیں' : 'Explore Research'}</span>
+            <ArrowRight className={`w-3.5 h-3.5 ${isRtl ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
       </section>
 
       {/* Biodiversity Highlights */}
@@ -549,6 +610,76 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onOpenInstallGuide }) 
               <span>{t('btn.learn_more', 'Start Learning')}</span>
               <ArrowRight className={`w-3.5 h-3.5 ${isRtl ? 'rotate-180' : ''}`} />
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Community Stewardship: Volunteer & Supporter Callout Banner */}
+      <section className="bg-gradient-to-br from-[#0B3D2E] via-[#07271D] to-[#04150F] rounded-3xl p-6 sm:p-8 border border-emerald-800/80 shadow-xl text-white space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center space-x-2 text-[#F27D26] text-xs font-mono font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full border border-[#F27D26]/30">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Valmiki Tiger Watch Community</span>
+            </div>
+            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Join the Mission to Protect Valmiki's Wild Tigers
+            </h3>
+            <p className="text-xs sm:text-sm text-emerald-100/80 leading-relaxed font-sans">
+              Be part of Bihar's sole tiger sanctuary. Whether contributing field observations, educational workshops, media documentation, or community outreach, your dedication directly aids wildlife rangers and indigenous forest custodians.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap gap-3 items-center flex-shrink-0">
+            {/* TAKE TIGER PLEDGE Button */}
+            <button
+              id="home-take-pledge-btn"
+              onClick={() => setActiveTab('pledge')}
+              className="px-5 py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-stone-950 font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center space-x-2 cursor-pointer"
+            >
+              <Award className="w-4 h-4 text-stone-950 stroke-[2.5]" />
+              <span>TAKE TIGER PLEDGE</span>
+            </button>
+
+            {/* BECOME A VOLUNTEER Button */}
+            <button
+              id="home-become-volunteer-btn"
+              onClick={openVolunteerModal}
+              className="px-5 py-3.5 bg-stone-900/90 hover:bg-stone-800 text-amber-400 font-extrabold text-xs uppercase tracking-wider rounded-2xl border border-stone-700 shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center space-x-2 cursor-pointer"
+            >
+              <HeartHandshake className="w-4 h-4 text-amber-400 stroke-[2.5]" />
+              <span>BECOME A VOLUNTEER</span>
+            </button>
+
+            {/* BECOME A SUPPORTER Button */}
+            <button
+              id="home-become-supporter-btn"
+              onClick={openSupporterModal}
+              className="px-5 py-3.5 bg-emerald-700/80 hover:bg-emerald-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl border border-emerald-500/60 shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center space-x-2 cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
+              <span>BECOME A SUPPORTER</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Features Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-4 border-t border-emerald-800/60 text-xs">
+          <div className="flex items-center gap-2 text-emerald-200/90 font-mono">
+            <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span>Personalized Pledge Certificate (PDF/PNG)</span>
+          </div>
+          <div className="flex items-center gap-2 text-emerald-200/90 font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>9 Specialized Volunteer Tracks</span>
+          </div>
+          <div className="flex items-center gap-2 text-emerald-200/90 font-mono">
+            <span className="w-2 h-2 rounded-full bg-teal-400"></span>
+            <span>Google Forms & Drive Integration</span>
+          </div>
+          <div className="flex items-center gap-2 text-emerald-200/90 font-mono">
+            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+            <span>Grounded Tiger Conservation AI</span>
           </div>
         </div>
       </section>
