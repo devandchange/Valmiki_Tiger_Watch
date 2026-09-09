@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en-IN" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
+    <!-- PWA Manifest & App Identity -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0B3D2E">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Tiger Watch" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- SEO & Metadata -->
+    <title>Valmiki Tiger Watch</title>
+    <meta name="description" content="An independent conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence." />
+    <meta property="og:title" content="Valmiki Tiger Watch" />
+    <meta property="og:description" content="An independent conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Valmiki Tiger Watch" />
+    <meta name="twitter:description" content="An independent conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence." />
+    <meta name="twitter:image" content="/icons/icon-512.png" />
+
+    <!-- Preconnect for typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Playfair+Display:ital,wght@0,600..900;1,600..900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Immediate cache & service worker self-healing script -->
+    <script>
+      (function() {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (var i = 0; i < registrations.length; i++) {
+              registrations[i].unregister();
+            }
+          });
+        }
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            for (var i = 0; i < keys.length; i++) {
+              caches.delete(keys[i]);
+            }
+          });
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-Nzau8lYp.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Cde4EILO.css">
+  </head>
+  <body class="bg-[#F5F1E6] text-[#1E293B] antialiased selection:bg-[#E65100] selection:text-white min-h-screen">
+    <div id="root"></div>
+  </body>
+</html>
+

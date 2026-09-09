@@ -6,6 +6,11 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build-android:
@@ -32,26 +37,14 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Install Capacitor
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android
-
-      - name: Create Capacitor config
+      - name: Add Android platform if not present
         run: |
-          cat > capacitor.config.ts <<'EOF'
-          import type { CapacitorConfig } from '@capacitor/cli';
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
 
-          const config: CapacitorConfig = {
-            appId: 'com.valmikitigerwatch.app',
-            appName: 'Valmiki Tiger Watch',
-            webDir: 'dist',
-            bundledWebRuntime: false
-          };
-
-          export default config;
-          EOF
-
-      - name: Add Android platform
-        run: npx cap add android
+      - name: Generate official Valmiki Tiger Watch Android launcher icons
+        run: node scripts/generate-android-icons.js
 
       - name: Sync Android project
         run: npx cap sync android
@@ -76,8 +69,27 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --init-script ../kotlin-fix.gradle
           
-      - name: Upload APK
+      - name: Prepare named APK artifact
+        run: |
+          mkdir -p release-apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/Valmiki-Tiger-Watch-v1.0.1.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Valmiki-Tiger-Watch-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Valmiki-Tiger-Watch-v1.0.1-APK
+          path: release-apk/Valmiki-Tiger-Watch-v1.0.1.apk
+
+      - name: Create or Update GitHub Release v1.0.1
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: v1.0.1
+          name: Valmiki Tiger Watch v1.0.1
+          body: |
+            Updated the Android launcher icon with the official Valmiki Tiger Watch logo.
+          files: release-apk/Valmiki-Tiger-Watch-v1.0.1.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

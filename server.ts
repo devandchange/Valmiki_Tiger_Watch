@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { fetchLiveTigerNews } from './src/server/newsService';
 import { processChatMessage, getAiBackendStatus } from './src/server/chatService';
@@ -16,7 +17,10 @@ import {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  // In development, port 3000 is required by the local dev reverse proxy.
+  // In production (e.g. Cloud Run), listen on the port provided by the environment (process.env.PORT, defaults to 8080 or 3000).
+  const isDev = process.env.NODE_ENV !== 'production';
+  const PORT = isDev ? 3000 : (process.env.PORT ? parseInt(process.env.PORT, 10) : 3000);
 
   app.use(express.json({ limit: '10mb' }));
 
@@ -256,22 +260,37 @@ async function startServer() {
   });
 
   // Vite middleware for development vs Static files for production
-  if (process.env.NODE_ENV !== 'production') {
+  if (isDev) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa'
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = fs.existsSync(path.join(process.cwd(), 'dist'))
+      ? path.join(process.cwd(), 'dist')
+      : path.join(__dirname, 'dist');
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Valmiki Tiger Watch - Application build not found.');
+      }
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT} (environment: ${process.env.NODE_ENV || 'development'})`);
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+      console.log('HTTP server closed');
+      process.exit(0);
+    });
   });
 }
 

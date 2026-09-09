@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 50 520 200" width="1040" height="400" fill="none">
+  <defs>
+    <!-- Authentic royal blue ballpoint pen ink colors -->
+    <linearGradient id="inkGrad" x1="0%" y1="20%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#11367d" />
+      <stop offset="35%" stop-color="#0e2f73" />
+      <stop offset="70%" stop-color="#143a84" />
+      <stop offset="100%" stop-color="#1d4696" />
+    </linearGradient>
+    <filter id="inkFlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0.2" dy="0.3" stdDeviation="0.25" flood-color="#0a2256" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <g filter="url(#inkFlow)" stroke="url(#inkGrad)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- === 'N' in Nazish === -->
+    <!-- Initial entry serif -->
+    <path d="M 65 142 C 68 128 72 115 75 103" stroke-width="4.4" />
+    <!-- Main left downstem -->
+    <path d="M 75 103 C 76 128 76 155 76 180 C 76 184 75 188 73 190" stroke-width="4.8" />
+    <!-- Diagonal rising stroke -->
+    <path d="M 75 184 C 77 154 89 125 104 104 C 108 98 112 94 115 93" stroke-width="4.6" />
+    <!-- Right vertical downstem -->
+    <path d="M 115 93 C 114 116 113 146 112 173 C 112 177 114 179 116 178" stroke-width="4.8" />
+
+    <!-- === 'a' === -->
+    <path d="M 116 178 C 122 176 127 167 129 153 C 131 141 128 133 121 134 C 114 135 110 146 112 161 C 114 171 122 174 128 169 C 133 163 135 153 136 138" stroke-width="4.2" />
+    <path d="M 136 138 L 135 169 C 135 175 139 176 144 171" stroke-width="4.4" />
+
+    <!-- === 'z' === -->
+    <path d="M 144 171 C 147 159 151 142 153 138 C 154 136 160 135 168 134" stroke-width="4.2" />
+    <path d="M 168 134 C 163 145 155 160 148 172" stroke-width="4.6" />
+    <path d="M 148 172 C 153 173 161 172 168 168" stroke-width="4.1" />
+
+    <!-- === 'i' === -->
+    <path d="M 168 168 C 172 163 176 150 179 138 L 180 169 C 180 174 184 174 188 169" stroke-width="4.3" />
+    <circle cx="179.5" cy="118" r="3.4" fill="url(#inkGrad)" stroke="none" />
+
+    <!-- === 's' === -->
+    <path d="M 188 169 C 193 162 197 148 199 139 C 201 136 205 137 206 142 C 207 150 207 160 202 168 C 199 173 205 174 210 170" stroke-width="4.2" />
+
+    <!-- === 'h' === -->
+    <!-- High ascender -->
+    <path d="M 210 170 C 215 156 221 122 225 96 C 227 90 229 90 228 98 L 226 174" stroke-width="4.7" />
+    <!-- Arch & leg -->
+    <path d="M 226 152 C 228 138 236 132 243 131 C 248 131 250 137 250 146 L 250 170" stroke-width="4.4" />
+
+    <!-- === Connector from 'h' to 'A' === -->
+    <path d="M 250 170 C 255 174 266 166 278 152 C 294 132 312 104 324 82" stroke-width="4.7" />
+
+    <!-- === Capital 'A' Apex & Plunging Descender === -->
+    <path d="M 324 82 C 324 112 322 153 320 198 C 319 218 318 233 317 242" stroke-width="5.3" />
+
+    <!-- === Crossbar of 'A' looping & extending across 'sad.' === -->
+    <path d="M 284 150 C 298 145 312 140 326 136 C 352 130 395 120 440 108 C 475 99 515 86 532 78 C 536 76 538 77 536 82 C 532 88 522 94 506 100" stroke-width="4.9" />
+
+    <!-- === 's' in sad === -->
+    <path d="M 352 158 C 356 149 360 145 364 145 C 368 146 369 153 367 161 C 365 167 368 169 372 167" stroke-width="4.1" />
+
+    <!-- === 'a' in sad === -->
+    <path d="M 372 167 C 376 161 380 152 383 145 C 386 143 381 157 383 165 C 386 167 389 165 392 160" stroke-width="4.1" />
+    <path d="M 392 145 L 392 166 C 392 170 395 170 398 167" stroke-width="4.2" />
+
+    <!-- === 'd' in sad === -->
+    <path d="M 398 167 C 402 161 406 153 410 145 C 413 143 408 158 410 166 C 413 168 416 166 419 160" stroke-width="4.1" />
+    <path d="M 419 124 C 420 120 422 121 422 127 L 422 166 C 424 170 427 169 430 166" stroke-width="4.3" />
+
+    <!-- === Final Dot '.' === -->
+    <circle cx="442" cy="164" r="3.4" fill="url(#inkGrad)" stroke="none" />
+  </g>
+</svg>

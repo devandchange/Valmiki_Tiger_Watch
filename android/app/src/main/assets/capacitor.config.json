@@ -1,0 +1,9 @@
+{
+	"appId": "com.valmikitigerwatch.app",
+	"appName": "Valmiki Tiger Watch",
+	"webDir": "dist",
+	"plugins": {
+		"Filesystem": {},
+		"Share": {}
+	}
+}
