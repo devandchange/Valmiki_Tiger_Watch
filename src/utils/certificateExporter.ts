@@ -44,8 +44,62 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 /**
+ * Mathematically converts an oklch(...) color string to standard rgb(...) / rgba(...)
+ * for Android WebView and canvas rendering engines that lack native OKLCH parser support.
+ */
+export function oklchToRgb(colorStr: string): string | null {
+  const match = colorStr.match(/oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)/i);
+  if (!match) return null;
+
+  const rawL = match[1];
+  const L = rawL.endsWith('%') ? parseFloat(rawL) / 100 : parseFloat(rawL);
+  const C = parseFloat(match[2]);
+  const H = parseFloat(match[3]);
+  const rawA = match[4];
+  const alpha = rawA ? (rawA.endsWith('%') ? parseFloat(rawA) / 100 : parseFloat(rawA)) : 1;
+
+  if (isNaN(L) || isNaN(C) || isNaN(H)) return null;
+
+  // OKLCH -> OKLab
+  const hRad = (H * Math.PI) / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+
+  // OKLab -> LMS
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+
+  // LMS -> Linear sRGB
+  const rLin = +4.0767434752 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const gLin = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const bLin = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+  // Linear sRGB to standard gamma sRGB (0..255)
+  const toSrgb = (c: number): number => {
+    const clamped = Math.max(0, Math.min(1, c));
+    return clamped <= 0.0031308
+      ? Math.round(12.92 * clamped * 255)
+      : Math.round((1.055 * Math.pow(clamped, 1 / 2.4) - 0.055) * 255);
+  };
+
+  const r = toSrgb(rLin);
+  const g = toSrgb(gLin);
+  const bVal = toSrgb(bLin);
+
+  if (alpha < 1) {
+    return `rgba(${r}, ${g}, ${bVal}, ${Number(alpha.toFixed(3))})`;
+  }
+  return `rgb(${r}, ${g}, ${bVal})`;
+}
+
+/**
  * Normalizes any modern CSS color value (oklch, color-mix, lab, lch) to standard
- * RGB / RGBA hexadecimal notation using native browser canvas context.
+ * RGB / RGBA hexadecimal notation using standalone mathematical conversion with canvas fallback.
  */
 export function normalizeColorToRgb(colorStr: string): string {
   if (!colorStr) return colorStr;
@@ -57,20 +111,30 @@ export function normalizeColorToRgb(colorStr: string): string {
   ) {
     return colorStr;
   }
+
+  // 1. Precise mathematical conversion for OKLCH
+  if (colorStr.includes('oklch')) {
+    const converted = oklchToRgb(colorStr);
+    if (converted) return converted;
+  }
+
+  // 2. Browser Canvas 2D test
   try {
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.fillStyle = '#000000';
+      ctx.fillStyle = '#010203';
       ctx.fillStyle = colorStr;
-      return ctx.fillStyle; // Native browser returns "rgb(...)" or "rgba(...)"
+      if (ctx.fillStyle !== '#010203' && ctx.fillStyle !== 'rgb(1, 2, 3)') {
+        return ctx.fillStyle; // Native browser successfully parsed it
+      }
     }
   } catch {
     // Non-blocking fallback
   }
-  return '#000000';
+  return '#1C1917';
 }
 
 /**

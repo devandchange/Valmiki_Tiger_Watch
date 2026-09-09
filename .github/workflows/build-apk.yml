@@ -49,14 +49,18 @@ jobs:
       - name: Sync Android project
         run: npx cap sync android
      
-      - name: Fix Kotlin dependency conflict
+      - name: Align Kotlin dependencies and prevent conflicts
         run: |
           cat > kotlin-fix.gradle <<'EOF'
           allprojects {
               configurations.configureEach {
                   resolutionStrategy.eachDependency { details ->
                       if (details.requested.group == "org.jetbrains.kotlin") {
-                          details.useVersion("1.8.22")
+                          if (details.requested.name == "kotlin-stdlib-jdk7" || details.requested.name == "kotlin-stdlib-jdk8") {
+                              details.useTarget("org.jetbrains.kotlin:kotlin-stdlib:2.2.20")
+                          } else if (details.requested.name.startsWith("kotlin-stdlib")) {
+                              details.useVersion("2.2.20")
+                          }
                       }
                   }
               }

@@ -24,6 +24,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 // server.ts
 var import_express = __toESM(require("express"), 1);
 var import_path2 = __toESM(require("path"), 1);
+var import_fs2 = __toESM(require("fs"), 1);
 var import_vite = require("vite");
 
 // src/server/newsService.ts
@@ -1250,6 +1251,7 @@ function updateCertificateSettings(updates) {
 async function startServer() {
   const app = (0, import_express.default)();
   const PORT = 3e3;
+  const isDev = process.env.NODE_ENV !== "production";
   app.use(import_express.default.json({ limit: "10mb" }));
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
@@ -1450,21 +1452,33 @@ async function startServer() {
       res.status(500).json({ success: false, error: error?.message || "Failed to update settings." });
     }
   });
-  if (process.env.NODE_ENV !== "production") {
+  if (isDev) {
     const vite = await (0, import_vite.createServer)({
       server: { middlewareMode: true },
       appType: "spa"
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = import_path2.default.join(process.cwd(), "dist");
+    const distPath = import_fs2.default.existsSync(import_path2.default.join(process.cwd(), "dist", "index.html")) ? import_path2.default.join(process.cwd(), "dist") : import_fs2.default.existsSync(import_path2.default.join(__dirname, "index.html")) ? __dirname : import_path2.default.join(process.cwd(), "dist");
     app.use(import_express.default.static(distPath));
     app.get("*", (_req, res) => {
-      res.sendFile(import_path2.default.join(distPath, "index.html"));
+      const indexPath = import_path2.default.join(distPath, "index.html");
+      if (import_fs2.default.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send("Valmiki Tiger Watch - Application build not found.");
+      }
     });
   }
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT} (environment: ${process.env.NODE_ENV || "development"})`);
+  });
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM signal received: closing HTTP server");
+    server.close(() => {
+      console.log("HTTP server closed");
+      process.exit(0);
+    });
   });
 }
 startServer();
