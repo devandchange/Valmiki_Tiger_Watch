@@ -8,15 +8,17 @@ import {
   CheckCircle2,
   AlertTriangle,
   Search,
-  ExternalLink,
   Copy,
   Check,
   HeartHandshake,
-  Lock,
-  Globe,
-  FileCheck,
   FileImage,
-  FileText
+  FileText,
+  Share2,
+  Filter,
+  Calendar,
+  User,
+  Hash,
+  RotateCcw
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -25,7 +27,9 @@ import { CertificatePreview } from './CertificatePreview';
 import {
   downloadCertificateAsJpg,
   downloadCertificateAsPdf,
-  downloadCertificateAsPng
+  downloadCertificateAsPng,
+  printCertificate,
+  shareCertificate
 } from '../utils/certificateExporter';
 
 export const TigerPledgeForm: React.FC = () => {
@@ -34,7 +38,9 @@ export const TigerPledgeForm: React.FC = () => {
     certificateSettings,
     generatePledgeCertificate,
     isCertificateGenerating,
-    certificates
+    certificates,
+    lastIssuedCertificate,
+    clearLastIssuedCertificate
   } = useData();
 
   // Form State
@@ -49,51 +55,44 @@ export const TigerPledgeForm: React.FC = () => {
   const [agreedToPledge, setAgreedToPledge] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const todayFormatted = new Date().toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
+  // Active Certificate State (initialized with last issued certificate if present)
+  const [generatedCert, setGeneratedCert] = useState<TigerPledgeCertificate | null>(() => {
+    return lastIssuedCertificate || null;
   });
+  const [alreadyIssuedNotice, setAlreadyIssuedNotice] = useState<boolean>(false);
 
-  // Generated Certificate & Export State - initialized in preview mode for immediate verification of the President's signature
-  const [generatedCert, setGeneratedCert] = useState<TigerPledgeCertificate | null>({
-    certificateNumber: 'VTW-TPP-2026-000001',
-    fullName: 'Shri Arvind Kumar',
-    cityAndState: 'West Champaran, Bihar',
-    country: 'India',
-    organization: 'Valmiki Tiger Reserve Community Vanguard',
-    pledgeDate: todayFormatted,
-    status: 'active',
-    language: 'en'
-  });
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [isExportingJpg, setIsExportingJpg] = useState(false);
-  const [isExportingPng, setIsExportingPng] = useState(false);
+  // Export & Action State
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportActionName, setExportActionName] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState<{
-    type: 'success' | 'error';
+    type: 'loading' | 'success' | 'error';
     message: string;
     filename?: string;
+    onRetry?: () => void;
   } | null>(null);
 
-  // Verification Search State
+  // Verification & Admin Search State
   const [activeTab, setActiveTab] = useState<'pledge' | 'verify'>('pledge');
   const [verifyQuery, setVerifyQuery] = useState('');
+  const [searchField, setSearchField] = useState<'all' | 'number' | 'name' | 'pledgeId' | 'date'>('all');
   const [verifyResult, setVerifyResult] = useState<{
     searched: boolean;
-    certificate?: TigerPledgeCertificate;
+    certificates?: TigerPledgeCertificate[];
+    selectedCertificate?: TigerPledgeCertificate;
     notFound?: boolean;
     isRevoked?: boolean;
   }>({ searched: false });
   const [isVerifying, setIsVerifying] = useState(false);
 
   const certRef = useRef<HTMLDivElement>(null);
-  const printCertRef = useRef<HTMLDivElement>(null);
 
   // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setAlreadyIssuedNotice(false);
+    setDownloadStatus(null);
 
     if (!fullName.trim()) {
       setFormError('Please enter your full name.');
@@ -109,18 +108,25 @@ export const TigerPledgeForm: React.FC = () => {
     }
 
     try {
-      const newCert = await generatePledgeCertificate({
+      const uniquePledgeId = `pledge_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const certResult = await generatePledgeCertificate({
         fullName: fullName.trim(),
         cityAndState: cityAndState.trim(),
         country: country.trim() || 'India',
         email: email.trim() || undefined,
         organization: organization.trim() || undefined,
-        language: certLanguage
+        language: certLanguage,
+        pledgeId: uniquePledgeId
       });
 
-      setGeneratedCert(newCert);
+      setGeneratedCert(certResult);
+      if (certResult.alreadyIssued) {
+        setAlreadyIssuedNotice(true);
+      } else {
+        setAlreadyIssuedNotice(false);
+      }
 
-      // Scroll smoothly to preview
+      // Scroll smoothly to generated certificate
       setTimeout(() => {
         const previewEl = document.getElementById('generated-certificate-section');
         if (previewEl) {
@@ -132,102 +138,193 @@ export const TigerPledgeForm: React.FC = () => {
     }
   };
 
-  // Handle Export to JPG
+  // Helper filename generator
+  const getSafeFilename = (ext: string) => {
+    const num = generatedCert?.certificateNumber ? generatedCert.certificateNumber.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Valmiki';
+    return `Valmiki-Tiger-Watch-Pledge-Certificate-${num}.${ext}`;
+  };
+
+  // Export Handlers
+  const handleDownloadPdf = async () => {
+    if (!certRef.current || !generatedCert) return;
+    setIsExporting(true);
+    setExportActionName('PDF');
+    setDownloadStatus({
+      type: 'loading',
+      message: 'Preparing your certificate…'
+    });
+
+    const filename = getSafeFilename('pdf');
+    try {
+      const res = await downloadCertificateAsPdf(certRef.current, filename);
+      if (res.success) {
+        setDownloadStatus({
+          type: 'success',
+          message: res.message || 'Certificate downloaded successfully.',
+          filename
+        });
+      } else {
+        setDownloadStatus({
+          type: 'error',
+          message: res.error || 'Failed to generate PDF certificate.',
+          onRetry: handleDownloadPdf
+        });
+      }
+    } catch (e: any) {
+      setDownloadStatus({
+        type: 'error',
+        message: e?.message || 'Unexpected error generating PDF certificate.',
+        onRetry: handleDownloadPdf
+      });
+    } finally {
+      setIsExporting(false);
+      setExportActionName('');
+    }
+  };
+
   const handleDownloadJpg = async () => {
     if (!certRef.current || !generatedCert) return;
-    setIsExportingJpg(true);
-    setDownloadStatus(null);
-    const filename = 'Valmiki-Tiger-Watch-Pledge-Certificate.jpg';
+    setIsExporting(true);
+    setExportActionName('JPG');
+    setDownloadStatus({
+      type: 'loading',
+      message: 'Preparing your certificate…'
+    });
+
+    const filename = getSafeFilename('jpg');
     try {
       const res = await downloadCertificateAsJpg(certRef.current, filename, 0.98);
       if (res.success) {
         setDownloadStatus({
           type: 'success',
-          message: `Certificate downloaded successfully as JPG (${filename}).`,
+          message: res.message || 'Certificate downloaded successfully.',
           filename
         });
       } else {
         setDownloadStatus({
           type: 'error',
-          message: res.error || 'Failed to generate JPG certificate. Please try again.'
+          message: res.error || 'Failed to generate JPG certificate.',
+          onRetry: handleDownloadJpg
         });
       }
     } catch (e: any) {
-      console.error('JPG export failed:', e);
       setDownloadStatus({
         type: 'error',
-        message: e?.message || 'Failed to generate JPG certificate. Please try again.'
+        message: e?.message || 'Unexpected error generating JPG certificate.',
+        onRetry: handleDownloadJpg
       });
     } finally {
-      setIsExportingJpg(false);
+      setIsExporting(false);
+      setExportActionName('');
     }
   };
 
-  // Handle Export to PDF
-  const handleDownloadPdf = async () => {
-    if (!certRef.current || !generatedCert) return;
-    setIsExportingPdf(true);
-    setDownloadStatus(null);
-    const filename = 'Valmiki-Tiger-Watch-Pledge-Certificate.pdf';
-    try {
-      const res = await downloadCertificateAsPdf(certRef.current, filename, 'landscape');
-      if (res.success) {
-        setDownloadStatus({
-          type: 'success',
-          message: `Certificate downloaded successfully as PDF (${filename}).`,
-          filename
-        });
-      } else {
-        setDownloadStatus({
-          type: 'error',
-          message: res.error || 'Failed to generate PDF certificate. Please try again.'
-        });
-      }
-    } catch (e: any) {
-      console.error('PDF export failed:', e);
-      setDownloadStatus({
-        type: 'error',
-        message: e?.message || 'Failed to generate PDF certificate. Please try again.'
-      });
-    } finally {
-      setIsExportingPdf(false);
-    }
-  };
-
-  // Handle Export to PNG (Optional secondary format)
   const handleDownloadPng = async () => {
     if (!certRef.current || !generatedCert) return;
-    setIsExportingPng(true);
-    setDownloadStatus(null);
-    const filename = 'Valmiki-Tiger-Watch-Pledge-Certificate.png';
+    setIsExporting(true);
+    setExportActionName('PNG');
+    setDownloadStatus({
+      type: 'loading',
+      message: 'Preparing your certificate…'
+    });
+
+    const filename = getSafeFilename('png');
     try {
       const res = await downloadCertificateAsPng(certRef.current, filename);
       if (res.success) {
         setDownloadStatus({
           type: 'success',
-          message: `Certificate downloaded successfully as PNG (${filename}).`,
+          message: res.message || 'Certificate downloaded successfully.',
           filename
         });
       } else {
         setDownloadStatus({
           type: 'error',
-          message: res.error || 'Failed to generate PNG certificate.'
+          message: res.error || 'Failed to generate PNG certificate.',
+          onRetry: handleDownloadPng
         });
       }
     } catch (e: any) {
-      console.error('PNG export failed:', e);
       setDownloadStatus({
         type: 'error',
-        message: e?.message || 'Failed to generate PNG certificate.'
+        message: e?.message || 'Unexpected error generating PNG certificate.',
+        onRetry: handleDownloadPng
       });
     } finally {
-      setIsExportingPng(false);
+      setIsExporting(false);
+      setExportActionName('');
     }
   };
 
-  // Handle Browser Native Print
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (!certRef.current || !generatedCert) return;
+    setIsExporting(true);
+    setExportActionName('Print');
+    setDownloadStatus({
+      type: 'loading',
+      message: 'Preparing your certificate for printing…'
+    });
+
+    try {
+      const res = await printCertificate(certRef.current, `Valmiki Tiger Watch Certificate - ${generatedCert.certificateNumber}`);
+      if (res.success) {
+        setDownloadStatus({
+          type: 'success',
+          message: res.message || 'Certificate print action initiated.'
+        });
+      } else {
+        setDownloadStatus({
+          type: 'error',
+          message: res.error || 'Failed to open certificate printing.',
+          onRetry: handlePrint
+        });
+      }
+    } catch (e: any) {
+      setDownloadStatus({
+        type: 'error',
+        message: e?.message || 'Print action could not be completed.',
+        onRetry: handlePrint
+      });
+    } finally {
+      setIsExporting(false);
+      setExportActionName('');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!certRef.current || !generatedCert) return;
+    setIsExporting(true);
+    setExportActionName('Share');
+    setDownloadStatus({
+      type: 'loading',
+      message: 'Preparing certificate to share…'
+    });
+
+    const filename = getSafeFilename('pdf');
+    try {
+      const res = await shareCertificate(certRef.current, 'pdf', filename);
+      if (res.success) {
+        setDownloadStatus({
+          type: 'success',
+          message: res.message || 'Certificate shared successfully.'
+        });
+      } else {
+        setDownloadStatus({
+          type: 'error',
+          message: res.error || 'Could not complete sharing.',
+          onRetry: handleShare
+        });
+      }
+    } catch (e: any) {
+      setDownloadStatus({
+        type: 'error',
+        message: e?.message || 'Sharing could not be initiated.',
+        onRetry: handleShare
+      });
+    } finally {
+      setIsExporting(false);
+      setExportActionName('');
+    }
   };
 
   // Copy Verification Link
@@ -239,7 +336,22 @@ export const TigerPledgeForm: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  // Handle Verification Search
+  // Reset form to issue a new pledge
+  const handleResetForm = () => {
+    setGeneratedCert(null);
+    clearLastIssuedCertificate();
+    setFullName('');
+    setCityAndState('');
+    setEmail('');
+    setOrganization('');
+    setAgreedToPledge(false);
+    setFormError(null);
+    setAlreadyIssuedNotice(false);
+    setDownloadStatus(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Admin & Verification Search
   const handleVerifySearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const query = verifyQuery.trim();
@@ -249,32 +361,53 @@ export const TigerPledgeForm: React.FC = () => {
     setVerifyResult({ searched: false });
 
     try {
-      // First check server endpoint
-      const res = await fetch(`/api/certificates/verify/${encodeURIComponent(query)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.valid && data.certificate) {
-          setVerifyResult({
-            searched: true,
-            certificate: data.certificate,
-            isRevoked: data.certificate.status === 'revoked'
-          });
-          setIsVerifying(false);
-          return;
+      const normalizedQuery = query.toLowerCase();
+
+      // Search local registry first
+      const localMatches = certificates.filter((c) => {
+        const certNum = (c.certificateNumber || '').toLowerCase();
+        const partName = (c.participantName || c.fullName || '').toLowerCase();
+        const pledgeId = (c.pledgeId || c.id || c.certificateId || '').toLowerCase();
+        const date = (c.issueDate || c.pledgeDate || c.createdAt || '').toLowerCase();
+
+        if (searchField === 'number') return certNum.includes(normalizedQuery);
+        if (searchField === 'name') return partName.includes(normalizedQuery);
+        if (searchField === 'pledgeId') return pledgeId.includes(normalizedQuery);
+        if (searchField === 'date') return date.includes(normalizedQuery);
+
+        return (
+          certNum.includes(normalizedQuery) ||
+          partName.includes(normalizedQuery) ||
+          pledgeId.includes(normalizedQuery) ||
+          date.includes(normalizedQuery)
+        );
+      });
+
+      // Try server endpoint if query looks like a certificate number
+      let serverMatch: TigerPledgeCertificate | null = null;
+      try {
+        const res = await fetch(`/api/certificates/verify/${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.valid && data.certificate) {
+            serverMatch = data.certificate;
+          }
         }
+      } catch {
+        // ignore server network errors
       }
 
-      // Fallback: check local certificates registry in context
-      const normalizedQuery = query.toUpperCase();
-      const match = certificates.find(
-        c => c.certificateNumber.toUpperCase() === normalizedQuery || c.id === query
-      );
+      const combined: TigerPledgeCertificate[] = [...localMatches];
+      if (serverMatch && !combined.some(c => c.certificateNumber === serverMatch!.certificateNumber)) {
+        combined.unshift(serverMatch);
+      }
 
-      if (match) {
+      if (combined.length > 0) {
         setVerifyResult({
           searched: true,
-          certificate: match,
-          isRevoked: match.status === 'revoked'
+          certificates: combined,
+          selectedCertificate: combined[0],
+          isRevoked: combined[0].status === 'revoked'
         });
       } else {
         setVerifyResult({
@@ -282,38 +415,14 @@ export const TigerPledgeForm: React.FC = () => {
           notFound: true
         });
       }
-    } catch (e) {
-      // Offline fallback search
-      const normalizedQuery = query.toUpperCase();
-      const match = certificates.find(
-        c => c.certificateNumber.toUpperCase() === normalizedQuery
-      );
-      if (match) {
-        setVerifyResult({
-          searched: true,
-          certificate: match,
-          isRevoked: match.status === 'revoked'
-        });
-      } else {
-        setVerifyResult({
-          searched: true,
-          notFound: true
-        });
-      }
+    } catch {
+      setVerifyResult({
+        searched: true,
+        notFound: true
+      });
     } finally {
       setIsVerifying(false);
     }
-  };
-
-  const handleResetForm = () => {
-    setGeneratedCert(null);
-    setFullName('');
-    setCityAndState('');
-    setEmail('');
-    setOrganization('');
-    setAgreedToPledge(false);
-    setFormError(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -359,162 +468,145 @@ export const TigerPledgeForm: React.FC = () => {
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>{t('pledge.verify_tab') || 'Verify Authenticity'}</span>
+            <span>Search & Verify Certificates</span>
           </button>
         </div>
       </div>
 
-      {/* TAB 1: PLEDGE FORM & GENERATOR */}
+      {/* TAB 1: PLEDGE GENERATION & CERTIFICATE DISPLAY */}
       {activeTab === 'pledge' && (
-        <div className="space-y-12">
-          
-          {/* Pledge Form Section (if not yet generated or if editing) */}
+        <div className="space-y-10">
+
           {!generatedCert ? (
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-xl overflow-hidden max-w-2xl mx-auto">
-              {/* Form Title bar */}
-              <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-950 text-white p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-emerald-700/60 rounded-xl border border-emerald-500/30">
-                    <Award className="w-6 h-6 text-amber-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
-                      {t('pledge.form_title') || 'Tiger Protection Pledge Form'}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-emerald-100/90 mt-0.5">
-                      {t('pledge.form_subtitle') ||
-                        'Fill in your details below to pledge your support and receive your official Certificate.'}
-                    </p>
-                  </div>
+            /* PLEDGE FORM VIEW */
+            <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-stone-200 shadow-xl p-4 sm:p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-stone-100">
+                <div className="p-2.5 bg-amber-100 rounded-xl">
+                  <Award className="w-6 h-6 text-amber-800" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-stone-900">
+                    {t('pledge.form_heading') || 'Tiger Protection Pledge Form'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-stone-500">
+                    {t('pledge.form_subheading') ||
+                      'Fill out your details accurately. Your name will appear on the official certificate.'}
+                  </p>
                 </div>
               </div>
 
-              {/* Form Body */}
-              <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5">
-                {formError && (
-                  <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                    <div>{formError}</div>
-                  </div>
-                )}
+              {/* Form Error Banner */}
+              {formError && (
+                <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <span>{formError}</span>
+                </div>
+              )}
 
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Full Name */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-stone-900 mb-1.5">
-                    {t('pledge.full_name') || 'Full Name'} <span className="text-red-500">*</span>
+                  <label htmlFor="pledge-fullname" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
+                    {t('pledge.label_fullname') || 'Full Name'} <span className="text-rose-600">*</span>
                   </label>
                   <input
+                    id="pledge-fullname"
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder={t('pledge.full_name_placeholder') || 'e.g. Rajesh Kumar Verma'}
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm font-medium transition"
+                    placeholder="e.g. Arvind Kumar / अरविंद कुमार"
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
                   />
                 </div>
 
-                {/* City and State */}
+                {/* City & State */}
+                <div>
+                  <label htmlFor="pledge-location" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
+                    {t('pledge.label_location') || 'City & State / District'} <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    id="pledge-location"
+                    type="text"
+                    required
+                    value={cityAndState}
+                    onChange={(e) => setCityAndState(e.target.value)}
+                    placeholder="e.g. West Champaran, Bihar"
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
+                  />
+                </div>
+
+                {/* Country */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-stone-900 mb-1.5">
-                      {t('pledge.city_state') || 'City and State'} <span className="text-red-500">*</span>
+                    <label htmlFor="pledge-country" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
+                      {t('pledge.label_country') || 'Country'}
                     </label>
                     <input
-                      type="text"
-                      required
-                      value={cityAndState}
-                      onChange={(e) => setCityAndState(e.target.value)}
-                      placeholder={t('pledge.city_state_placeholder') || 'e.g. Bettiah, West Champaran, Bihar'}
-                      className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm font-medium transition"
-                    />
-                  </div>
-
-                  {/* Country */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-bold text-stone-900 mb-1.5">
-                      {t('pledge.country') || 'Country'}
-                    </label>
-                    <input
+                      id="pledge-country"
                       type="text"
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
-                      placeholder="e.g. India"
-                      className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm font-medium transition"
+                      placeholder="India"
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
                     />
                   </div>
-                </div>
 
-                {/* Email Address (Optional) & Privacy Guarantee */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs sm:text-sm font-bold text-stone-900">
-                      {t('pledge.email') || 'Email Address (Optional)'}
-                    </label>
-                    <span className="text-[11px] text-stone-500 font-medium flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-stone-400" /> Never shown publicly
-                    </span>
-                  </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t('pledge.email_placeholder') || 'e.g. contact@example.com (kept private)'}
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm font-medium transition"
-                  />
-                  <p className="text-[11px] text-stone-500 mt-1">
-                    {t('pledge.email_privacy_note') ||
-                      'Privacy Note: Email is strictly confidential and is never displayed on the certificate or shared.'}
-                  </p>
-                </div>
-
-                {/* Organization / Institution (Optional) */}
-                <div>
-                  <label className="block text-xs sm:text-sm font-bold text-stone-900 mb-1.5">
-                    {t('pledge.organization') || 'Organisation / Institution Name (Optional)'}
-                  </label>
-                  <input
-                    type="text"
-                    value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
-                    placeholder={t('pledge.organization_placeholder') || 'e.g. Wildlife Nature Club / Patna University'}
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm font-medium transition"
-                  />
-                </div>
-
-                {/* Certificate Language & Auto Date */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  {/* Certificate Language */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-stone-900 mb-1.5 flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>Certificate Language</span>
+                    <label htmlFor="pledge-language" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
+                      {t('pledge.label_language') || 'Certificate Language'}
                     </label>
                     <select
+                      id="pledge-language"
                       value={certLanguage}
                       onChange={(e) => setCertLanguage(e.target.value as 'en' | 'hi' | 'ur')}
-                      className="w-full px-3 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm font-medium bg-white"
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm bg-white"
                     >
-                      <option value="en">English (Official)</option>
-                      <option value="hi">हिन्दी (Hindi)</option>
+                      <option value="en">English (Official Standard)</option>
+                      <option value="hi">हिंदी (Hindi)</option>
                       <option value="ur">اردو (Urdu)</option>
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-xs sm:text-sm font-bold text-stone-900 mb-1.5">
-                      {t('pledge.pledge_date') || 'Date of Pledge'}
-                    </label>
-                    <div className="w-full px-4 py-2.5 rounded-xl bg-stone-50 border border-stone-200 text-stone-700 text-sm font-semibold">
-                      {todayFormatted} (Automated)
-                    </div>
-                  </div>
                 </div>
 
-                {/* Required Checkbox Pledge Statement */}
+                {/* Email Address (Optional) */}
+                <div>
+                  <label htmlFor="pledge-email" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
+                    {t('pledge.label_email') || 'Email Address'} <span className="text-xs font-normal text-stone-500">(Optional - for personal copy)</span>
+                  </label>
+                  <input
+                    id="pledge-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. arvind@example.com"
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
+                  />
+                </div>
+
+                {/* School / College / Organization (Optional) */}
+                <div>
+                  <label htmlFor="pledge-org" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
+                    {t('pledge.label_org') || 'School / College / Organization'} <span className="text-xs font-normal text-stone-500">(Optional)</span>
+                  </label>
+                  <input
+                    id="pledge-org"
+                    type="text"
+                    value={organization}
+                    onChange={(e) => setOrganization(e.target.value)}
+                    placeholder="e.g. Bettiah Wildlife Club"
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
+                  />
+                </div>
+
+                {/* Mandatory Pledge Affirmation Checkbox */}
                 <div className="pt-2">
-                  <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/90 flex items-start gap-3">
+                  <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 flex items-start gap-3">
                     <input
-                      type="checkbox"
                       id="pledge-agree-checkbox"
+                      type="checkbox"
+                      required
                       checked={agreedToPledge}
                       onChange={(e) => setAgreedToPledge(e.target.checked)}
                       className="w-5 h-5 mt-0.5 rounded border-amber-400 text-emerald-800 focus:ring-emerald-700 shrink-0 cursor-pointer"
@@ -526,12 +618,10 @@ export const TigerPledgeForm: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Privacy Safeguard Notice */}
+                {/* Privacy Notice */}
                 <div className="text-[11px] text-stone-500 flex items-center gap-1.5 pt-1">
                   <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <span>
-                    No Aadhaar, PAN, phone number, or sensitive personal data is ever collected.
-                  </span>
+                  <span>No Aadhaar, PAN, phone number, or sensitive personal data is ever collected.</span>
                 </div>
 
                 {/* Generate Button */}
@@ -539,17 +629,17 @@ export const TigerPledgeForm: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isCertificateGenerating || !agreedToPledge || !fullName.trim() || !cityAndState.trim()}
-                    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white font-bold text-base shadow-lg shadow-emerald-900/20 hover:from-emerald-700 hover:to-emerald-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white font-bold text-base shadow-lg shadow-emerald-900/20 hover:from-emerald-700 hover:to-emerald-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isCertificateGenerating ? (
                       <>
                         <RefreshCw className="w-5 h-5 animate-spin" />
-                        <span>{t('pledge.btn_generating') || 'Generating Certificate...'}</span>
+                        <span>Generating Certificate...</span>
                       </>
                     ) : (
                       <>
                         <Award className="w-5 h-5 text-amber-400" />
-                        <span>{t('pledge.btn_generate') || 'Generate Certificate'}</span>
+                        <span>Generate Certificate</span>
                       </>
                     )}
                   </button>
@@ -557,150 +647,235 @@ export const TigerPledgeForm: React.FC = () => {
               </form>
             </div>
           ) : (
-            /* SUCCESS & CERTIFICATE DISPLAY VIEW */
+            /* CERTIFICATE DISPLAY & DOWNLOAD VIEW */
             <div id="generated-certificate-section" className="space-y-8">
               
-              {/* Success Alert Banner */}
-              <div className="no-print p-6 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-700" />
+              {/* Duplicate Detection Notice OR Success Banner */}
+              {alreadyIssuedNotice ? (
+                <div className="no-print p-5 rounded-2xl bg-amber-50 border-2 border-amber-400 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                      <AlertTriangle className="w-6 h-6 text-amber-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-amber-950">
+                        Certificate already issued
+                      </h3>
+                      <p className="text-xs sm:text-sm text-amber-900">
+                        A permanent certificate is already recorded for this participant with Certificate Number{' '}
+                        <span className="font-mono font-bold text-emerald-950 bg-amber-200/80 px-1.5 py-0.5 rounded">
+                          {generatedCert.certificateNumber}
+                        </span>
+                        . Your authentic record is displayed below.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-emerald-950">
-                      {t('pledge.success_heading') || 'Pledge Recorded & Certificate Ready!'}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-emerald-800">
-                      {t('pledge.success_message') ||
-                        'Thank you for your commitment to tiger conservation. Your certificate has been assigned number '}{' '}
-                      <span className="font-mono font-bold">{generatedCert.certificateNumber}</span>.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions Toolbar */}
-                <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
-                  <button
-                    type="button"
-                    onClick={handleCopyVerificationLink}
-                    className="px-3.5 py-2 rounded-xl bg-white border border-stone-300 text-stone-700 font-semibold text-xs sm:text-sm hover:bg-stone-50 transition flex items-center gap-1.5 shadow-sm"
-                  >
-                    {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                    <span>{copiedLink ? 'Copied Link' : 'Share / Link'}</span>
-                  </button>
 
                   <button
                     type="button"
                     onClick={handleResetForm}
-                    className="px-3.5 py-2 rounded-xl bg-stone-100 text-stone-700 font-semibold text-xs sm:text-sm hover:bg-stone-200 transition flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 font-bold text-xs sm:text-sm hover:bg-amber-100/50 transition flex items-center gap-1.5 shrink-0 shadow-sm"
                   >
                     <RefreshCw className="w-4 h-4" />
-                    <span>{t('pledge.btn_another') || 'New Certificate'}</span>
+                    <span>Take New Pledge</span>
                   </button>
                 </div>
+              ) : (
+                <div className="no-print p-5 rounded-2xl bg-emerald-50 border border-emerald-300 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-emerald-950">
+                        Pledge Recorded & Certificate Ready!
+                      </h3>
+                      <p className="text-xs sm:text-sm text-emerald-800">
+                        Thank you for your commitment to tiger conservation. Assigned Certificate Number:{' '}
+                        <span className="font-mono font-bold text-emerald-950 bg-emerald-200/80 px-1.5 py-0.5 rounded">
+                          {generatedCert.certificateNumber}
+                        </span>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResetForm}
+                      className="px-3.5 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-900 font-semibold text-xs sm:text-sm hover:bg-emerald-100/40 transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      <span>Take Another Pledge</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Orientation / Swipe Helper */}
+              <div className="sm:hidden flex items-center justify-between text-[11px] text-stone-500 px-1 py-1 font-mono">
+                <span>↔ Swipe horizontally to view full certificate</span>
+                <span className="text-emerald-800 font-bold">Landscape supported</span>
               </div>
 
               {/* High-Resolution Certificate Render Container */}
-              <div className="flex justify-center overflow-x-auto py-2">
-                <CertificatePreview
-                  ref={certRef}
-                  certificate={generatedCert}
-                  settings={certificateSettings}
-                />
+              <div className="w-full max-w-full overflow-x-auto py-2 px-1 rounded-xl scrollbar-thin flex justify-start sm:justify-center touch-pan-x overscroll-x-contain">
+                <div className="min-w-[620px] sm:min-w-[720px] md:min-w-0 w-full max-w-[860px] shrink-0">
+                  <CertificatePreview
+                    ref={certRef}
+                    certificate={generatedCert}
+                    settings={certificateSettings}
+                  />
+                </div>
               </div>
 
-              {/* Status Message (Download Success / Error Notification) */}
+              {/* Status Message (Download Success, In-Progress, or Error Notification) */}
               {downloadStatus && (
                 <div
                   id="certificate-download-status"
-                  className={`no-print max-w-2xl mx-auto p-4 rounded-xl border flex items-start sm:items-center gap-3 shadow-sm transition-all ${
-                    downloadStatus.type === 'success'
+                  className={`no-print max-w-2xl mx-auto p-4 rounded-xl border flex items-center justify-between gap-3 shadow-sm transition-all ${
+                    downloadStatus.type === 'loading'
+                      ? 'bg-blue-50 border-blue-300 text-blue-950'
+                      : downloadStatus.type === 'success'
                       ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
                       : 'bg-rose-50 border-rose-300 text-rose-950'
                   }`}
                 >
-                  {downloadStatus.type === 'success' ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5 sm:mt-0" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5 sm:mt-0" />
-                  )}
-                  <div className="flex-1 text-xs sm:text-sm font-semibold">
-                    {downloadStatus.message}
+                  <div className="flex items-center gap-2.5">
+                    {downloadStatus.type === 'loading' ? (
+                      <RefreshCw className="w-5 h-5 text-blue-700 animate-spin shrink-0" />
+                    ) : downloadStatus.type === 'success' ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                    )}
+                    <span className="text-xs sm:text-sm font-bold">
+                      {downloadStatus.message}
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setDownloadStatus(null)}
-                    className="text-stone-400 hover:text-stone-700 text-sm font-bold px-2 py-1 -mr-1"
-                    aria-label="Dismiss message"
-                  >
-                    ✕
-                  </button>
+
+                  <div className="flex items-center gap-2">
+                    {downloadStatus.type === 'error' && downloadStatus.onRetry && (
+                      <button
+                        type="button"
+                        onClick={downloadStatus.onRetry}
+                        className="px-3 py-1 rounded-lg bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Retry</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setDownloadStatus(null)}
+                      className="text-stone-400 hover:text-stone-700 text-sm font-bold px-2 py-1"
+                      aria-label="Dismiss message"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {/* TWO CLEARLY VISIBLE BUTTONS BELOW THE CERTIFICATE */}
-              <div className="no-print max-w-2xl mx-auto space-y-4">
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  {/* Download Certificate as JPG */}
-                  <button
-                    type="button"
-                    id="btn-download-certificate-jpg"
-                    onClick={handleDownloadJpg}
-                    disabled={isExportingJpg || isExportingPdf}
-                    className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {isExportingJpg ? (
-                      <>
-                        <RefreshCw className="w-5 h-5 animate-spin" />
-                        <span>Generating High-Quality JPG...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileImage className="w-5 h-5 text-amber-200" />
-                        <span>Download Certificate as JPG</span>
-                      </>
-                    )}
-                  </button>
-
+              {/* DOWNLOAD & ACTION BUTTONS BELOW CERTIFICATE */}
+              <div className="no-print max-w-3xl mx-auto space-y-3">
+                {/* Primary Download Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Download Certificate as PDF */}
                   <button
                     type="button"
                     id="btn-download-certificate-pdf"
                     onClick={handleDownloadPdf}
-                    disabled={isExportingPdf || isExportingJpg}
-                    className="w-full sm:flex-1 py-4 px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                    disabled={isExporting}
+                    className="py-3.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    {isExportingPdf ? (
+                    {isExporting && exportActionName === 'PDF' ? (
                       <>
-                        <RefreshCw className="w-5 h-5 animate-spin" />
-                        <span>Generating Print-Ready PDF...</span>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Generating PDF...</span>
                       </>
                     ) : (
                       <>
                         <FileText className="w-5 h-5 text-emerald-200" />
-                        <span>Download Certificate as PDF</span>
+                        <span>Download PDF</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Download Certificate as JPG */}
+                  <button
+                    type="button"
+                    id="btn-download-certificate-jpg"
+                    onClick={handleDownloadJpg}
+                    disabled={isExporting}
+                    className="py-3.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isExporting && exportActionName === 'JPG' ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Generating JPG...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileImage className="w-5 h-5 text-amber-200" />
+                        <span>Download JPG</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Download Certificate as PNG */}
+                  <button
+                    type="button"
+                    id="btn-download-certificate-png"
+                    onClick={handleDownloadPng}
+                    disabled={isExporting}
+                    className="py-3.5 px-4 rounded-xl bg-stone-800 hover:bg-stone-900 active:bg-black text-white font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isExporting && exportActionName === 'PNG' ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Generating PNG...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-5 h-5 text-stone-300" />
+                        <span>Download PNG</span>
                       </>
                     )}
                   </button>
                 </div>
 
-                {/* Secondary Utility Controls */}
-                <div className="flex items-center justify-center gap-3 pt-1 text-xs sm:text-sm">
+                {/* Secondary Utility Controls (Print & Share) */}
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-1 text-xs sm:text-sm">
                   <button
                     type="button"
+                    id="btn-print-certificate"
                     onClick={handlePrint}
-                    className="px-4 py-2 rounded-lg bg-white border border-stone-300 text-stone-700 font-semibold hover:bg-stone-50 transition flex items-center gap-1.5 shadow-sm"
+                    disabled={isExporting}
+                    className="px-5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-700 font-bold hover:bg-stone-50 transition flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
                   >
                     <Printer className="w-4 h-4 text-stone-600" />
                     <span>Print Certificate</span>
                   </button>
+
+                  <button
+                    type="button"
+                    id="btn-share-certificate"
+                    onClick={handleShare}
+                    disabled={isExporting}
+                    className="px-5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-700 font-bold hover:bg-stone-50 transition flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <Share2 className="w-4 h-4 text-emerald-700" />
+                    <span>Share Certificate</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={handleCopyVerificationLink}
-                    className="px-4 py-2 rounded-lg bg-white border border-stone-300 text-stone-700 font-semibold hover:bg-stone-50 transition flex items-center gap-1.5 shadow-sm"
+                    className="px-5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-700 font-bold hover:bg-stone-50 transition flex items-center gap-2 shadow-sm cursor-pointer"
                   >
                     {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-stone-600" />}
-                    <span>{copiedLink ? 'Copied Link' : 'Share Verification Link'}</span>
+                    <span>{copiedLink ? 'Copied Link' : 'Copy Verification Link'}</span>
                   </button>
                 </div>
               </div>
@@ -722,45 +897,71 @@ export const TigerPledgeForm: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: CERTIFICATE VERIFICATION PORTAL */}
+      {/* TAB 2: CERTIFICATE SEARCH & VERIFICATION PORTAL */}
       {activeTab === 'verify' && (
         <div className="max-w-3xl mx-auto space-y-8">
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-xl p-6 sm:p-8">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-xl p-4 sm:p-6 md:p-8">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 bg-emerald-100 rounded-xl">
                 <ShieldCheck className="w-6 h-6 text-emerald-800" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-stone-900">
-                  {t('pledge.verify_tab') || 'Verify Authenticity'}
+                  {t('pledge.verify_tab') || 'Search & Verify Certificates'}
                 </h2>
                 <p className="text-xs sm:text-sm text-stone-600">
-                  {t('pledge.verify_tab_desc') ||
-                    'Enter any Valmiki Tiger Watch certificate number to verify its authenticity in the official registry.'}
+                  Search genuine Valmiki Tiger Watch certificates by certificate number, participant name, pledge ID, or issue date.
                 </p>
               </div>
             </div>
 
-            {/* Search Input Box */}
-            <form onSubmit={handleVerifySearch} className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
-                <input
-                  type="text"
-                  value={verifyQuery}
-                  onChange={(e) => setVerifyQuery(e.target.value)}
-                  placeholder={t('pledge.verify_input_placeholder') || 'e.g. VTW-TPP-2026-000001'}
-                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm font-mono font-medium uppercase"
-                />
+            {/* Filter & Search Form */}
+            <form onSubmit={handleVerifySearch} className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="sm:w-48">
+                  <select
+                    value={searchField}
+                    onChange={(e) => setSearchField(e.target.value as any)}
+                    className="w-full py-3 px-3 rounded-xl border border-stone-300 text-stone-800 text-xs sm:text-sm font-semibold bg-stone-50 focus:ring-2 focus:ring-emerald-700"
+                  >
+                    <option value="all">All Fields</option>
+                    <option value="number">Certificate Number</option>
+                    <option value="name">Participant Name</option>
+                    <option value="pledgeId">Pledge ID</option>
+                    <option value="date">Issue Date</option>
+                  </select>
+                </div>
+
+                <div className="relative flex-1">
+                  <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input
+                    type="text"
+                    value={verifyQuery}
+                    onChange={(e) => setVerifyQuery(e.target.value)}
+                    placeholder={
+                      searchField === 'number'
+                        ? 'e.g. VTW-2026-000001'
+                        : searchField === 'name'
+                        ? 'e.g. Arvind Kumar'
+                        : searchField === 'pledgeId'
+                        ? 'e.g. pledge_...'
+                        : searchField === 'date'
+                        ? 'e.g. 09 Sep 2026'
+                        : 'Search by Number, Name, Pledge ID, or Date...'
+                    }
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isVerifying || !verifyQuery.trim()}
+                  className="px-6 py-3 rounded-xl bg-emerald-800 text-white font-bold text-sm hover:bg-emerald-900 transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  {isVerifying ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  <span>Search</span>
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={isVerifying || !verifyQuery.trim()}
-                className="px-6 py-3 rounded-xl bg-emerald-800 text-white font-bold text-sm hover:bg-emerald-900 transition flex items-center gap-2 shadow-sm disabled:opacity-50"
-              >
-                {isVerifying ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                <span>{t('pledge.verify_btn') || 'Verify Certificate'}</span>
-              </button>
             </form>
 
             {/* Verification Result Display */}
@@ -771,92 +972,140 @@ export const TigerPledgeForm: React.FC = () => {
                     <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
                       <div className="font-bold text-sm">
-                        {t('pledge.verify_not_found') || 'Certificate Not Found in Official Registry'}
+                        No Certificate Found
                       </div>
                       <div className="text-xs text-amber-700 mt-1">
-                        No record matching certificate number &ldquo;{verifyQuery}&rdquo; was found. Please check for typos or ensure the full identifier format (e.g. VTW-TPP-2026-000001) was entered.
+                        No record matching &ldquo;{verifyQuery}&rdquo; was found in the official registry. Please check for spelling mistakes or ensure the correct format was entered.
                       </div>
                     </div>
                   </div>
                 )}
 
-                {verifyResult.certificate && (
+                {verifyResult.certificates && verifyResult.certificates.length > 0 && (
                   <div className="space-y-6">
-                    {/* Status Badge Card */}
-                    <div
-                      className={`p-5 rounded-xl border flex items-center justify-between gap-4 ${
-                        verifyResult.isRevoked
-                          ? 'bg-red-50 border-red-200 text-red-900'
-                          : 'bg-emerald-50 border-emerald-200 text-emerald-950'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {verifyResult.isRevoked ? (
-                          <AlertTriangle className="w-7 h-7 text-red-600 shrink-0" />
-                        ) : (
-                          <CheckCircle2 className="w-7 h-7 text-emerald-700 shrink-0" />
-                        )}
-                        <div>
-                          <div className="font-black text-base">
-                            {verifyResult.isRevoked
-                              ? 'Certificate Status: REVOKED'
-                              : 'Official Certificate Verified (AUTHENTIC & ACTIVE)'}
-                          </div>
-                          <div className="text-xs font-mono font-bold mt-0.5">
-                            {verifyResult.certificate.certificateNumber}
-                          </div>
+                    {/* If multiple matches, show selector list */}
+                    {verifyResult.certificates.length > 1 && (
+                      <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
+                        <div className="text-xs font-bold text-stone-700 mb-2">
+                          Found {verifyResult.certificates.length} matching certificates:
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {verifyResult.certificates.map((cert) => (
+                            <button
+                              key={cert.certificateNumber}
+                              type="button"
+                              onClick={() => setVerifyResult(prev => ({
+                                ...prev,
+                                selectedCertificate: cert,
+                                isRevoked: cert.status === 'revoked'
+                              }))}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition ${
+                                verifyResult.selectedCertificate?.certificateNumber === cert.certificateNumber
+                                  ? 'bg-emerald-800 text-white shadow-sm'
+                                  : 'bg-white border border-stone-300 text-stone-800 hover:bg-stone-100'
+                              }`}
+                            >
+                              {cert.certificateNumber} ({cert.participantName || cert.fullName})
+                            </button>
+                          ))}
                         </div>
                       </div>
+                    )}
 
-                      <div className="text-right text-xs">
-                        <div className="text-stone-500 font-medium">Issue Date</div>
-                        <div className="font-bold text-stone-800">{verifyResult.certificate.pledgeDate}</div>
-                      </div>
-                    </div>
+                    {verifyResult.selectedCertificate && (
+                      <>
+                        {/* Status Badge Card */}
+                        <div
+                          className={`p-5 rounded-xl border flex items-center justify-between gap-4 ${
+                            verifyResult.isRevoked
+                              ? 'bg-red-50 border-red-200 text-red-900'
+                              : 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {verifyResult.isRevoked ? (
+                              <AlertTriangle className="w-7 h-7 text-red-600 shrink-0" />
+                            ) : (
+                              <CheckCircle2 className="w-7 h-7 text-emerald-700 shrink-0" />
+                            )}
+                            <div>
+                              <div className="font-black text-base">
+                                {verifyResult.isRevoked
+                                  ? 'Certificate Status: REVOKED'
+                                  : 'Official Certificate Verified (AUTHENTIC & ACTIVE)'}
+                              </div>
+                              <div className="text-xs font-mono font-bold mt-0.5">
+                                {verifyResult.selectedCertificate.certificateNumber}
+                              </div>
+                            </div>
+                          </div>
 
-                    {/* Metadata Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs">
-                      <div>
-                        <span className="text-stone-500 font-medium block">Pledged Recipient:</span>
-                        <span className="font-bold text-stone-900 text-sm">{verifyResult.certificate.fullName}</span>
-                      </div>
-
-                      <div>
-                        <span className="text-stone-500 font-medium block">Location:</span>
-                        <span className="font-bold text-stone-900 text-sm">
-                          {verifyResult.certificate.cityAndState}, {verifyResult.certificate.country || 'India'}
-                        </span>
-                      </div>
-
-                      {verifyResult.certificate.organization && (
-                        <div>
-                          <span className="text-stone-500 font-medium block">Organisation:</span>
-                          <span className="font-bold text-emerald-800 text-sm">
-                            {verifyResult.certificate.organization}
-                          </span>
+                          <div className="text-right text-xs">
+                            <div className="text-stone-500 font-medium">Issue Date</div>
+                            <div className="font-bold text-stone-800">
+                              {verifyResult.selectedCertificate.issueDate || verifyResult.selectedCertificate.pledgeDate}
+                            </div>
+                          </div>
                         </div>
-                      )}
 
-                      <div>
-                        <span className="text-stone-500 font-medium block">Issuing Authority:</span>
-                        <span className="font-bold text-stone-900 text-sm">
-                          Valmiki Tiger Watch (President: Nazish Asad)
-                        </span>
-                      </div>
-                    </div>
+                        {/* Metadata Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs">
+                          <div>
+                            <span className="text-stone-500 font-medium block">Pledged Recipient:</span>
+                            <span className="font-bold text-stone-900 text-sm">
+                              {verifyResult.selectedCertificate.participantName || verifyResult.selectedCertificate.fullName}
+                            </span>
+                          </div>
 
-                    {/* Certificate Preview rendering */}
-                    <div className="pt-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-stone-600 mb-3 text-center">
-                        Registry Certificate Rendering
-                      </h4>
-                      <div className="flex justify-center overflow-x-auto">
-                        <CertificatePreview
-                          certificate={verifyResult.certificate}
-                          settings={certificateSettings}
-                        />
-                      </div>
-                    </div>
+                          <div>
+                            <span className="text-stone-500 font-medium block">Location:</span>
+                            <span className="font-bold text-stone-900 text-sm">
+                              {verifyResult.selectedCertificate.cityAndState}, {verifyResult.selectedCertificate.country || 'India'}
+                            </span>
+                          </div>
+
+                          {verifyResult.selectedCertificate.pledgeId && (
+                            <div>
+                              <span className="text-stone-500 font-medium block">Pledge ID:</span>
+                              <span className="font-mono font-semibold text-stone-800">
+                                {verifyResult.selectedCertificate.pledgeId}
+                              </span>
+                            </div>
+                          )}
+
+                          {verifyResult.selectedCertificate.organization && (
+                            <div>
+                              <span className="text-stone-500 font-medium block">Organisation:</span>
+                              <span className="font-bold text-emerald-800 text-sm">
+                                {verifyResult.selectedCertificate.organization}
+                              </span>
+                            </div>
+                          )}
+
+                          <div>
+                            <span className="text-stone-500 font-medium block">Issuing Authority:</span>
+                            <span className="font-bold text-stone-900 text-sm">
+                              Valmiki Tiger Watch (President: Nazish Asad)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Certificate Preview rendering */}
+                        <div className="pt-2 w-full max-w-full overflow-hidden">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-stone-600 mb-3 text-center">
+                            Registry Certificate Rendering
+                          </h4>
+                          <div className="w-full max-w-full overflow-x-auto py-2 px-1 rounded-xl scrollbar-thin flex justify-start sm:justify-center touch-pan-x overscroll-x-contain">
+                            <div className="min-w-[620px] sm:min-w-[720px] md:min-w-0 w-full max-w-[860px] shrink-0">
+                              <CertificatePreview
+                                certificate={verifyResult.selectedCertificate}
+                                settings={certificateSettings}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 import { ShieldCheck, Award, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { TigerPledgeCertificate, CertificateAdminSettings } from '../types';
+import { PRESIDENT_SIGNATURE_DATA_URL, VTW_LOGO_DATA_URL } from '../assets/certificateImages';
 
 interface CertificatePreviewProps {
   certificate: TigerPledgeCertificate;
@@ -35,7 +36,7 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
 
     const presentedTo = settings?.presentedToText?.[lang] || (
       lang === 'hi' ? 'यह प्रमाण पत्र गर्व के साथ प्रदान किया जाता है' :
-      lang === 'ur' ? 'یہ سرٹیفکیٹ فخر کے ساتھ پیش کیا جاتا ہے بحق' :
+      lang === 'ur' ? 'یہ سرٹیفکیٹ فخر کے ساتھ پیش کیا जाता ہے بحق' :
       'This is to proudly certify that'
     );
 
@@ -54,20 +55,30 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
     const signatureName = settings?.signatureName || 'Nazish Asad';
     const signatureTitle = settings?.signatureTitle || 'President';
     const signatureOrg = settings?.signatureOrg || 'Valmiki Tiger Watch';
-    const signatureImageUrl = (settings?.customSignatureUrl && settings.customSignatureUrl.trim().length > 0)
+    
+    // Use the official original signature image (Data URI guaranteed to work offline and in Android APK)
+    const signatureImageUrl = (settings?.customSignatureUrl && settings.customSignatureUrl.trim().length > 0 && settings.customSignatureUrl !== '/assets/president-signature.png')
       ? settings.customSignatureUrl
-      : '/assets/president-signature.png';
-    const customLogoUrl = settings?.customLogoUrl || '/vtw-logo.png';
+      : PRESIDENT_SIGNATURE_DATA_URL;
+
+    // Use official VTW logo (Data URI guaranteed to render without cross-origin issues)
+    const customLogoUrl = (settings?.customLogoUrl && settings.customLogoUrl.trim().length > 0 && settings.customLogoUrl !== '/vtw-logo.png')
+      ? settings.customLogoUrl
+      : VTW_LOGO_DATA_URL;
 
     const isRevoked = certificate.status === 'revoked';
+    const recipientName = certificate.participantName || certificate.fullName;
+    const issueDateString = certificate.issueDate || certificate.pledgeFormattedDate || certificate.pledgeDate;
 
     return (
       <div
         ref={ref}
         id={`certificate-${certificate.certificateNumber}`}
-        className={`relative w-full max-w-[900px] aspect-[1.414/1] bg-[#FCFAF5] text-stone-900 select-none overflow-hidden shadow-2xl rounded-sm ${isUrdu ? 'rtl' : 'ltr'} ${className}`}
+        className={`relative w-full max-w-[900px] aspect-[1.414/1] select-none overflow-hidden shadow-2xl rounded-sm ${isUrdu ? 'rtl' : 'ltr'} ${className}`}
         style={{
           boxSizing: 'border-box',
+          backgroundColor: '#FCFAF5',
+          color: '#1C1917',
           fontFamily: isUrdu
             ? "'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif"
             : "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif"
@@ -75,24 +86,50 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
       >
         {/* Background Subtle Watermark Tiger Motif */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.035] flex items-center justify-center overflow-hidden"
+          className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden"
+          style={{ opacity: 0.035 }}
           aria-hidden="true"
         >
-          <svg className="w-[600px] h-[600px] text-emerald-950 fill-current" viewBox="0 0 24 24">
+          <svg
+            className="w-[600px] h-[600px]"
+            style={{ fill: '#022C22', color: '#022C22' }}
+            viewBox="0 0 24 24"
+          >
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
           </svg>
         </div>
 
         {/* Ornate Gold Outer Border Frame */}
-        <div className="absolute inset-3 sm:inset-4 border-[2px] border-amber-600/60 rounded-sm pointer-events-none" />
-        <div className="absolute inset-4 sm:inset-5 border border-emerald-800/40 rounded-sm pointer-events-none" />
-        <div className="absolute inset-[18px] sm:inset-[22px] border-[1px] border-amber-500/30 pointer-events-none" />
+        <div
+          className="absolute inset-3 sm:inset-4 border-[2px] rounded-sm pointer-events-none"
+          style={{ borderColor: 'rgba(217, 119, 6, 0.6)' }}
+        />
+        <div
+          className="absolute inset-4 sm:inset-5 border rounded-sm pointer-events-none"
+          style={{ borderColor: 'rgba(6, 95, 70, 0.4)' }}
+        />
+        <div
+          className="absolute inset-[18px] sm:inset-[22px] border-[1px] pointer-events-none"
+          style={{ borderColor: 'rgba(245, 158, 11, 0.3)' }}
+        />
 
         {/* Corner Flourish Motifs */}
-        <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-amber-600 pointer-events-none" />
-        <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-amber-600 pointer-events-none" />
-        <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-amber-600 pointer-events-none" />
-        <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-amber-600 pointer-events-none" />
+        <div
+          className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 pointer-events-none"
+          style={{ borderColor: '#D97706' }}
+        />
+        <div
+          className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 pointer-events-none"
+          style={{ borderColor: '#D97706' }}
+        />
+        <div
+          className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 pointer-events-none"
+          style={{ borderColor: '#D97706' }}
+        />
+        <div
+          className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 pointer-events-none"
+          style={{ borderColor: '#D97706' }}
+        />
 
         {/* Main Certificate Content Container */}
         <div className="relative z-10 h-full flex flex-col justify-between p-6 sm:p-8 md:p-10">
@@ -101,7 +138,13 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
           <div className="text-center pt-1">
             {/* Crest / Logo & Header Branding */}
             <div className="flex items-center justify-center gap-3 mb-1.5">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-amber-500/70 p-1 bg-amber-50/70 shadow-sm flex items-center justify-center overflow-hidden">
+              <div
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border p-1 shadow-sm flex items-center justify-center overflow-hidden"
+                style={{
+                  borderColor: 'rgba(245, 158, 11, 0.7)',
+                  backgroundColor: 'rgba(255, 251, 235, 0.8)'
+                }}
+              >
                 {customLogoUrl ? (
                   <img
                     src={customLogoUrl}
@@ -110,14 +153,20 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
                     crossOrigin="anonymous"
                   />
                 ) : (
-                  <ShieldCheck className="w-6 h-6 text-emerald-800" />
+                  <ShieldCheck className="w-6 h-6" style={{ color: '#064E3B' }} />
                 )}
               </div>
               <div className="text-left">
-                <span className="block text-[13px] sm:text-[15px] font-black tracking-widest text-emerald-900 uppercase">
+                <span
+                  className="block text-[13px] sm:text-[15px] font-black tracking-widest uppercase"
+                  style={{ color: '#064E3B' }}
+                >
                   {headerOrg}
                 </span>
-                <span className="block text-[9px] sm:text-[10px] tracking-wider text-amber-800 font-semibold uppercase">
+                <span
+                  className="block text-[9px] sm:text-[10px] tracking-wider font-semibold uppercase"
+                  style={{ color: '#92400E' }}
+                >
                   Valmiki Tiger Reserve • Bihar • India
                 </span>
               </div>
@@ -125,81 +174,144 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
 
             {/* Decorative Gold Divider with Center Star */}
             <div className="flex items-center justify-center gap-2 my-1">
-              <div className="w-16 sm:w-28 h-[1px] bg-gradient-to-r from-transparent via-amber-600/70 to-amber-700" />
-              <div className="w-2 h-2 rotate-45 bg-amber-600" />
-              <div className="w-16 sm:w-28 h-[1px] bg-gradient-to-l from-transparent via-amber-600/70 to-amber-700" />
+              <div
+                className="w-16 sm:w-28 h-[1px]"
+                style={{ background: 'linear-gradient(to right, transparent, rgba(217, 119, 6, 0.7), #B45309)' }}
+              />
+              <div
+                className="w-2 h-2 rotate-45"
+                style={{ backgroundColor: '#D97706' }}
+              />
+              <div
+                className="w-16 sm:w-28 h-[1px]"
+                style={{ background: 'linear-gradient(to left, transparent, rgba(217, 119, 6, 0.7), #B45309)' }}
+              />
             </div>
 
             {/* Certificate Title */}
-            <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-wide text-stone-900 uppercase mt-1">
+            <h1
+              className="text-lg sm:text-xl md:text-2xl font-black tracking-wide uppercase mt-1"
+              style={{ color: '#1C1917' }}
+            >
               {certTitle}
             </h1>
-            <p className="text-[10px] sm:text-[11px] font-medium text-stone-600 tracking-wider uppercase mt-0.5">
+            <p
+              className="text-[10px] sm:text-[11px] font-medium tracking-wider uppercase mt-0.5"
+              style={{ color: '#57534E' }}
+            >
               Community Tiger Conservation & Habitat Protection Initiative
             </p>
           </div>
 
           {/* Recipient & Pledge Statement */}
           <div className="text-center my-auto py-2">
-            <p className="text-xs sm:text-sm text-stone-600 font-serif italic mb-1">
+            <p
+              className="text-xs sm:text-sm font-serif italic mb-1"
+              style={{ color: '#57534E' }}
+            >
               {presentedTo}
             </p>
 
             {/* Recipient Full Name */}
             <div className="inline-block relative px-6 py-1 my-0.5">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-950 tracking-wide font-serif">
-                {certificate.fullName}
+              <h2
+                className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-wide font-serif"
+                style={{ color: '#022C22' }}
+              >
+                {recipientName}
               </h2>
               {/* Elegant underline */}
-              <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-amber-600 to-transparent mt-1" />
+              <div
+                className="w-full h-[2px] mt-1"
+                style={{ background: 'linear-gradient(to right, transparent, #D97706, transparent)' }}
+              />
             </div>
 
             {/* Location & Organization details */}
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-xs sm:text-sm text-stone-700 font-medium mt-1">
+            <div
+              className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-xs sm:text-sm font-medium mt-1"
+              style={{ color: '#44403C' }}
+            >
               <span>
                 {certificate.cityAndState}
                 {certificate.country && certificate.country !== 'India' ? `, ${certificate.country}` : ', India'}
               </span>
               {certificate.organization && (
                 <>
-                  <span className="text-amber-700">•</span>
-                  <span className="text-emerald-800 font-semibold">{certificate.organization}</span>
+                  <span style={{ color: '#B45309' }}>•</span>
+                  <span className="font-semibold" style={{ color: '#065F46' }}>
+                    {certificate.organization}
+                  </span>
                 </>
               )}
             </div>
 
             {/* Pledge Body Narrative */}
-            <p className="max-w-xl mx-auto text-xs sm:text-[13px] md:text-sm text-stone-700 leading-relaxed font-serif mt-3 px-4">
+            <p
+              className="max-w-xl mx-auto text-xs sm:text-[13px] md:text-sm leading-relaxed font-serif mt-3 px-4"
+              style={{ color: '#44403C' }}
+            >
               {pledgeBody}
             </p>
           </div>
 
           {/* Footer Section: Cert Number, Seal, Signature */}
-          <div className="pt-2 border-t border-amber-600/30">
+          <div
+            className="pt-2 border-t"
+            style={{ borderColor: 'rgba(217, 119, 6, 0.3)' }}
+          >
             <div className="grid grid-cols-3 items-end gap-2 text-left">
               
               {/* Left Column: Certificate Identifier & Date */}
               <div className="space-y-0.5">
-                <div className="text-[9px] sm:text-[10px] uppercase tracking-wider text-stone-500 font-semibold">
+                <div
+                  className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold"
+                  style={{ color: '#78716C' }}
+                >
                   Certificate Number
                 </div>
-                <div className="text-xs sm:text-sm font-mono font-bold text-emerald-950 tracking-tight">
+                <div
+                  className="text-xs sm:text-sm font-mono font-bold tracking-tight"
+                  style={{ color: '#022C22' }}
+                >
                   {certificate.certificateNumber}
                 </div>
-                <div className="text-[9px] sm:text-[10px] text-stone-600 font-medium">
-                  Issued: <span className="font-semibold text-stone-800">{certificate.pledgeDate}</span>
+                <div
+                  className="text-[9px] sm:text-[10px] font-medium"
+                  style={{ color: '#57534E' }}
+                >
+                  Issued:{' '}
+                  <span className="font-semibold" style={{ color: '#292524' }}>
+                    {issueDateString}
+                  </span>
                 </div>
               </div>
 
               {/* Center Column: Official Golden Seal */}
               <div className="flex flex-col items-center justify-center text-center">
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 p-0.5 shadow-md flex items-center justify-center">
-                  <div className="w-full h-full rounded-full border border-amber-200/50 flex flex-col items-center justify-center bg-emerald-950 text-amber-300 p-1">
-                    <Award className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 mb-0.5" />
-                    <span className="text-[6px] sm:text-[7px] font-black tracking-tighter uppercase leading-tight">
+                <div
+                  className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full p-0.5 shadow-md flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #FBBF24, #F59E0B, #B45309)' }}
+                >
+                  <div
+                    className="w-full h-full rounded-full border flex flex-col items-center justify-center p-1"
+                    style={{
+                      backgroundColor: '#022C22',
+                      color: '#FDE68A',
+                      borderColor: 'rgba(253, 230, 138, 0.5)'
+                    }}
+                  >
+                    <Award className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" style={{ color: '#FBBF24' }} />
+                    <span
+                      className="text-[6px] sm:text-[7px] font-black tracking-tighter uppercase leading-tight"
+                      style={{ color: '#FDE68A' }}
+                    >
                       VTW OFFICIAL
                     </span>
-                    <span className="text-[5px] sm:text-[6px] text-amber-200/80 uppercase">
+                    <span
+                      className="text-[5px] sm:text-[6px] uppercase"
+                      style={{ color: 'rgba(253, 230, 138, 0.8)' }}
+                    >
                       VERIFIED SEAL
                     </span>
                   </div>
@@ -209,19 +321,41 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
               {/* Right Column: President's Official Signature Block */}
               <div className="text-right space-y-0.5">
                 <div className="h-9 sm:h-11 flex items-end justify-end pb-0.5">
-                  <img
-                    src={signatureImageUrl}
-                    alt="Signature of President, Valmiki Tiger Watch"
-                    className="h-full max-h-11 w-auto object-contain select-none pointer-events-none"
-                    crossOrigin="anonymous"
-                    loading="eager"
-                  />
+                  {signatureImageUrl ? (
+                    <img
+                      src={signatureImageUrl}
+                      alt="Signature of President, Valmiki Tiger Watch"
+                      className="h-full max-h-11 w-auto object-contain select-none pointer-events-none"
+                      crossOrigin="anonymous"
+                      loading="eager"
+                    />
+                  ) : (
+                    <div
+                      className="text-[8px] border p-1 rounded text-center"
+                      style={{
+                        color: '#B91C1C',
+                        backgroundColor: '#FEF2F2',
+                        borderColor: '#FCA5A5'
+                      }}
+                    >
+                      Authorized signature missing
+                    </div>
+                  )}
                 </div>
-                <div className="w-32 sm:w-40 ml-auto h-[1px] bg-stone-500" />
-                <div className="text-xs sm:text-sm font-bold text-stone-900 leading-tight">
+                <div
+                  className="w-32 sm:w-40 ml-auto h-[1px]"
+                  style={{ backgroundColor: '#78716C' }}
+                />
+                <div
+                  className="text-xs sm:text-sm font-bold leading-tight"
+                  style={{ color: '#1C1917' }}
+                >
                   {signatureName}
                 </div>
-                <div className="text-[9px] sm:text-[10px] text-stone-600 font-medium leading-tight">
+                <div
+                  className="text-[9px] sm:text-[10px] font-medium leading-tight"
+                  style={{ color: '#57534E' }}
+                >
                   {signatureTitle}, {signatureOrg}
                 </div>
               </div>
@@ -229,8 +363,14 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
             </div>
 
             {/* Disclaimer in Fine Print */}
-            <div className="mt-2.5 pt-1.5 border-t border-stone-200/70 text-center">
-              <p className="text-[7.5px] sm:text-[8.5px] text-stone-500 leading-tight font-sans max-w-2xl mx-auto">
+            <div
+              className="mt-2.5 pt-1.5 border-t text-center"
+              style={{ borderColor: 'rgba(231, 229, 228, 0.7)' }}
+            >
+              <p
+                className="text-[7.5px] sm:text-[8.5px] leading-tight font-sans max-w-2xl mx-auto"
+                style={{ color: '#78716C' }}
+              >
                 {disclaimer}
               </p>
             </div>
@@ -240,14 +380,27 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
 
         {/* Revocation Overlay (if status is revoked) */}
         {isRevoked && (
-          <div className="absolute inset-0 bg-red-950/20 backdrop-blur-[1px] flex flex-col items-center justify-center z-30 pointer-events-none p-6">
-            <div className="transform -rotate-12 border-4 border-red-700 bg-red-900/90 text-white px-8 py-3 rounded shadow-2xl text-center">
-              <div className="flex items-center justify-center gap-2 text-xl sm:text-2xl font-black uppercase tracking-widest">
-                <AlertTriangle className="w-6 h-6" />
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none p-6"
+            style={{ backgroundColor: 'rgba(69, 10, 10, 0.3)' }}
+          >
+            <div
+              className="transform -rotate-12 border-4 px-8 py-3 rounded shadow-2xl text-center"
+              style={{
+                backgroundColor: 'rgba(127, 29, 29, 0.95)',
+                borderColor: '#B91C1C',
+                color: '#FFFFFF'
+              }}
+            >
+              <div className="flex items-center justify-center gap-2 text-xl sm:text-2xl font-black uppercase tracking-widest text-white">
+                <AlertTriangle className="w-6 h-6" style={{ color: '#FFFFFF' }} />
                 <span>REVOKED / निरस्त</span>
               </div>
               {certificate.revocationReason && (
-                <div className="text-xs sm:text-sm mt-1 text-red-100 font-medium">
+                <div
+                  className="text-xs sm:text-sm mt-1 font-medium"
+                  style={{ color: '#FEE2E2' }}
+                >
                   Reason: {certificate.revocationReason}
                 </div>
               )}

@@ -121,12 +121,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FDFBF7] text-stone-900 selection:bg-amber-400 selection:text-black">
+    <div className="min-h-screen flex flex-col bg-[#FDFBF7] text-stone-900 selection:bg-amber-400 selection:text-black w-full max-w-full overflow-x-hidden">
       {/* Top Navigation */}
       <Navbar onOpenAdmin={() => setIsAdminOpen(true)} onOpenInstall={() => setIsInstallOpen(true)} />
 
       {/* Main View Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-20 lg:pb-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-24 lg:pb-8 max-w-full overflow-x-hidden">
         <ConservationAlertBanner className="mb-6" />
         {renderSection()}
       </main>

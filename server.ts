@@ -125,7 +125,7 @@ async function startServer() {
   // Generate a new Certificate
   app.post('/api/certificates/generate', (req, res) => {
     try {
-      const { fullName, cityAndState, country, email, organization, language } = req.body || {};
+      const { pledgeId, fullName, cityAndState, country, email, organization, language } = req.body || {};
       if (!fullName || typeof fullName !== 'string' || !fullName.trim()) {
         res.status(400).json({ error: 'Full name is required.' });
         return;
@@ -136,6 +136,7 @@ async function startServer() {
       }
 
       const certificate = createTigerPledgeCertificate({
+        pledgeId,
         fullName,
         cityAndState,
         country: country || 'India',
@@ -144,10 +145,14 @@ async function startServer() {
         language
       });
 
-      res.status(201).json({
+      const isAlreadyIssued = Boolean(certificate.alreadyIssued);
+      res.status(isAlreadyIssued ? 200 : 201).json({
         success: true,
+        alreadyIssued: isAlreadyIssued,
         certificate,
-        message: 'Tiger Protection Pledge Certificate generated successfully.'
+        message: isAlreadyIssued
+          ? 'Certificate already issued for this participant.'
+          : 'Tiger Protection Pledge Certificate generated successfully.'
       });
     } catch (error: any) {
       console.error('Error generating certificate:', error);

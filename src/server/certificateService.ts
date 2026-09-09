@@ -8,7 +8,7 @@ const REGISTRY_FILE = path.join(DATA_DIR, 'certificates_registry.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'certificate_settings.json');
 
 const DEFAULT_SETTINGS: CertificateAdminSettings = {
-  numberingPrefix: 'VTW-TPP',
+  numberingPrefix: 'VTW',
   numberingYearFormat: 'YYYY',
   nextSequence: 1,
   customLogoUrl: '/vtw-logo.png',
@@ -144,26 +144,26 @@ function generateUniqueCertificateNumber(): string {
     ? String(now.getFullYear()).slice(-2)
     : String(now.getFullYear());
 
-  const prefix = certificateSettings.numberingPrefix || 'VTW-TPP';
-  const seq = certificateSettings.nextSequence;
-  
-  // Advance sequence counter
-  certificateSettings.nextSequence += 1;
-  saveSettingsToDisk();
+  const prefix = certificateSettings.numberingPrefix || 'VTW';
+  let seq = certificateSettings.nextSequence;
 
-  const paddedSeq = String(seq).padStart(6, '0');
-  const certNumber = `${prefix}-${yearStr}-${paddedSeq}`;
+  while (true) {
+    const paddedSeq = String(seq).padStart(6, '0');
+    const certNumber = `${prefix}-${yearStr}-${paddedSeq}`;
 
-  // Ensure collision avoidance
-  const exists = certificatesRegistry.some(c => c.certificateNumber === certNumber);
-  if (exists) {
-    return generateUniqueCertificateNumber();
+    // Ensure collision avoidance against any existing records
+    const exists = certificatesRegistry.some(c => c.certificateNumber === certNumber);
+    if (!exists) {
+      certificateSettings.nextSequence = seq + 1;
+      saveSettingsToDisk();
+      return certNumber;
+    }
+    seq += 1;
   }
-
-  return certNumber;
 }
 
 export interface CreateCertificateInput {
+  pledgeId?: string;
   fullName: string;
   cityAndState: string;
   country?: string;
@@ -173,9 +173,9 @@ export interface CreateCertificateInput {
 }
 
 /**
- * Create and register a new Tiger Protection Pledge Certificate
+ * Create and register a new Tiger Protection Pledge Certificate with deduplication
  */
-export function createTigerPledgeCertificate(input: CreateCertificateInput): TigerPledgeCertificate {
+export function createTigerPledgeCertificate(input: CreateCertificateInput): TigerPledgeCertificate & { alreadyIssued?: boolean } {
   const trimmedName = input.fullName.trim();
   const trimmedLocation = input.cityAndState.trim();
   const trimmedCountry = (input.country || 'India').trim();
@@ -190,9 +190,29 @@ export function createTigerPledgeCertificate(input: CreateCertificateInput): Tig
     throw new Error('City and State is required.');
   }
 
+  // Deduplication check: check if pledgeId matches OR (normalized name + location/email matches)
+  const existing = certificatesRegistry.find(c => {
+    if (input.pledgeId && c.pledgeId && c.pledgeId === input.pledgeId) {
+      return true;
+    }
+    const sameName = c.fullName.trim().toLowerCase() === trimmedName.toLowerCase();
+    const sameLocation = c.cityAndState.trim().toLowerCase() === trimmedLocation.toLowerCase();
+    const sameEmail = (trimmedEmail && c.email) ? c.email.trim().toLowerCase() === trimmedEmail.toLowerCase() : false;
+    return (sameName && sameLocation) || (sameName && sameEmail);
+  });
+
+  if (existing) {
+    return {
+      ...existing,
+      alreadyIssued: true
+    };
+  }
+
   const certNumber = generateUniqueCertificateNumber();
   const now = new Date();
   const pledgeFormattedDate = formatPledgeDate(now, lang);
+  const certId = `cert_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const pledgeId = input.pledgeId || `pledge_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
   // Generate a non-repudiation cryptographic verification hash
   const hash = crypto
@@ -202,19 +222,25 @@ export function createTigerPledgeCertificate(input: CreateCertificateInput): Tig
     .slice(0, 16);
 
   const newCert: TigerPledgeCertificate = {
-    id: `cert_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+    id: certId,
+    certificateId: certId,
     certificateNumber: certNumber,
+    pledgeId,
     fullName: trimmedName,
+    participantName: trimmedName,
     cityAndState: trimmedLocation,
     country: trimmedCountry,
     email: trimmedEmail,
     organization: trimmedOrg,
-    pledgeDate: now.toISOString(),
+    pledgeDate: pledgeFormattedDate,
+    issueDate: pledgeFormattedDate,
     pledgeFormattedDate,
     language: lang,
     status: 'valid',
     issuedAt: now.toISOString(),
-    verificationHash: hash
+    createdAt: now.toISOString(),
+    verificationHash: hash,
+    isLocallyStored: false
   };
 
   certificatesRegistry.unshift(newCert);
@@ -238,6 +264,10 @@ export function getCertificatesList(search?: string, status?: string): TigerPled
     list = list.filter(c => 
       c.certificateNumber.toLowerCase().includes(q) ||
       c.fullName.toLowerCase().includes(q) ||
+      (c.participantName && c.participantName.toLowerCase().includes(q)) ||
+      (c.pledgeId && c.pledgeId.toLowerCase().includes(q)) ||
+      (c.pledgeDate && c.pledgeDate.toLowerCase().includes(q)) ||
+      (c.issueDate && c.issueDate.toLowerCase().includes(q)) ||
       c.cityAndState.toLowerCase().includes(q) ||
       (c.organization && c.organization.toLowerCase().includes(q))
     );

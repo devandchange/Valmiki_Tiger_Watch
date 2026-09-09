@@ -203,6 +203,8 @@ interface DataContextType {
   certificates: TigerPledgeCertificate[];
   certificateSettings: CertificateAdminSettings;
   isCertificateGenerating: boolean;
+  lastIssuedCertificate: TigerPledgeCertificate | null;
+  clearLastIssuedCertificate: () => void;
   generatePledgeCertificate: (input: {
     fullName: string;
     cityAndState: string;
@@ -210,7 +212,8 @@ interface DataContextType {
     email?: string;
     organization?: string;
     language?: 'en' | 'hi' | 'ur';
-  }) => Promise<TigerPledgeCertificate>;
+    pledgeId?: string;
+  }) => Promise<TigerPledgeCertificate & { alreadyIssued?: boolean }>;
   revokePledgeCertificate: (certNumber: string, reason: string) => Promise<{ success: boolean; message: string }>;
   restorePledgeCertificate: (certNumber: string) => Promise<{ success: boolean; message: string }>;
   updateCertificateSettings: (settings: Partial<CertificateAdminSettings>) => Promise<void>;
@@ -244,13 +247,15 @@ const STORAGE_KEYS = {
   WEATHER_CACHE: 'vtw_weather_cache_v1',
   WEATHER_ZONE: 'vtw_weather_zone_v1',
   CERTIFICATES: 'vtw_certificates_v1',
-  CERTIFICATE_SETTINGS: 'vtw_certificate_settings_v1'
+  CERTIFICATE_SETTINGS: 'vtw_certificate_settings_v1',
+  CERT_SEQUENCE: 'vtw_cert_seq_v2',
+  LAST_ISSUED_CERT: 'vtw_last_issued_cert_v2'
 };
 
 const ADMIN_PASSWORD_HASH = 'vtw2026admin'; // Standard access key for demonstration
 
 export const DEFAULT_CERTIFICATE_SETTINGS: CertificateAdminSettings = {
-  numberingPrefix: 'VTW-TPP',
+  numberingPrefix: 'VTW',
   numberingYearFormat: 'YYYY',
   nextSequence: 1,
   customLogoUrl: '/vtw-logo.png',
@@ -646,6 +651,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return [];
     }
   });
+
+  const [lastIssuedCertificate, setLastIssuedCertificate] = useState<TigerPledgeCertificate | null>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.LAST_ISSUED_CERT);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const clearLastIssuedCertificate = () => {
+    setLastIssuedCertificate(null);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.LAST_ISSUED_CERT);
+    } catch (e) {}
+  };
 
   const [certificateSettings, setCertificateSettings] = useState<CertificateAdminSettings>(() => {
     try {
@@ -1517,57 +1538,142 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     email?: string;
     organization?: string;
     language?: 'en' | 'hi' | 'ur';
-  }): Promise<TigerPledgeCertificate> => {
+    pledgeId?: string;
+  }): Promise<TigerPledgeCertificate & { alreadyIssued?: boolean }> => {
     setIsCertificateGenerating(true);
+    const trimmedName = input.fullName.trim();
+    const trimmedCity = input.cityAndState.trim();
+    const trimmedEmail = input.email?.trim() || '';
+
     try {
-      const response = await fetch('/api/certificates/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...input,
-          pledgeStatementAgreed: true
-        })
+      // 1. Local deduplication check: Has this participant or pledge already received a certificate?
+      const existing = certificates.find((c) => {
+        if (input.pledgeId && c.pledgeId && c.pledgeId === input.pledgeId) {
+          return true;
+        }
+        const certName = (c.participantName || c.fullName || '').trim().toLowerCase();
+        const certCity = (c.cityAndState || '').trim().toLowerCase();
+        const certEmail = (c.email || '').trim().toLowerCase();
+
+        if (certName === trimmedName.toLowerCase() && certCity === trimmedCity.toLowerCase()) {
+          return true;
+        }
+        if (trimmedEmail && certEmail && certEmail === trimmedEmail.toLowerCase() && certName === trimmedName.toLowerCase()) {
+          return true;
+        }
+        return false;
       });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Server certificate generation failed');
+      if (existing) {
+        const resultCert = { ...existing, alreadyIssued: true };
+        setLastIssuedCertificate(resultCert);
+        try {
+          localStorage.setItem(STORAGE_KEYS.LAST_ISSUED_CERT, JSON.stringify(resultCert));
+        } catch (e) {}
+        return resultCert;
       }
 
-      const data = await response.json();
-      const newCert: TigerPledgeCertificate = data.certificate;
-      
-      setCertificates(prev => {
-        const updated = [newCert, ...prev.filter(c => c.certificateNumber !== newCert.certificateNumber)];
-        try {
-          localStorage.setItem(STORAGE_KEYS.CERTIFICATES, JSON.stringify(updated));
-        } catch (e) {}
-        return updated;
+      // 2. Server generation attempt
+      try {
+        const response = await fetch('/api/certificates/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...input,
+            pledgeStatementAgreed: true
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const newCert: TigerPledgeCertificate = data.certificate;
+          const isAlreadyIssued = !!data.alreadyIssued;
+
+          setCertificates(prev => {
+            const updated = [newCert, ...prev.filter(c => c.certificateNumber !== newCert.certificateNumber)];
+            try {
+              localStorage.setItem(STORAGE_KEYS.CERTIFICATES, JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
+
+          const returnVal = { ...newCert, alreadyIssued: isAlreadyIssued };
+          setLastIssuedCertificate(returnVal);
+          try {
+            localStorage.setItem(STORAGE_KEYS.LAST_ISSUED_CERT, JSON.stringify(returnVal));
+          } catch (e) {}
+
+          return returnVal;
+        }
+      } catch (fetchErr) {
+        console.warn('Backend certificate endpoint unreachable or running in APK, generating locally:', fetchErr);
+      }
+
+      // 3. Fallback / Offline / APK Local Unique Sequence Generator
+      const currentYear = new Date().getFullYear();
+      const prefix = certificateSettings.numberingPrefix || 'VTW';
+
+      // Find highest sequence from existing certificates
+      let maxSeq = 0;
+      certificates.forEach(c => {
+        const match = c.certificateNumber?.match(/-(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxSeq) maxSeq = num;
+        }
       });
 
-      return newCert;
-    } catch (err: any) {
-      console.warn('Server certificate generation failed, using local generator:', err);
-      const year = new Date().getFullYear();
-      const seq = (certificates.length + 1).toString().padStart(6, '0');
-      const fallbackCertNum = `VTW-TPP-${year}-${seq}`;
+      let storedSeq = 0;
+      try {
+        const s = localStorage.getItem(STORAGE_KEYS.CERT_SEQUENCE);
+        if (s) storedSeq = parseInt(s, 10) || 0;
+      } catch (e) {}
+
+      let nextNum = Math.max(maxSeq, storedSeq, 0) + 1;
+      let uniqueCertNum = '';
+
+      // Collision loop
+      while (true) {
+        const padded = nextNum.toString().padStart(6, '0');
+        const candidate = `${prefix}-${currentYear}-${padded}`;
+        const exists = certificates.some(c => c.certificateNumber === candidate);
+        if (!exists) {
+          uniqueCertNum = candidate;
+          nextNum += 1;
+          break;
+        }
+        nextNum += 1;
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEYS.CERT_SEQUENCE, nextNum.toString());
+      } catch (e) {}
+
       const now = new Date();
       const formattedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-      
+      const certId = `cert_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const pledgeId = input.pledgeId || `pledge_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
       const fallbackCert: TigerPledgeCertificate = {
-        id: `cert-${Date.now()}`,
-        certificateNumber: fallbackCertNum,
-        fullName: input.fullName.trim(),
-        cityAndState: input.cityAndState.trim(),
+        id: certId,
+        certificateId: certId,
+        pledgeId,
+        certificateNumber: uniqueCertNum,
+        participantName: trimmedName,
+        fullName: trimmedName,
+        cityAndState: trimmedCity,
         country: input.country?.trim() || 'India',
-        email: input.email?.trim() || undefined,
+        email: trimmedEmail || undefined,
         organization: input.organization?.trim() || undefined,
+        issueDate: formattedDate,
         pledgeDate: formattedDate,
+        pledgeFormattedDate: formattedDate,
         createdAt: now.toISOString(),
         issuedAt: now.toISOString(),
         status: 'valid',
         language: input.language || 'en',
-        verificationHash: Math.random().toString(36).substring(2, 18)
+        verificationHash: Math.random().toString(36).substring(2, 18),
+        isLocallyStored: true
       };
 
       setCertificates(prev => {
@@ -1577,6 +1683,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (e) {}
         return updated;
       });
+
+      setLastIssuedCertificate(fallbackCert);
+      try {
+        localStorage.setItem(STORAGE_KEYS.LAST_ISSUED_CERT, JSON.stringify(fallbackCert));
+      } catch (e) {}
 
       return fallbackCert;
     } finally {
@@ -1873,6 +1984,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         certificates,
         certificateSettings,
         isCertificateGenerating,
+        lastIssuedCertificate,
+        clearLastIssuedCertificate,
         generatePledgeCertificate,
         revokePledgeCertificate,
         restorePledgeCertificate,

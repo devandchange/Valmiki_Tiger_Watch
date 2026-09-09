@@ -76,110 +76,126 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-[#0B3D2E]/20 shadow-sm">
+    <header className="sticky top-0 z-40 bg-white border-b border-[#0B3D2E]/20 shadow-sm w-full max-w-full overflow-hidden">
       {/* Top Utility Ribbon */}
-      <div className="bg-[#0B3D2E] px-4 sm:px-8 py-1.5 text-[11px] flex flex-wrap justify-between items-center text-[#F5F1E6]/80 font-mono gap-2">
-        <div className="flex items-center space-x-3">
-          <span className="inline-flex items-center text-[#F27D26] font-semibold tracking-wider uppercase text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#F27D26] animate-pulse mr-1.5"></span>
-            {t('app.independent', 'Independent Conservation Platform')}
-          </span>
-          <span className="hidden sm:inline text-white/40">•</span>
-          <span className="hidden sm:inline text-[#F5F1E6]/70">{t('app.location', 'Valmiki Tiger Reserve, West Champaran, Bihar')}</span>
-        </div>
-
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          {/* Become a Volunteer Button */}
-          <button
-            onClick={openVolunteerModal}
-            id="top-ribbon-volunteer-btn"
-            className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
-            title="Join Valmiki Tiger Watch as a Volunteer"
-          >
-            <HeartHandshake className="w-3 h-3 mr-1 text-stone-950" />
-            <span>BECOME A VOLUNTEER</span>
-          </button>
-
-          {/* Become a Supporter Button */}
-          <button
-            onClick={openSupporterModal}
-            id="top-ribbon-supporter-btn"
-            className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-0.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
-            title="Pledge Support for Valmiki Tiger Reserve"
-          >
-            <ShieldCheck className="w-3 h-3 mr-1 text-emerald-200" />
-            <span>BECOME A SUPPORTER</span>
-          </button>
-
-          {/* Top Language Selector */}
-          <div className="flex items-center">
-            <LanguageSelector variant="compact" />
+      <div className="bg-[#0B3D2E] px-3 sm:px-6 lg:px-8 py-1.5 text-[11px] text-[#F5F1E6]/80 font-mono w-full max-w-full overflow-hidden border-b border-white/5">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
+          {/* Platform Identity */}
+          <div className="flex items-center justify-between sm:justify-start space-x-2 min-w-0">
+            <span className="inline-flex items-center text-[#F27D26] font-semibold tracking-wider uppercase text-[10px] truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F27D26] animate-pulse mr-1.5 shrink-0"></span>
+              <span className="truncate">{t('app.independent', 'Independent Conservation Platform')}</span>
+            </span>
+            <span className="hidden md:inline text-white/40">•</span>
+            <span className="hidden md:inline text-[#F5F1E6]/70 truncate text-[10px]">
+              {t('app.location', 'Valmiki Tiger Reserve, West Champaran, Bihar')}
+            </span>
+            {/* Mobile Active Advisories count badge */}
+            {activeAlertsCount > 0 && (
+              <button
+                onClick={() => handleNavClick('alerts')}
+                className="sm:hidden inline-flex items-center text-[#F27D26] hover:text-amber-300 font-bold transition-colors text-[10px] shrink-0"
+              >
+                <ShieldAlert className="w-3 h-3 mr-1" />
+                <span>{activeAlertsCount} {activeAlertsCount > 1 ? 'Advisories' : 'Advisory'}</span>
+              </button>
+            )}
           </div>
 
-          {/* VTR Live Weather Quick Glance */}
-          {weatherData?.current && (
+          {/* Quick Actions & Language Selector */}
+          <div className="flex items-center flex-wrap gap-1.5 sm:gap-2.5 min-w-0">
+            {/* Become a Volunteer Button */}
             <button
-              onClick={() => handleNavClick('weather')}
-              className="hidden md:inline-flex items-center gap-1.5 bg-[#07271D] hover:bg-[#093527] text-stone-200 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] transition-colors"
-              title="Valmiki Tiger Reserve Weather"
+              onClick={openVolunteerModal}
+              id="top-ribbon-volunteer-btn"
+              className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+              title="Join Valmiki Tiger Watch as a Volunteer"
             >
-              <span className="text-amber-400 font-bold">{Math.round(weatherData.current.temperature)}°C</span>
-              <span className="text-stone-300">
-                {language === 'hi' ? weatherData.current.condition.hi : language === 'ur' ? weatherData.current.condition.ur : weatherData.current.condition.en}
+              <HeartHandshake className="w-3 h-3 mr-1 text-stone-950" />
+              <span>BECOME A VOLUNTEER</span>
+            </button>
+
+            {/* Become a Supporter Button */}
+            <button
+              onClick={openSupporterModal}
+              id="top-ribbon-supporter-btn"
+              className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-0.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+              title="Pledge Support for Valmiki Tiger Reserve"
+            >
+              <ShieldCheck className="w-3 h-3 mr-1 text-emerald-200" />
+              <span>BECOME A SUPPORTER</span>
+            </button>
+
+            {/* Top Language Selector */}
+            <div className="flex items-center shrink-0">
+              <LanguageSelector variant="compact" />
+            </div>
+
+            {/* VTR Live Weather Quick Glance */}
+            {weatherData?.current && (
+              <button
+                onClick={() => handleNavClick('weather')}
+                className="hidden md:inline-flex items-center gap-1.5 bg-[#07271D] hover:bg-[#093527] text-stone-200 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] transition-colors shrink-0"
+                title="Valmiki Tiger Reserve Weather"
+              >
+                <span className="text-amber-400 font-bold">{Math.round(weatherData.current.temperature)}°C</span>
+                <span className="text-stone-300">
+                  {language === 'hi' ? weatherData.current.condition.hi : language === 'ur' ? weatherData.current.condition.ur : weatherData.current.condition.en}
+                </span>
+              </button>
+            )}
+
+            {!isOnline && (
+              <span className="inline-flex items-center text-[#F27D26] bg-[#07271D] px-2 py-0.5 rounded text-[10px] border border-[#F27D26]/40 shrink-0">
+                <WifiOff className="w-3 h-3 mr-1" />
+                {t('app.offline', 'Offline Mode')}
               </span>
-            </button>
-          )}
+            )}
 
-          {!isOnline && (
-            <span className="inline-flex items-center text-[#F27D26] bg-[#07271D] px-2 py-0.5 rounded text-[10px] border border-[#F27D26]/40">
-              <WifiOff className="w-3 h-3 mr-1" />
-              {t('app.offline', 'Offline Mode')}
-            </span>
-          )}
+            {activeAlertsCount > 0 && (
+              <button
+                onClick={() => handleNavClick('alerts')}
+                className="hidden sm:inline-flex items-center text-[#F27D26] hover:text-amber-300 font-bold transition-colors shrink-0"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 mr-1" />
+                <span>{activeAlertsCount} {activeAlertsCount > 1 ? t('app.active_advisories_plural', 'Active Advisories') : t('app.active_advisories', 'Active Advisory')}</span>
+              </button>
+            )}
 
-          {activeAlertsCount > 0 && (
             <button
-              onClick={() => handleNavClick('alerts')}
-              className="inline-flex items-center text-[#F27D26] hover:text-amber-300 font-bold transition-colors"
+              onClick={onOpenAdmin}
+              id="admin-auth-nav-btn"
+              className="inline-flex items-center text-[10px] uppercase tracking-wider text-[#F5F1E6]/80 hover:text-[#F27D26] transition-colors shrink-0 ml-auto sm:ml-0"
+              title="Administrator Portal"
             >
-              <ShieldAlert className="w-3.5 h-3.5 mr-1" />
-              <span>{activeAlertsCount} {activeAlertsCount > 1 ? t('app.active_advisories_plural', 'Active Advisories') : t('app.active_advisories', 'Active Advisory')}</span>
+              <Lock className="w-3 h-3 mr-1" />
+              {isAdmin ? t('app.admin_active', 'Admin Active') : t('app.admin', 'Admin')}
             </button>
-          )}
-
-          <button
-            onClick={onOpenAdmin}
-            id="admin-auth-nav-btn"
-            className="inline-flex items-center text-[10px] uppercase tracking-wider text-[#F5F1E6]/80 hover:text-[#F27D26] transition-colors"
-            title="Administrator Portal"
-          >
-            <Lock className="w-3 h-3 mr-1" />
-            {isAdmin ? t('app.admin_active', 'Admin Active') : t('app.admin', 'Admin')}
-          </button>
+          </div>
         </div>
       </div>
 
       {/* Main Editorial Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full max-w-full">
+        <div className="flex items-center justify-between min-h-[4.5rem] py-2 gap-2">
           {/* Brand Logo & Editorial Typography */}
           <button 
             onClick={() => handleNavClick('home')}
-            className="flex items-center gap-3.5 text-left group focus:outline-none"
+            className="flex items-center gap-2.5 sm:gap-3.5 text-left group focus:outline-none min-w-0 pr-1"
             id="brand-logo-btn"
           >
-            <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform overflow-hidden bg-[#0B3D2E]">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform overflow-hidden bg-[#0B3D2E]">
               <img 
                 src="/icons/icon-192.png" 
                 alt="Valmiki Tiger Watch Logo" 
                 className="w-full h-full object-contain rounded-full"
               />
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tighter text-[#0B3D2E] leading-none uppercase font-sans">
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight text-[#0B3D2E] leading-tight uppercase font-sans truncate sm:whitespace-normal">
                 {t('app.title', 'Valmiki Tiger Watch')}
               </h1>
-              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#F27D26] mt-1 font-mono">
+              <p className="text-[9px] sm:text-[10px] font-semibold tracking-wider sm:tracking-[0.2em] uppercase text-[#F27D26] mt-0.5 font-mono truncate">
                 {t('app.tagline', 'Watch • Protect • Conserve')}
               </p>
             </div>

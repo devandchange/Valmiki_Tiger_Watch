@@ -91,14 +91,14 @@ export const ConservationAlertBanner: React.FC<ConservationAlertBannerProps> = (
       id="conservation-alert-banner"
       role="region" 
       aria-label="Wildlife and Forest Conservation Alert"
-      className={`rounded-2xl border backdrop-blur-md transition-all duration-300 ${styles.wrapper} ${className}`}
+      className={`w-full max-w-full rounded-2xl border backdrop-blur-md transition-all duration-300 overflow-hidden ${styles.wrapper} ${className}`}
     >
-      <div className="p-3.5 sm:p-4.5">
+      <div className="p-3 sm:p-4.5 w-full max-w-full">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           
           {/* Left: Icon & Alert Content */}
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className={`p-2 rounded-xl flex-shrink-0 mt-0.5 ${styles.iconBg}`}>
+          <div className="flex items-start gap-2.5 sm:gap-3 flex-1 min-w-0">
+            <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${styles.iconBg}`}>
               {currentAlert.severity === 'critical' ? (
                 <ShieldAlert className="w-5 h-5" />
               ) : (
@@ -108,7 +108,7 @@ export const ConservationAlertBanner: React.FC<ConservationAlertBannerProps> = (
 
             <div className="space-y-1 min-w-0 flex-1">
               {/* Header Tags & Metadata */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${styles.badge}`}>
                   {currentAlert.severity}
                 </span>
@@ -139,18 +139,18 @@ export const ConservationAlertBanner: React.FC<ConservationAlertBannerProps> = (
 
               {/* Alert Title & Description */}
               <div>
-                <h4 className="font-serif font-bold text-sm sm:text-base text-white leading-snug truncate sm:whitespace-normal">
+                <h4 className="font-serif font-bold text-sm sm:text-base text-white leading-snug break-words">
                   {currentAlert.title}
                 </h4>
                 {!compact && (
-                  <p className={`text-xs leading-relaxed line-clamp-2 sm:line-clamp-none mt-0.5 ${styles.metaText}`}>
+                  <p className={`text-xs leading-relaxed line-clamp-3 sm:line-clamp-none mt-0.5 break-words ${styles.metaText}`}>
                     {currentAlert.description}
                   </p>
                 )}
               </div>
 
               {/* Authority & Emergency hotline */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono text-stone-300 pt-0.5">
+              <div className="flex flex-wrap items-center gap-x-2.5 sm:gap-x-3 gap-y-1 text-[11px] font-mono text-stone-300 pt-0.5 break-words">
                 <span>
                   <strong>Issuing Authority:</strong> {currentAlert.issuingAuthority || 'Bihar Forest Department & VTR Field Directorate'}
                 </span>
@@ -167,7 +167,7 @@ export const ConservationAlertBanner: React.FC<ConservationAlertBannerProps> = (
           </div>
 
           {/* Right: Carousel Controls, Action Button & Dismiss */}
-          <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10 flex-shrink-0">
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10 shrink-0">
             {activeAlerts.length > 1 && (
               <div className="flex items-center gap-1 bg-black/30 rounded-xl p-0.5 border border-white/10">
                 <button
@@ -204,7 +204,7 @@ export const ConservationAlertBanner: React.FC<ConservationAlertBannerProps> = (
                 onClick={() => setIsDismissed(true)}
                 title="Dismiss banner"
                 aria-label="Dismiss alert banner"
-                className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
+                className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

@@ -272,7 +272,7 @@ export const WeatherSection: React.FC = () => {
                 </div>
 
                 {/* Sun Position (Sunrise & Sunset) */}
-                <div className="w-full sm:w-auto rounded-2xl border border-stone-800 bg-stone-950/60 p-4 min-w-[200px]">
+                <div className="w-full sm:w-auto rounded-2xl border border-stone-800 bg-stone-950/60 p-4 sm:min-w-[200px]">
                   <div className="text-xs font-semibold text-stone-400 uppercase tracking-wider border-b border-stone-800/80 pb-2 mb-3">
                     Solar Cycle (VTR)
                   </div>
@@ -483,7 +483,7 @@ export const WeatherSection: React.FC = () => {
               <span className="text-xs text-stone-400">Next 24 Hours Interval</span>
             </div>
 
-            <div className="mt-6 flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin scrollbar-thumb-stone-700">
+            <div className="mt-6 flex gap-3 overflow-x-auto pb-3 pt-1 w-full max-w-full touch-pan-x scrollbar-thin scrollbar-thumb-stone-700">
               {weatherData.hourly.map((item, idx) => {
                 const hourDate = new Date(item.time);
                 const hourLabel = hourDate.toLocaleTimeString(

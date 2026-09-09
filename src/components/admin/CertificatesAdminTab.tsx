@@ -752,12 +752,14 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
             </div>
 
             {/* Live Certificate Preview Frame */}
-            <div className="flex justify-center py-2 overflow-x-auto">
-              <CertificatePreview
-                ref={previewCertRef}
-                certificate={selectedCert}
-                settings={certificateSettings}
-              />
+            <div className="w-full max-w-full overflow-x-auto py-2 px-1 rounded-xl scrollbar-thin flex justify-start sm:justify-center touch-pan-x overscroll-x-contain">
+              <div className="min-w-[620px] sm:min-w-[720px] md:min-w-0 w-full max-w-[860px] shrink-0">
+                <CertificatePreview
+                  ref={previewCertRef}
+                  certificate={selectedCert}
+                  settings={certificateSettings}
+                />
+              </div>
             </div>
 
             {/* Quick Actions */}

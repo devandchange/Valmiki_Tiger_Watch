@@ -1,0 +1,38 @@
+{
+  "numberingPrefix": "VTW",
+  "numberingYearFormat": "YYYY",
+  "nextSequence": 3,
+  "customLogoUrl": "/vtw-logo.png",
+  "customSignatureUrl": "/assets/president-signature.png",
+  "signatureName": "Nazish Asad",
+  "signatureTitle": "President",
+  "signatureOrg": "Valmiki Tiger Watch",
+  "designTheme": "royal-emerald-gold",
+  "borderStyle": "ornate-double",
+  "headerText": {
+    "en": "VALMIKI TIGER WATCH",
+    "hi": "वाल्मीकि टाइगर वॉच",
+    "ur": "والمیکی ٹائیگر واچ"
+  },
+  "titleText": {
+    "en": "CERTIFICATE OF TIGER PROTECTION PLEDGE",
+    "hi": "बाघ संरक्षण संकल्प प्रमाण पत्र",
+    "ur": "تحفظِ شیر عہد نامہ سرٹیفکیٹ"
+  },
+  "presentedToText": {
+    "en": "This certificate is proudly presented to",
+    "hi": "यह प्रमाण पत्र गर्व के साथ प्रदान किया जाता है:",
+    "ur": "یہ سرٹیفکیٹ فخر کے ساتھ پیش کیا جاتا ہے بحق:"
+  },
+  "pledgeBodyText": {
+    "en": "For voluntarily pledging to support tiger conservation, protect wildlife, respect forest laws, and contribute to the protection of tigers and their natural habitat in Valmiki Tiger Reserve and across India.",
+    "hi": "बाघ संरक्षण का स्वेच्छा से समर्थन करने, वन्यजीवों की रक्षा करने, वन नियमों का सम्मान करने और वाल्मीकि टाइगर रिज़र्व व पूरे भारत में बाघों तथा उनके प्राकृतिक आवास के संरक्षण में योगदान देने के संकल्प हेतु।",
+    "ur": "شیروں کے تحفظ کی رضاکارانہ حمایت، جنگلی حیات کی بقا، جنگل کے قوانین کے احترام اور والمیکی ٹائیگر ریزرو و پورے بھارت میں شیروں اور ان کے قدرتی مسکن کے تحفظ میں اپنا کردار ادا کرنے کا پختہ عہد کرنے پر۔"
+  },
+  "disclaimerText": {
+    "en": "This is a voluntary conservation pledge certificate issued by Valmiki Tiger Watch to recognize individual community commitment to wildlife protection. It is not an official government certificate, employment credential, or formal academic qualification.",
+    "hi": "यह वाल्मीकि टाइगर वॉच द्वारा वन्यजीव संरक्षण के प्रति व्यक्तिगत सामुदायिक प्रतिबद्धता को सम्मानित करने हेतु जारी एक स्वैच्छिक संकल्प प्रमाण पत्र है। यह कोई सरकारी दस्तावेज, रोजगार प्रमाण पत्र या शैक्षणिक उपाधि नहीं है।",
+    "ur": "یہ والمیکی ٹائیگر واچ کی جانب سے جنگلی حیات کے تحفظ کے لیے انفرادی عزم کو سراہنے کے لیے جاری کردہ ایک رضاکارانہ عہد نامہ سرٹیفکیٹ ہے۔ یہ کوئی سرکاری سند، ملازمت کا پروانہ یا تعلیمی ڈگری نہیں ہے۔"
+  },
+  "lastUpdated": "2026-09-09T07:06:01.734Z"
+}

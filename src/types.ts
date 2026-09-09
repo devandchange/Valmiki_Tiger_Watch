@@ -583,21 +583,26 @@ export interface WeatherAdminSettings {
 
 export interface TigerPledgeCertificate {
   id: string;
-  certificateNumber: string; // e.g. VTW-TPP-2026-000001
+  certificateId?: string; // Standard alias for id
+  certificateNumber: string; // e.g. VTW-2026-000001
+  pledgeId?: string; // Unique permanent pledge identifier
   fullName: string;
+  participantName?: string; // Standard alias for fullName
   cityAndState: string;
   country: string;
   email?: string; // Optional, private, never displayed publicly
   organization?: string; // Optional organisation / institution
-  pledgeDate: string; // ISO date string
+  pledgeDate: string; // Issue/pledge date string
+  issueDate?: string; // Standard alias for pledgeDate
   pledgeFormattedDate?: string;
   language: 'en' | 'hi' | 'ur';
-  status: 'valid' | 'revoked';
+  status: 'valid' | 'revoked' | 'active';
   revokedAt?: string;
   revocationReason?: string;
   issuedAt: string;
-  createdAt?: string;
+  createdAt: string;
   verificationHash?: string;
+  isLocallyStored?: boolean;
 }
 
 export interface CertificateAdminSettings {
