@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ShieldCheck,
   Award,
@@ -18,12 +18,14 @@ import {
   Calendar,
   User,
   Hash,
-  RotateCcw
+  RotateCcw,
+  QrCode
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { TigerPledgeCertificate } from '../types';
 import { CertificatePreview } from './CertificatePreview';
+import { getPledgePageUrl } from '../utils/qrCodeGenerator';
 import {
   downloadCertificateAsJpg,
   downloadCertificateAsPdf,
@@ -140,8 +142,8 @@ export const TigerPledgeForm: React.FC = () => {
 
   // Helper filename generator
   const getSafeFilename = (ext: string) => {
-    const num = generatedCert?.certificateNumber ? generatedCert.certificateNumber.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Valmiki';
-    return `Valmiki-Tiger-Watch-Pledge-Certificate-${num}.${ext}`;
+    const num = generatedCert?.certificateNumber ? generatedCert.certificateNumber.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Certificate';
+    return `VTW-Certificate-${num}.${ext}`;
   };
 
   // Export Handlers
@@ -156,7 +158,7 @@ export const TigerPledgeForm: React.FC = () => {
 
     const filename = getSafeFilename('pdf');
     try {
-      const res = await downloadCertificateAsPdf(certRef.current, filename);
+      const res = await downloadCertificateAsPdf(certRef.current, filename, generatedCert, certificateSettings);
       if (res.success) {
         setDownloadStatus({
           type: 'success',
@@ -193,7 +195,7 @@ export const TigerPledgeForm: React.FC = () => {
 
     const filename = getSafeFilename('jpg');
     try {
-      const res = await downloadCertificateAsJpg(certRef.current, filename, 0.98);
+      const res = await downloadCertificateAsJpg(certRef.current, filename, 0.98, generatedCert, certificateSettings);
       if (res.success) {
         setDownloadStatus({
           type: 'success',
@@ -230,7 +232,7 @@ export const TigerPledgeForm: React.FC = () => {
 
     const filename = getSafeFilename('png');
     try {
-      const res = await downloadCertificateAsPng(certRef.current, filename);
+      const res = await downloadCertificateAsPng(certRef.current, filename, generatedCert, certificateSettings);
       if (res.success) {
         setDownloadStatus({
           type: 'success',
@@ -266,7 +268,12 @@ export const TigerPledgeForm: React.FC = () => {
     });
 
     try {
-      const res = await printCertificate(certRef.current, `Valmiki Tiger Watch Certificate - ${generatedCert.certificateNumber}`);
+      const res = await printCertificate(
+        certRef.current,
+        `Valmiki Tiger Watch Certificate - ${generatedCert.certificateNumber}`,
+        generatedCert,
+        certificateSettings
+      );
       if (res.success) {
         setDownloadStatus({
           type: 'success',
@@ -302,7 +309,7 @@ export const TigerPledgeForm: React.FC = () => {
 
     const filename = getSafeFilename('pdf');
     try {
-      const res = await shareCertificate(certRef.current, 'pdf', filename);
+      const res = await shareCertificate(certRef.current, 'pdf', filename, generatedCert, certificateSettings);
       if (res.success) {
         setDownloadStatus({
           type: 'success',
@@ -327,10 +334,71 @@ export const TigerPledgeForm: React.FC = () => {
     }
   };
 
+  // Auto-verify if cert query parameter is present in URL (e.g. from scanned QR code)
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const certParam = searchParams.get('cert');
+      if (certParam && certParam.trim()) {
+        const query = certParam.trim();
+        setActiveTab('verify');
+        setVerifyQuery(query);
+
+        (async () => {
+          setIsVerifying(true);
+          try {
+            const normalizedQuery = query.toLowerCase();
+            const localMatches = certificates.filter((c) => {
+              const certNum = (c.certificateNumber || '').toLowerCase();
+              return certNum.includes(normalizedQuery);
+            });
+
+            let serverMatch: TigerPledgeCertificate | null = null;
+            try {
+              const res = await fetch(`/api/certificates/verify/${encodeURIComponent(query)}`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.valid && data.certificate) {
+                  serverMatch = data.certificate;
+                }
+              }
+            } catch {}
+
+            const combined: TigerPledgeCertificate[] = [...localMatches];
+            if (serverMatch && !combined.some((c) => c.certificateNumber === serverMatch!.certificateNumber)) {
+              combined.unshift(serverMatch);
+            }
+
+            if (combined.length > 0) {
+              setVerifyResult({
+                searched: true,
+                certificates: combined,
+                selectedCertificate: combined[0],
+                isRevoked: combined[0].status === 'revoked'
+              });
+            } else {
+              setVerifyResult({
+                searched: true,
+                notFound: true
+              });
+            }
+          } catch {
+            setVerifyResult({
+              searched: true,
+              notFound: true
+            });
+          } finally {
+            setIsVerifying(false);
+          }
+        })();
+      }
+    } catch {}
+  }, [certificates]);
+
   // Copy Verification Link
   const handleCopyVerificationLink = () => {
     if (!generatedCert) return;
-    const url = `${window.location.origin}${window.location.pathname}?cert=${encodeURIComponent(generatedCert.certificateNumber)}#verify`;
+    const url = getPledgePageUrl(generatedCert.certificateNumber);
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
@@ -877,6 +945,14 @@ export const TigerPledgeForm: React.FC = () => {
                     {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-stone-600" />}
                     <span>{copiedLink ? 'Copied Link' : 'Copy Verification Link'}</span>
                   </button>
+                </div>
+
+                {/* Embedded QR Code Notice */}
+                <div className="flex items-center justify-center gap-1.5 text-xs text-stone-600 bg-amber-50/80 border border-amber-200/70 rounded-lg py-2 px-3 text-center">
+                  <QrCode className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>
+                    <strong>Authenticity QR Code Included:</strong> Embedded on the certificate display and inside all exported PDF, PNG, and JPG files to link back to this pledge page.
+                  </span>
                 </div>
               </div>
 

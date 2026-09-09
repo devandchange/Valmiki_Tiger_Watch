@@ -1,7 +1,8 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useEffect } from 'react';
 import { ShieldCheck, Award, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { TigerPledgeCertificate, CertificateAdminSettings } from '../types';
 import { PRESIDENT_SIGNATURE_DATA_URL, VTW_LOGO_DATA_URL } from '../assets/certificateImages';
+import { generateCertificateQrCodeDataUrl } from '../utils/qrCodeGenerator';
 
 interface CertificatePreviewProps {
   certificate: TigerPledgeCertificate;
@@ -70,6 +71,20 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
     const recipientName = certificate.participantName || certificate.fullName;
     const issueDateString = certificate.issueDate || certificate.pledgeFormattedDate || certificate.pledgeDate;
 
+    // Load QR Code pointing back to the VTW conservation pledge page
+    const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+    useEffect(() => {
+      let isMounted = true;
+      generateCertificateQrCodeDataUrl(certificate.certificateNumber, 200).then((url) => {
+        if (isMounted && url) {
+          setQrCodeUrl(url);
+        }
+      });
+      return () => {
+        isMounted = false;
+      };
+    }, [certificate.certificateNumber]);
+
     return (
       <div
         ref={ref}
@@ -79,10 +94,14 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
           boxSizing: 'border-box',
           backgroundColor: '#FCFAF5',
           color: '#1C1917',
+          border: '1.5px solid rgba(217, 119, 6, 0.75)',
           fontFamily: isUrdu
             ? "'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif"
             : "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif"
         }}
+        data-certificate-number={certificate.certificateNumber}
+        data-certificate-json={JSON.stringify(certificate)}
+        data-settings-json={settings ? JSON.stringify(settings) : ''}
       >
         {/* Background Subtle Watermark Tiger Motif */}
         <div
@@ -101,34 +120,58 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
 
         {/* Ornate Gold Outer Border Frame */}
         <div
-          className="absolute inset-3 sm:inset-4 border-[2px] rounded-sm pointer-events-none"
-          style={{ borderColor: 'rgba(217, 119, 6, 0.6)' }}
+          className="absolute inset-3 sm:inset-4 rounded-sm pointer-events-none"
+          style={{
+            borderStyle: 'solid',
+            borderWidth: '2px',
+            borderColor: 'rgba(217, 119, 6, 0.7)'
+          }}
         />
         <div
-          className="absolute inset-4 sm:inset-5 border rounded-sm pointer-events-none"
-          style={{ borderColor: 'rgba(6, 95, 70, 0.4)' }}
+          className="absolute inset-4 sm:inset-5 rounded-sm pointer-events-none"
+          style={{
+            borderStyle: 'solid',
+            borderWidth: '1px',
+            borderColor: 'rgba(6, 95, 70, 0.5)'
+          }}
         />
         <div
-          className="absolute inset-[18px] sm:inset-[22px] border-[1px] pointer-events-none"
-          style={{ borderColor: 'rgba(245, 158, 11, 0.3)' }}
+          className="absolute inset-[18px] sm:inset-[22px] rounded-sm pointer-events-none"
+          style={{
+            borderStyle: 'solid',
+            borderWidth: '1px',
+            borderColor: 'rgba(245, 158, 11, 0.4)'
+          }}
         />
 
         {/* Corner Flourish Motifs */}
         <div
-          className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 pointer-events-none"
-          style={{ borderColor: '#D97706' }}
+          className="absolute top-4 left-4 w-6 h-6 pointer-events-none"
+          style={{
+            borderTop: '2px solid #D97706',
+            borderLeft: '2px solid #D97706'
+          }}
         />
         <div
-          className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 pointer-events-none"
-          style={{ borderColor: '#D97706' }}
+          className="absolute top-4 right-4 w-6 h-6 pointer-events-none"
+          style={{
+            borderTop: '2px solid #D97706',
+            borderRight: '2px solid #D97706'
+          }}
         />
         <div
-          className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 pointer-events-none"
-          style={{ borderColor: '#D97706' }}
+          className="absolute bottom-4 left-4 w-6 h-6 pointer-events-none"
+          style={{
+            borderBottom: '2px solid #D97706',
+            borderLeft: '2px solid #D97706'
+          }}
         />
         <div
-          className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 pointer-events-none"
-          style={{ borderColor: '#D97706' }}
+          className="absolute bottom-4 right-4 w-6 h-6 pointer-events-none"
+          style={{
+            borderBottom: '2px solid #D97706',
+            borderRight: '2px solid #D97706'
+          }}
         />
 
         {/* Main Certificate Content Container */}
@@ -262,28 +305,60 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
           >
             <div className="grid grid-cols-3 items-end gap-2 text-left">
               
-              {/* Left Column: Certificate Identifier & Date */}
-              <div className="space-y-0.5">
-                <div
-                  className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold"
-                  style={{ color: '#78716C' }}
-                >
-                  Certificate Number
-                </div>
-                <div
-                  className="text-xs sm:text-sm font-mono font-bold tracking-tight"
-                  style={{ color: '#022C22' }}
-                >
-                  {certificate.certificateNumber}
-                </div>
-                <div
-                  className="text-[9px] sm:text-[10px] font-medium"
-                  style={{ color: '#57534E' }}
-                >
-                  Issued:{' '}
-                  <span className="font-semibold" style={{ color: '#292524' }}>
-                    {issueDateString}
-                  </span>
+              {/* Left Column: Certificate Identifier, Date & QR Code */}
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                {qrCodeUrl && (
+                  <div className="flex-shrink-0 flex flex-col items-center">
+                    <div
+                      className="p-0.5 sm:p-1 rounded shadow-xs"
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid rgba(217, 119, 6, 0.45)'
+                      }}
+                    >
+                      <img
+                        src={qrCodeUrl}
+                        alt="Scan QR code to visit VTW pledge"
+                        className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                    <span
+                      className="text-[6px] sm:text-[7px] font-bold tracking-tight uppercase mt-0.5"
+                      style={{ color: '#064E3B' }}
+                    >
+                      Scan Pledge
+                    </span>
+                  </div>
+                )}
+                <div className="space-y-0.5 min-w-0">
+                  <div
+                    className="text-[8px] sm:text-[9px] uppercase tracking-wider font-semibold"
+                    style={{ color: '#78716C' }}
+                  >
+                    Certificate Number
+                  </div>
+                  <div
+                    className="text-xs sm:text-[13px] font-mono font-bold tracking-tight truncate"
+                    style={{ color: '#022C22' }}
+                  >
+                    {certificate.certificateNumber}
+                  </div>
+                  <div
+                    className="text-[8.5px] sm:text-[9.5px] font-medium"
+                    style={{ color: '#57534E' }}
+                  >
+                    Issued:{' '}
+                    <span className="font-semibold" style={{ color: '#292524' }}>
+                      {issueDateString}
+                    </span>
+                  </div>
+                  <div
+                    className="text-[8px] sm:text-[9px] font-bold"
+                    style={{ color: isRevoked ? '#B91C1C' : '#065F46' }}
+                  >
+                    {isRevoked ? 'Status: Revoked' : 'Status: Verified & Active'}
+                  </div>
                 </div>
               </div>
 

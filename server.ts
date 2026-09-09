@@ -17,10 +17,9 @@ import {
 
 async function startServer() {
   const app = express();
-  // In development, port 3000 is required by the local dev reverse proxy.
-  // In production (e.g. Cloud Run), listen on the port provided by the environment (process.env.PORT, defaults to 8080 or 3000).
+  // Cloud Run and the development environment strictly proxy all external traffic to port 3000.
+  const PORT = 3000;
   const isDev = process.env.NODE_ENV !== 'production';
-  const PORT = isDev ? 3000 : (process.env.PORT ? parseInt(process.env.PORT, 10) : 3000);
 
   app.use(express.json({ limit: '10mb' }));
 
@@ -267,9 +266,11 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = fs.existsSync(path.join(process.cwd(), 'dist'))
+    const distPath = fs.existsSync(path.join(process.cwd(), 'dist', 'index.html'))
       ? path.join(process.cwd(), 'dist')
-      : path.join(__dirname, 'dist');
+      : (fs.existsSync(path.join(__dirname, 'index.html'))
+        ? __dirname
+        : path.join(process.cwd(), 'dist'));
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       const indexPath = path.join(distPath, 'index.html');

@@ -775,7 +775,7 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
                   onClick={async () => {
                     if (!previewCertRef.current) return;
                     setIsExporting(true);
-                    await downloadCertificateAsPdf(previewCertRef.current, `${selectedCert.certificateNumber}.pdf`);
+                    await downloadCertificateAsPdf(previewCertRef.current, `${selectedCert.certificateNumber}.pdf`, selectedCert);
                     setIsExporting(false);
                   }}
                   className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-lg flex items-center gap-1 transition disabled:opacity-50"
@@ -790,7 +790,7 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
                   onClick={async () => {
                     if (!previewCertRef.current) return;
                     setIsExporting(true);
-                    await downloadCertificateAsPng(previewCertRef.current, `${selectedCert.certificateNumber}.png`);
+                    await downloadCertificateAsPng(previewCertRef.current, `${selectedCert.certificateNumber}.png`, selectedCert);
                     setIsExporting(false);
                   }}
                   className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg flex items-center gap-1 transition disabled:opacity-50"

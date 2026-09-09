@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { TigerPledgeCertificate, CertificateAdminSettings } from '../types';
 
 export interface ExportResult {
   success: boolean;
@@ -123,8 +124,8 @@ export function sanitizeElementColors(rootElement: HTMLElement): void {
 }
 
 /**
- * Ensures all web fonts, images, and signature assets inside the certificate
- * element are fully loaded and decoded in memory before rendering.
+ * Ensures all web fonts, images, QR code, and signature assets inside the certificate
+ * preview element are fully loaded and decoded in memory before capturing.
  */
 export async function waitForCertificateReady(element: HTMLElement): Promise<void> {
   // 1. Wait for document fonts if available
@@ -136,7 +137,7 @@ export async function waitForCertificateReady(element: HTMLElement): Promise<voi
     }
   }
 
-  // 2. Find all images inside the certificate element
+  // 2. Find all images inside the certificate element (QR code, logo, signature)
   const images = Array.from(element.querySelectorAll('img'));
   const imagePromises = images.map((img) => {
     if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
@@ -150,100 +151,174 @@ export async function waitForCertificateReady(element: HTMLElement): Promise<voi
       };
       img.addEventListener('load', finish, { once: true });
       img.addEventListener('error', finish, { once: true });
-      // Fallback timeout in case event does not fire
       setTimeout(finish, 2000);
     });
   });
 
   await Promise.all(imagePromises);
 
-  // 3. Small paint frame yield to ensure DOM layout and styles are stabilized
+  // 3. Yield to ensure layout and styles are stabilized
   await new Promise((resolve) => setTimeout(resolve, 80));
 }
 
 /**
- * Single, unified certificate rendering function.
- * Generates an ultra-crisp 3x DPI canvas from the exact same DOM element
- * displayed in the live preview.
- *
- * Employs dual-engine fallback:
- * 1. Primary: html2canvas-pro (native oklch/lab/color-mix support + onclone sanitization)
- * 2. Fallback: html-to-image (native foreignObject rendering)
+ * Validates that:
+ * 1. Canvas is present and has meaningful dimensions
+ * 2. Aspect ratio matches A4 landscape (width > height)
  */
-export async function renderCertificateToCanvas(element: HTMLElement): Promise<HTMLCanvasElement> {
-  await waitForCertificateReady(element);
+export function isCanvasValidCertificate(canvas: HTMLCanvasElement): boolean {
+  if (!canvas || canvas.width < 1200 || canvas.height < 800) {
+    console.warn(`Canvas dimension check failed: ${canvas?.width}x${canvas?.height}`);
+    return false;
+  }
+  // Must be A4 Landscape: width must be greater than height
+  if (canvas.width <= canvas.height) {
+    console.warn('Canvas must be landscape (width > height)');
+    return false;
+  }
+  return true;
+}
 
-  // Attempt 1: Primary render with html2canvas-pro
+/**
+ * Extracts a TigerPledgeCertificate from the DOM element or datasets if available.
+ */
+function extractCertificateFromElement(element: HTMLElement | null): TigerPledgeCertificate | null {
+  if (!element) return null;
   try {
-    const canvas = await html2canvasPro(element, {
-      scale: 3, // 300 DPI equivalent for print-grade sharpness
+    const jsonStr =
+      element.getAttribute('data-certificate-json') ||
+      element.querySelector('[data-certificate-json]')?.getAttribute('data-certificate-json');
+    if (jsonStr) {
+      return JSON.parse(jsonStr) as TigerPledgeCertificate;
+    }
+  } catch {
+    // Non-blocking
+  }
+  return null;
+}
+
+/**
+ * Extracts CertificateAdminSettings from the DOM element or datasets if available.
+ */
+function extractSettingsFromElement(element: HTMLElement | null): CertificateAdminSettings | undefined {
+  if (!element) return undefined;
+  try {
+    const jsonStr =
+      element.getAttribute('data-settings-json') ||
+      element.querySelector('[data-settings-json]')?.getAttribute('data-settings-json');
+    if (jsonStr) {
+      return JSON.parse(jsonStr) as CertificateAdminSettings;
+    }
+  } catch {
+    // Non-blocking
+  }
+  return undefined;
+}
+
+/**
+ * Single, unified certificate rendering function.
+ * Exports the ORIGINAL preview component (CertificatePreview) EXACTLY as rendered in the UI.
+ * Never redesigns the certificate.
+ * Conforms strictly to A4 LANDSCAPE (never portrait) at ultra-high resolution (~3508 × 2480, 300 DPI).
+ */
+export async function renderCertificateToCanvas(
+  element: HTMLElement | null,
+  certificate?: TigerPledgeCertificate,
+  _settings?: CertificateAdminSettings
+): Promise<HTMLCanvasElement> {
+  // 1. Locate the live CertificatePreview DOM element
+  let targetElement = element;
+  if (!targetElement && certificate?.certificateNumber) {
+    targetElement = document.getElementById(`certificate-${certificate.certificateNumber}`);
+  }
+  if (!targetElement) {
+    targetElement = document.querySelector('[id^="certificate-"]');
+  }
+
+  if (!targetElement) {
+    throw new Error(
+      'Certificate preview element not found. Please ensure the certificate preview is displayed on screen.'
+    );
+  }
+
+  // 2. Ensure all fonts and images (QR code, logo, signature) inside CertificatePreview are ready
+  await waitForCertificateReady(targetElement);
+
+  // 3. Normalize modern color models so canvas engines render without errors
+  sanitizeElementColors(targetElement);
+
+  // 4. Calculate pixel ratio to achieve crisp A4 300 DPI resolution (~3508px width)
+  const currentWidth = targetElement.offsetWidth || 860;
+  const pixelRatio = Math.max(2.5, Math.min(5, 3508 / currentWidth));
+
+  // Method 1 (Primary): html2canvas-pro on the live CertificatePreview element
+  // Directly renders the DOM tree to 2D Canvas without attempting to read remote cross-origin CSS rules.
+  try {
+    const canvas = await html2canvasPro(targetElement, {
+      scale: pixelRatio,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#FCFAF5',
       logging: false,
-      imageTimeout: 15000,
-      windowWidth: 1024,
-      windowHeight: 768,
       onclone: (clonedDoc) => {
-        const cloned = clonedDoc.getElementById(element.id);
+        const cloned =
+          clonedDoc.getElementById(targetElement!.id) ||
+          clonedDoc.querySelector(`[id="${targetElement!.id}"]`);
         if (cloned) {
-          cloned.style.visibility = 'visible';
-          cloned.style.display = 'block';
-          cloned.style.width = '842px';
-          cloned.style.minWidth = '842px';
-          cloned.style.maxWidth = '842px';
-          cloned.style.height = '595px';
-          cloned.style.minHeight = '595px';
-          cloned.style.maxHeight = '595px';
-          cloned.style.transform = 'none';
-          cloned.style.boxSizing = 'border-box';
-
-          // Deeply sanitize cloned certificate elements to eliminate any oklch
-          sanitizeElementColors(cloned);
-        }
-
-        // Sanitize any style sheets in the cloned document that might contain oklch
-        try {
-          const styles = clonedDoc.querySelectorAll('style');
-          styles.forEach((s) => {
-            if (s.textContent && (s.textContent.includes('oklch') || s.textContent.includes('color-mix'))) {
-              s.textContent = s.textContent.replace(/oklch\([^)]+\)/g, (match) => {
-                return normalizeColorToRgb(match) || '#000000';
-              });
-            }
-          });
-        } catch {
-          // Non-blocking
+          (cloned as HTMLElement).style.boxShadow = 'none';
+          sanitizeElementColors(cloned as HTMLElement);
         }
       }
     });
 
-    if (canvas && canvas.width > 0 && canvas.height > 0) {
+    if (canvas && isCanvasValidCertificate(canvas)) {
       return canvas;
     }
   } catch (proErr) {
-    console.warn('html2canvas-pro render encountered an issue, falling back to html-to-image:', proErr);
+    console.warn('html2canvas-pro render warning, attempting fallback:', proErr);
   }
 
-  // Attempt 2: Fallback to html-to-image
+  // Method 2 (Secondary Fallback): html-to-image toCanvas with skipFonts: true
+  // Explicitly skips font downloading/parsing from document.styleSheets to avoid cross-origin cssRules security exceptions.
   try {
-    const fallbackCanvas = await htmlToImageCanvas(element, {
+    const canvas = await htmlToImageCanvas(targetElement, {
+      pixelRatio,
       backgroundColor: '#FCFAF5',
-      pixelRatio: 3,
-      canvasWidth: 842 * 3,
-      canvasHeight: 595 * 3,
-      cacheBust: false
+      cacheBust: false,
+      skipFonts: true,
+      style: {
+        boxShadow: 'none',
+        margin: '0px'
+      }
     });
 
-    if (fallbackCanvas && fallbackCanvas.width > 0 && fallbackCanvas.height > 0) {
-      return fallbackCanvas;
+    if (canvas && isCanvasValidCertificate(canvas)) {
+      return canvas;
     }
-  } catch (fallbackErr) {
-    console.error('All certificate canvas rendering strategies failed:', fallbackErr);
-    throw new Error('Failed to render certificate. Please ensure all images and fonts have loaded.');
+  } catch (imgErr) {
+    console.warn('html-to-image canvas capture error:', imgErr);
   }
 
-  throw new Error('Failed to generate high-resolution certificate canvas.');
+  throw new Error('Failed to generate complete certificate canvas. Please try again.');
+}
+
+/**
+ * Standardized Certificate Filename Formatter:
+ * Output: VTW-Certificate-[certificate-number].[ext]
+ */
+export function formatCertificateFilename(
+  certNumber: string | undefined,
+  ext: 'pdf' | 'jpg' | 'png',
+  fallbackName?: string
+): string {
+  if (certNumber && certNumber.trim().length > 0) {
+    const cleanNum = certNumber.trim().replace(/[^\w-]/g, '_');
+    return `VTW-Certificate-${cleanNum}.${ext}`;
+  }
+  if (fallbackName && fallbackName.endsWith(`.${ext}`)) {
+    return fallbackName;
+  }
+  return `VTW-Certificate.${ext}`;
 }
 
 /**
@@ -333,7 +408,6 @@ async function deliverFile(
         return { success: true, filename, isNative: false, message: 'Certificate shared successfully.' };
       }
     } catch (shareErr: any) {
-      // If user cancelled or browser denied share, continue to standard download fallback
       if (shareErr?.name === 'AbortError') {
         return { success: true, filename, isNative: false, message: 'Share action cancelled.' };
       }
@@ -369,27 +443,31 @@ async function deliverFile(
 }
 
 /**
- * Downloads the certificate element as a high-resolution JPG image.
+ * Downloads the certificate as a high-resolution A4 LANDSCAPE JPG image (3508 × 2480).
  */
 export async function downloadCertificateAsJpg(
-  element: HTMLElement,
-  filename: string = 'Valmiki-Tiger-Watch-Pledge-Certificate.jpg',
-  quality: number = 0.98
+  element: HTMLElement | null,
+  filename?: string,
+  quality: number = 0.98,
+  certificate?: TigerPledgeCertificate,
+  settings?: CertificateAdminSettings
 ): Promise<ExportResult> {
   try {
-    const canvas = await renderCertificateToCanvas(element);
+    const canvas = await renderCertificateToCanvas(element, certificate, settings);
+    const effectiveCert = certificate || extractCertificateFromElement(element);
+    const finalFilename = formatCertificateFilename(effectiveCert?.certificateNumber, 'jpg', filename);
 
     const blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob(resolve, 'image/jpeg', quality);
     });
 
-    if (!blob) {
-      return { success: false, error: 'Failed to create JPG image blob.' };
+    if (!blob || blob.size < 5000) {
+      return { success: false, error: 'Verification failed: Generated JPG image is incomplete or empty.' };
     }
 
     const base64 = await blobToBase64(blob);
-    const result = await deliverFile(blob, base64, filename, 'image/jpeg', 'download');
-    return { ...result, format: 'jpg' };
+    const result = await deliverFile(blob, base64, finalFilename, 'image/jpeg', 'download');
+    return { ...result, format: 'jpg', filename: finalFilename };
   } catch (error: any) {
     console.error('Error generating JPG certificate:', error);
     return {
@@ -401,26 +479,30 @@ export async function downloadCertificateAsJpg(
 }
 
 /**
- * Downloads the certificate element as a high-resolution PNG image.
+ * Downloads the certificate as a high-resolution A4 LANDSCAPE PNG image (3508 × 2480).
  */
 export async function downloadCertificateAsPng(
-  element: HTMLElement,
-  filename: string = 'Valmiki-Tiger-Watch-Pledge-Certificate.png'
+  element: HTMLElement | null,
+  filename?: string,
+  certificate?: TigerPledgeCertificate,
+  settings?: CertificateAdminSettings
 ): Promise<ExportResult> {
   try {
-    const canvas = await renderCertificateToCanvas(element);
+    const canvas = await renderCertificateToCanvas(element, certificate, settings);
+    const effectiveCert = certificate || extractCertificateFromElement(element);
+    const finalFilename = formatCertificateFilename(effectiveCert?.certificateNumber, 'png', filename);
 
     const blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob(resolve, 'image/png');
     });
 
-    if (!blob) {
-      return { success: false, error: 'Failed to create PNG image blob.' };
+    if (!blob || blob.size < 5000) {
+      return { success: false, error: 'Verification failed: Generated PNG image is incomplete or empty.' };
     }
 
     const base64 = await blobToBase64(blob);
-    const result = await deliverFile(blob, base64, filename, 'image/png', 'download');
-    return { ...result, format: 'png' };
+    const result = await deliverFile(blob, base64, finalFilename, 'image/png', 'download');
+    return { ...result, format: 'png', filename: finalFilename };
   } catch (error: any) {
     console.error('Error generating PNG certificate:', error);
     return {
@@ -432,16 +514,22 @@ export async function downloadCertificateAsPng(
 }
 
 /**
- * Downloads the certificate element as a high-resolution A4 Landscape PDF document.
+ * Downloads the certificate element as an A4 LANDSCAPE PDF document (297mm × 210mm).
  */
 export async function downloadCertificateAsPdf(
-  element: HTMLElement,
-  filename: string = 'Valmiki-Tiger-Watch-Pledge-Certificate.pdf'
+  element: HTMLElement | null,
+  filename?: string,
+  certificate?: TigerPledgeCertificate,
+  settings?: CertificateAdminSettings
 ): Promise<ExportResult> {
   try {
-    const canvas = await renderCertificateToCanvas(element);
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    const canvas = await renderCertificateToCanvas(element, certificate, settings);
+    const imgData = canvas.toDataURL('image/png');
 
+    const effectiveCert = certificate || extractCertificateFromElement(element);
+    const finalFilename = formatCertificateFilename(effectiveCert?.certificateNumber, 'pdf', filename);
+
+    // Exact A4 landscape jsPDF configuration: width 297mm x height 210mm
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
@@ -449,17 +537,26 @@ export async function downloadCertificateAsPdf(
       compress: true
     });
 
-    // A4 Landscape dimensions: 297mm x 210mm
-    const pdfWidth = 297;
-    const pdfHeight = 210;
-
-    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+    // A4 landscape dimensions: 297mm width x 210mm height
+    pdf.addImage(
+      imgData,
+      'PNG',
+      0,
+      0,
+      297,
+      210,
+      undefined,
+      'FAST'
+    );
 
     const pdfBlob = pdf.output('blob');
-    const base64 = await blobToBase64(pdfBlob);
+    if (!pdfBlob || pdfBlob.size < 5000) {
+      return { success: false, error: 'Verification failed: Generated PDF document is incomplete or empty.' };
+    }
 
-    const result = await deliverFile(pdfBlob, base64, filename, 'application/pdf', 'download');
-    return { ...result, format: 'pdf' };
+    const base64 = await blobToBase64(pdfBlob);
+    const result = await deliverFile(pdfBlob, base64, finalFilename, 'application/pdf', 'download');
+    return { ...result, format: 'pdf', filename: finalFilename };
   } catch (error: any) {
     console.error('Error generating PDF certificate:', error);
     return {
@@ -474,26 +571,30 @@ export async function downloadCertificateAsPdf(
  * Shares the certificate file using native Android Share Sheet or Web Share API.
  */
 export async function shareCertificate(
-  element: HTMLElement,
+  element: HTMLElement | null,
   format: 'pdf' | 'jpg' | 'png' = 'pdf',
-  customFilename?: string
+  customFilename?: string,
+  certificate?: TigerPledgeCertificate,
+  settings?: CertificateAdminSettings
 ): Promise<ExportResult> {
   try {
-    const filename = customFilename || (
-      format === 'pdf' ? 'Valmiki-Tiger-Watch-Pledge-Certificate.pdf' :
-      format === 'png' ? 'Valmiki-Tiger-Watch-Pledge-Certificate.png' :
-      'Valmiki-Tiger-Watch-Pledge-Certificate.jpg'
-    );
+    const effectiveCert = certificate || extractCertificateFromElement(element);
+    const finalFilename = formatCertificateFilename(effectiveCert?.certificateNumber, format, customFilename);
 
-    const canvas = await renderCertificateToCanvas(element);
+    const canvas = await renderCertificateToCanvas(element, certificate, settings);
 
     let blob: Blob | null = null;
     let mimeType: 'application/pdf' | 'image/jpeg' | 'image/png' = 'application/pdf';
 
     if (format === 'pdf') {
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
-      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, 297, 210, undefined, 'FAST');
       blob = pdf.output('blob');
       mimeType = 'application/pdf';
     } else if (format === 'png') {
@@ -504,86 +605,101 @@ export async function shareCertificate(
       mimeType = 'image/jpeg';
     }
 
-    if (!blob) {
-      return { success: false, error: 'Could not generate certificate data to share.' };
+    if (!blob || blob.size < 5000) {
+      return { success: false, error: 'Verification failed: Generated share file is empty or corrupted.' };
     }
 
     const base64 = await blobToBase64(blob);
-    return await deliverFile(blob, base64, filename, mimeType, 'share');
+    return await deliverFile(blob, base64, finalFilename, mimeType, 'share');
   } catch (error: any) {
     console.error('Error sharing certificate:', error);
     return {
       success: false,
-      error: error?.message || 'Failed to share certificate.'
+      error: error?.message || 'Failed to prepare certificate for sharing.'
     };
   }
 }
 
 /**
- * Prints the certificate directly.
- * In desktop/web browser, opens an isolated high-resolution print window.
- * In Android APK (where window.print is restricted), shares the PDF/JPG so
- * the user can print using Android Print Service or their connected printer.
+ * Prints the certificate directly in A4 LANDSCAPE format (297mm × 210mm).
  */
 export async function printCertificate(
-  element: HTMLElement,
-  title: string = 'Valmiki Tiger Watch Pledge Certificate'
+  element: HTMLElement | null,
+  title: string = 'Valmiki Tiger Watch Pledge Certificate',
+  certificate?: TigerPledgeCertificate,
+  settings?: CertificateAdminSettings
 ): Promise<ExportResult> {
   try {
     const isNative = Capacitor.isNativePlatform();
+    const effectiveCert = certificate || extractCertificateFromElement(element);
+    const finalFilename = formatCertificateFilename(effectiveCert?.certificateNumber, 'pdf');
 
     if (isNative) {
-      // In Android WebView, window.print() is often unsupported or broken.
-      // We generate the PDF and open the native system share/print dialog.
-      return await shareCertificate(element, 'pdf', 'Valmiki-Tiger-Watch-Pledge-Certificate.pdf');
+      return await shareCertificate(element, 'pdf', finalFilename, certificate, settings);
     }
 
-    // Web browser printing
-    const canvas = await renderCertificateToCanvas(element);
+    // Web browser printing: A4 Landscape
+    const canvas = await renderCertificateToCanvas(element, certificate, settings);
     const imgData = canvas.toDataURL('image/png');
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      // Popup blocked, fallback to downloading PDF
-      return await downloadCertificateAsPdf(element);
+    try {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>${title}</title>
+              <style>
+                @page {
+                  size: A4 landscape;
+                  margin: 0;
+                }
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  width: 297mm;
+                  height: 210mm;
+                  background-color: #FCFAF5;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+                img {
+                  width: 297mm;
+                  height: 210mm;
+                  max-width: 297mm;
+                  max-height: 210mm;
+                  object-fit: contain;
+                  display: block;
+                  margin: 0 auto;
+                }
+              </style>
+            </head>
+            <body>
+              <img src="${imgData}" onload="window.focus(); setTimeout(function() { window.print(); window.close(); }, 350);" />
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        return {
+          success: true,
+          message: 'Certificate print dialog opened.',
+          filename: finalFilename
+        };
+      }
+    } catch (winErr) {
+      console.warn('Print popup blocked, falling back to direct window.print:', winErr);
     }
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            @page {
-              size: A4 landscape;
-              margin: 0;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              background-color: #FCFAF5;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              min-height: 100vh;
-            }
-            img {
-              width: 100vw;
-              height: 100vh;
-              object-fit: contain;
-            }
-          </style>
-        </head>
-        <body>
-          <img src="${imgData}" onload="window.focus(); window.print(); window.close();" />
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-
+    // Direct browser print fallback
+    window.print();
     return {
       success: true,
-      message: 'Certificate print dialog opened.'
+      message: 'Certificate print dialog opened.',
+      filename: finalFilename
     };
   } catch (error: any) {
     console.error('Error printing certificate:', error);

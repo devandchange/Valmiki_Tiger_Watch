@@ -89,9 +89,24 @@
   background: #94A3B8;
 }
 
-/* Print optimizations */
+/* Print optimizations for A4 Landscape */
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
 @media print {
-  nav, footer, .no-print {
+  html, body {
+    width: 297mm !important;
+    height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #F8F5ED !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  header, nav, footer, .no-print, [role="navigation"], button, input, select, #chatbot-container, .chatbot-widget {
     display: none !important;
   }
 }
