@@ -311,26 +311,87 @@ export async function renderCertificateToCanvas(
   // 3. Normalize modern color models so canvas engines render without errors
   sanitizeElementColors(targetElement);
 
-  // 4. Calculate pixel ratio to achieve crisp A4 300 DPI resolution (~3508px width)
-  const currentWidth = targetElement.offsetWidth || 860;
-  const pixelRatio = Math.max(2.5, Math.min(5, 3508 / currentWidth));
+  const effectiveCert = certificate || extractCertificateFromElement(targetElement);
+
+  // 4. Standardize export canvas dimensions to A4 landscape (3508 × 2480, 300 DPI)
+  // CRITICAL: Do NOT use the screenshot viewport width for export.
+  // We uncouple export rendering from mobile/responsive screen sizes, giving the
+  // certificate a full 1200px landscape layout before scaling to 3508px.
+  const exportBaseWidth = 1200;
+  const exportBaseHeight = 848; // Math.round(1200 / 1.414)
+  const targetA4Width = 3508;
+  const exportScale = targetA4Width / exportBaseWidth; // ~2.92333
 
   // Method 1 (Primary): html2canvas-pro on the live CertificatePreview element
   // Directly renders the DOM tree to 2D Canvas without attempting to read remote cross-origin CSS rules.
   try {
     const canvas = await html2canvasPro(targetElement, {
-      scale: pixelRatio,
+      scale: exportScale,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#FCFAF5',
       logging: false,
+      windowWidth: 1440,
+      windowHeight: 1024,
       onclone: (clonedDoc) => {
         const cloned =
           clonedDoc.getElementById(targetElement!.id) ||
-          clonedDoc.querySelector(`[id="${targetElement!.id}"]`);
+          clonedDoc.querySelector(`[id="${targetElement!.id}"]`) ||
+          clonedDoc.querySelector('[data-certificate-number]');
         if (cloned) {
-          (cloned as HTMLElement).style.boxShadow = 'none';
-          sanitizeElementColors(cloned as HTMLElement);
+          const el = cloned as HTMLElement;
+          // Standardize certificate dimensions to full landscape width (never screenshot viewport width)
+          el.style.width = `${exportBaseWidth}px`;
+          el.style.minWidth = `${exportBaseWidth}px`;
+          el.style.maxWidth = `${exportBaseWidth}px`;
+          el.style.height = `${exportBaseHeight}px`;
+          el.style.minHeight = `${exportBaseHeight}px`;
+          el.style.maxHeight = `${exportBaseHeight}px`;
+          el.style.boxShadow = 'none';
+          el.style.transform = 'none';
+
+          // Ensure certificate number display has full width and zero clipping
+          const certNumDisplay = el.querySelector('[data-certificate-number-display]') as HTMLElement | null;
+          if (certNumDisplay) {
+            certNumDisplay.style.overflow = 'visible';
+            certNumDisplay.style.textOverflow = 'clip';
+            certNumDisplay.style.whiteSpace = 'nowrap';
+            certNumDisplay.style.width = 'max-content';
+            certNumDisplay.style.minWidth = 'max-content';
+            certNumDisplay.style.maxWidth = 'none';
+            certNumDisplay.style.display = 'block';
+            if (effectiveCert?.certificateNumber) {
+              certNumDisplay.textContent = effectiveCert.certificateNumber;
+            }
+          }
+
+          const certNumContainer = el.querySelector('[data-certificate-number-container]') as HTMLElement | null;
+          if (certNumContainer) {
+            certNumContainer.style.overflow = 'visible';
+            certNumContainer.style.minWidth = 'max-content';
+            certNumContainer.style.width = 'auto';
+            certNumContainer.style.maxWidth = 'none';
+          }
+
+          // Fallback: search for certificate number text in any cloned child element
+          if (!certNumDisplay && effectiveCert?.certificateNumber) {
+            const allElements = el.querySelectorAll('*');
+            for (const child of Array.from(allElements)) {
+              if (child.textContent && child.textContent.includes(effectiveCert.certificateNumber)) {
+                const htmlChild = child as HTMLElement;
+                htmlChild.style.overflow = 'visible';
+                htmlChild.style.textOverflow = 'clip';
+                htmlChild.style.whiteSpace = 'nowrap';
+                htmlChild.style.width = 'max-content';
+                htmlChild.style.minWidth = 'max-content';
+                htmlChild.style.maxWidth = 'none';
+                htmlChild.textContent = effectiveCert.certificateNumber;
+                break;
+              }
+            }
+          }
+
+          sanitizeElementColors(el);
         }
       }
     });
@@ -346,13 +407,16 @@ export async function renderCertificateToCanvas(
   // Explicitly skips font downloading/parsing from document.styleSheets to avoid cross-origin cssRules security exceptions.
   try {
     const canvas = await htmlToImageCanvas(targetElement, {
-      pixelRatio,
+      pixelRatio: exportScale,
       backgroundColor: '#FCFAF5',
       cacheBust: false,
       skipFonts: true,
       style: {
         boxShadow: 'none',
-        margin: '0px'
+        margin: '0px',
+        width: `${exportBaseWidth}px`,
+        maxWidth: `${exportBaseWidth}px`,
+        height: `${exportBaseHeight}px`
       }
     });
 

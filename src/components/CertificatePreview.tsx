@@ -306,7 +306,7 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
             <div className="grid grid-cols-3 items-end gap-2 text-left">
               
               {/* Left Column: Certificate Identifier, Date & QR Code */}
-              <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="flex items-center gap-2 sm:gap-2.5 overflow-visible">
                 {qrCodeUrl && (
                   <div className="flex-shrink-0 flex flex-col items-center">
                     <div
@@ -331,21 +331,36 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
                     </span>
                   </div>
                 )}
-                <div className="space-y-0.5 min-w-0">
+                <div
+                  data-certificate-number-container="true"
+                  className="space-y-0.5 overflow-visible"
+                  style={{
+                    minWidth: 'max-content',
+                    width: 'auto'
+                  }}
+                >
                   <div
-                    className="text-[8px] sm:text-[9px] uppercase tracking-wider font-semibold"
+                    className="text-[8px] sm:text-[9px] uppercase tracking-wider font-semibold whitespace-nowrap"
                     style={{ color: '#78716C' }}
                   >
                     Certificate Number
                   </div>
                   <div
-                    className="text-xs sm:text-[13px] font-mono font-bold tracking-tight truncate"
-                    style={{ color: '#022C22' }}
+                    data-certificate-number-display="true"
+                    className="text-[11px] sm:text-xs font-mono font-bold tracking-tight whitespace-nowrap overflow-visible"
+                    style={{
+                      color: '#022C22',
+                      textOverflow: 'clip',
+                      minWidth: 'max-content',
+                      width: 'max-content',
+                      maxWidth: 'none',
+                      display: 'block'
+                    }}
                   >
                     {certificate.certificateNumber}
                   </div>
                   <div
-                    className="text-[8.5px] sm:text-[9.5px] font-medium"
+                    className="text-[8.5px] sm:text-[9.5px] font-medium whitespace-nowrap"
                     style={{ color: '#57534E' }}
                   >
                     Issued:{' '}
@@ -354,7 +369,7 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
                     </span>
                   </div>
                   <div
-                    className="text-[8px] sm:text-[9px] font-bold"
+                    className="text-[8px] sm:text-[9px] font-bold whitespace-nowrap"
                     style={{ color: isRevoked ? '#B91C1C' : '#065F46' }}
                   >
                     {isRevoked ? 'Status: Revoked' : 'Status: Verified & Active'}
