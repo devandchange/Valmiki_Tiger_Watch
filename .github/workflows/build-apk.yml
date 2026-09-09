@@ -67,11 +67,15 @@ jobs:
           }
           EOF
       
-      - name: Build APK
+            - name: Build APK
         run: |
           cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug --init-script ../kotlin-fix.gradle
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            gradle assembleDebug
+          fi
           
       - name: Prepare named APK artifact
         run: |
