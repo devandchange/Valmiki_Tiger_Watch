@@ -37,11 +37,14 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Add Android platform if not present
+      - name: Recreate Android platform
         run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
+          rm -rf android
+          npx cap add android
+
+      - name: Sync Android project
+        run: |
+          npx cap sync android
 
       - name: Generate official Valmiki Tiger Watch Android launcher icons
         run: node scripts/generate-android-icons.js
@@ -67,15 +70,11 @@ jobs:
           }
           EOF
       
-            - name: Build APK
+      - name: Build APK
         run: |
           cd android
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug
-          else
-            gradle assembleDebug
-          fi
+          chmod +x gradlew
+          ./gradlew assembleDebug
           
       - name: Prepare named APK artifact
         run: |
