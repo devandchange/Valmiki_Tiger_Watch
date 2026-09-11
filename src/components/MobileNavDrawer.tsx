@@ -31,8 +31,11 @@ import {
   Eye,
   Layers,
   HeartHandshake,
-  CloudSun
+  CloudSun,
+  RefreshCw,
+  Smartphone
 } from 'lucide-react';
+import { APP_VERSION } from '../config/version';
 
 interface MobileNavDrawerProps {
   isOpen: boolean;
@@ -57,7 +60,8 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
     installPwa, 
     isAdmin,
     openVolunteerModal,
-    openSupporterModal
+    openSupporterModal,
+    openUpdateModal
   } = useData();
 
   const { language, setLanguage, languages, t, isRtl } = useLanguage();
@@ -94,6 +98,11 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
   }, [isOpen, onClose]);
 
   const handleSelectTab = (tabId: string) => {
+    if (tabId === 'check-updates') {
+      onClose();
+      openUpdateModal();
+      return;
+    }
     setActiveTab(tabId);
     onClose();
   };
@@ -314,6 +323,14 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
           icon: Phone,
           badge: '24x7 Help',
           badgeColor: 'bg-red-100 text-red-800'
+        },
+        {
+          id: 'check-updates',
+          title: t('app.check_updates', 'Check for Updates'),
+          desc: language === 'hi' ? 'आधिकारिक एपीके अपडेट एवं वर्तमान संस्करण जांचें' : language === 'ur' ? 'سرکاری اے پی کے اپ ڈیٹس اور موجودہ ورژن چیک کریں' : `Current build v${APP_VERSION} • Official GitHub release`,
+          icon: RefreshCw,
+          badge: `v${APP_VERSION}`,
+          badgeColor: 'bg-emerald-100 text-emerald-800'
         },
         {
           id: 'credits',
@@ -590,6 +607,44 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
                   </div>
                 </div>
               ))}
+
+              {/* Menu → Settings / App Information → Check for Updates */}
+              <div className="p-4 rounded-2xl bg-white border border-stone-200/90 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center text-stone-700">
+                      <Smartphone className="w-4 h-4 text-[#0B3D2E]" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-900">
+                        Settings / App Information
+                      </h4>
+                      <p className="text-[10px] text-stone-500 font-mono">
+                        v{APP_VERSION} • Valmiki Tiger Watch
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                    v{APP_VERSION}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    openUpdateModal();
+                  }}
+                  id="drawer-check-updates-btn"
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#0B3D2E] hover:bg-[#145A43] text-white transition-colors text-xs font-semibold shadow-xs group"
+                >
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-180 transition-transform duration-500" />
+                    <span>{t('app.check_updates', 'Check for Updates')}</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-stone-300 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
             </div>
 
             {/* Bottom Actions & Status Tray */}
@@ -610,6 +665,19 @@ export const MobileNavDrawer: React.FC<MobileNavDrawerProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      onClose();
+                      openUpdateModal();
+                    }}
+                    id="drawer-tray-update-btn"
+                    className="text-[11px] font-bold text-[#0B3D2E] hover:text-[#F27D26] flex items-center gap-1"
+                    title="Check for App Updates"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{t('app.check_updates', 'Check for Updates')}</span>
+                  </button>
+
                   {canInstallPwa && (
                     <button
                       onClick={() => {

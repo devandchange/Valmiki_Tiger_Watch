@@ -2,14 +2,14 @@ import React from 'react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
-import { Shield, Phone, MapPin, ArrowUp, Lock, HeartHandshake, ShieldCheck, Award } from 'lucide-react';
+import { Shield, Phone, MapPin, ArrowUp, Lock, HeartHandshake, ShieldCheck, Award, RefreshCw } from 'lucide-react';
 
 interface FooterProps {
   onOpenAdmin: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
-  const { setActiveTab, openVolunteerModal, openSupporterModal } = useData();
+  const { setActiveTab, openVolunteerModal, openSupporterModal, openUpdateModal } = useData();
   const { t, language } = useLanguage();
 
   const scrollToTop = () => {
@@ -246,6 +246,16 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
             </button>
             <span>•</span>
             <button
+              onClick={openUpdateModal}
+              id="footer-check-updates-btn"
+              className="hover:text-[#F27D26] transition-colors flex items-center space-x-1"
+              title="Check for App Updates"
+            >
+              <RefreshCw className="w-3 h-3 text-amber-400" />
+              <span>{t('app.check_updates', 'Check for Updates')}</span>
+            </button>
+            <span>•</span>
+            <button
               onClick={scrollToTop}
               className="p-1.5 rounded-full bg-white/10 hover:bg-[#F27D26] hover:text-black text-white transition-colors"
               title="Scroll to Top"
@@ -256,7 +266,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
         </div>
 
         <div className="text-center text-[10px] text-[#F5F1E6]/50 mt-4 font-mono tracking-widest uppercase">
-          Valmiki Tiger Watch • English • हिन्दी • اردو • PWA Edition
+          Valmiki Tiger Watch • English • हिन्दी • اردو
         </div>
       </div>
     </footer>

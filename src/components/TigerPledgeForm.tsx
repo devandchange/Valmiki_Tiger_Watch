@@ -523,7 +523,7 @@ export const TigerPledgeForm: React.FC = () => {
             }`}
           >
             <Award className="w-4 h-4" />
-            <span>Take Pledge & Get Certificate</span>
+            <span>{t('pledge.tab_take_pledge', 'Take the Pledge & Get Certificate') || 'Take the Pledge & Get Certificate'}</span>
           </button>
 
           <button
@@ -536,7 +536,7 @@ export const TigerPledgeForm: React.FC = () => {
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>Search & Verify Certificates</span>
+            <span>{t('pledge.tab_verify', 'Search & Verify Certificates') || 'Search & Verify Certificates'}</span>
           </button>
         </div>
       </div>
@@ -554,11 +554,11 @@ export const TigerPledgeForm: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-stone-900">
-                    {t('pledge.form_heading') || 'Tiger Protection Pledge Form'}
+                    {t('pledge.form_heading', 'Take the Pledge & Get Certificate') || 'Take the Pledge & Get Certificate'}
                   </h2>
                   <p className="text-xs sm:text-sm text-stone-500">
-                    {t('pledge.form_subheading') ||
-                      'Fill out your details accurately. Your name will appear on the official certificate.'}
+                    {t('pledge.form_subheading', 'Join the community in protecting tigers and wildlife.') ||
+                      'Join the community in protecting tigers and wildlife.'}
                   </p>
                 </div>
               </div>
@@ -575,7 +575,7 @@ export const TigerPledgeForm: React.FC = () => {
                 {/* Full Name */}
                 <div>
                   <label htmlFor="pledge-fullname" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
-                    {t('pledge.label_fullname') || 'Full Name'} <span className="text-rose-600">*</span>
+                    {t('pledge.label_fullname', 'Full Name') || 'Full Name'} <span className="text-rose-600">*</span>
                   </label>
                   <input
                     id="pledge-fullname"
@@ -583,7 +583,7 @@ export const TigerPledgeForm: React.FC = () => {
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Arvind Kumar / अरविंद कुमार"
+                    placeholder={t('pledge.placeholder_fullname', 'e.g. Arvind Kumar') || 'e.g. Arvind Kumar'}
                     className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
                   />
                 </div>
@@ -591,7 +591,7 @@ export const TigerPledgeForm: React.FC = () => {
                 {/* City & State */}
                 <div>
                   <label htmlFor="pledge-location" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
-                    {t('pledge.label_location') || 'City & State / District'} <span className="text-rose-600">*</span>
+                    {t('pledge.label_location', 'Location') || 'Location'} <span className="text-rose-600">*</span>
                   </label>
                   <input
                     id="pledge-location"
@@ -599,7 +599,7 @@ export const TigerPledgeForm: React.FC = () => {
                     required
                     value={cityAndState}
                     onChange={(e) => setCityAndState(e.target.value)}
-                    placeholder="e.g. West Champaran, Bihar"
+                    placeholder={t('pledge.placeholder_location', 'e.g. West Champaran, Bihar') || 'e.g. West Champaran, Bihar'}
                     className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
                   />
                 </div>
@@ -608,14 +608,14 @@ export const TigerPledgeForm: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="pledge-country" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
-                      {t('pledge.label_country') || 'Country'}
+                      {t('pledge.label_country', 'Country') || 'Country'}
                     </label>
                     <input
                       id="pledge-country"
                       type="text"
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
-                      placeholder="India"
+                      placeholder={t('pledge.placeholder_country', 'India') || 'India'}
                       className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
                     />
                   </div>
@@ -623,7 +623,7 @@ export const TigerPledgeForm: React.FC = () => {
                   {/* Certificate Language */}
                   <div>
                     <label htmlFor="pledge-language" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
-                      {t('pledge.label_language') || 'Certificate Language'}
+                      {t('pledge.label_language', 'Language') || 'Language'}
                     </label>
                     <select
                       id="pledge-language"
@@ -631,9 +631,9 @@ export const TigerPledgeForm: React.FC = () => {
                       onChange={(e) => setCertLanguage(e.target.value as 'en' | 'hi' | 'ur')}
                       className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm bg-white"
                     >
-                      <option value="en">English (Official Standard)</option>
-                      <option value="hi">हिंदी (Hindi)</option>
-                      <option value="ur">اردو (Urdu)</option>
+                      <option value="en">{t('pledge.lang_en', 'English (Official Standard)') || 'English (Official Standard)'}</option>
+                      <option value="hi">{t('pledge.lang_hi', 'Hindi') || 'Hindi'}</option>
+                      <option value="ur">{t('pledge.lang_ur', 'Urdu') || 'Urdu'}</option>
                     </select>
                   </div>
                 </div>
@@ -641,14 +641,14 @@ export const TigerPledgeForm: React.FC = () => {
                 {/* Email Address (Optional) */}
                 <div>
                   <label htmlFor="pledge-email" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
-                    {t('pledge.label_email') || 'Email Address'} <span className="text-xs font-normal text-stone-500">(Optional - for personal copy)</span>
+                    {t('pledge.label_email', 'Email (Optional – for personal copy)') || 'Email (Optional – for personal copy)'}
                   </label>
                   <input
                     id="pledge-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. arvind@example.com"
+                    placeholder={t('pledge.placeholder_email', 'e.g. arvind@example.com') || 'e.g. arvind@example.com'}
                     className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
                   />
                 </div>
@@ -656,14 +656,14 @@ export const TigerPledgeForm: React.FC = () => {
                 {/* School / College / Organization (Optional) */}
                 <div>
                   <label htmlFor="pledge-org" className="block text-xs sm:text-sm font-bold text-stone-800 mb-1">
-                    {t('pledge.label_org') || 'School / College / Organization'} <span className="text-xs font-normal text-stone-500">(Optional)</span>
+                    {t('pledge.label_org', 'Organization (Optional)') || 'Organization (Optional)'}
                   </label>
                   <input
                     id="pledge-org"
                     type="text"
                     value={organization}
                     onChange={(e) => setOrganization(e.target.value)}
-                    placeholder="e.g. Bettiah Wildlife Club"
+                    placeholder={t('pledge.placeholder_org', 'e.g. Bettiah Wildlife Club') || 'e.g. Bettiah Wildlife Club'}
                     className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 text-stone-900 text-sm"
                   />
                 </div>
@@ -680,8 +680,8 @@ export const TigerPledgeForm: React.FC = () => {
                       className="w-5 h-5 mt-0.5 rounded border-amber-400 text-emerald-800 focus:ring-emerald-700 shrink-0 cursor-pointer"
                     />
                     <label htmlFor="pledge-agree-checkbox" className="text-xs sm:text-sm text-stone-800 font-semibold cursor-pointer leading-relaxed">
-                      {t('pledge.required_statement') ||
-                        'I voluntarily pledge to support tiger conservation, protect wildlife, respect forest laws, and encourage others to protect tigers.'}
+                      {t('pledge.required_statement', 'I voluntarily pledge to support tiger conservation, protect wildlife, respect forest laws, and contribute to the protection of tigers and their natural habitat.') ||
+                        'I voluntarily pledge to support tiger conservation, protect wildlife, respect forest laws, and contribute to the protection of tigers and their natural habitat.'}
                     </label>
                   </div>
                 </div>
@@ -702,12 +702,12 @@ export const TigerPledgeForm: React.FC = () => {
                     {isCertificateGenerating ? (
                       <>
                         <RefreshCw className="w-5 h-5 animate-spin" />
-                        <span>Generating Certificate...</span>
+                        <span>{t('pledge.btn_generating', 'Generating Certificate...') || 'Generating Certificate...'}</span>
                       </>
                     ) : (
                       <>
                         <Award className="w-5 h-5 text-amber-400" />
-                        <span>Generate Certificate</span>
+                        <span>{t('pledge.btn_generate', 'Generate Certificate') || 'Generate Certificate'}</span>
                       </>
                     )}
                   </button>

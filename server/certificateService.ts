@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { TigerPledgeCertificate, CertificateAdminSettings } from '../types';
+import { TigerPledgeCertificate, CertificateAdminSettings } from '../src/types';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const REGISTRY_FILE = path.join(DATA_DIR, 'certificates_registry.json');

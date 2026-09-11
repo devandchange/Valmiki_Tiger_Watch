@@ -1,4 +1,4 @@
-import { NewsArticle, NewsSourceCategory, NewsVerificationStatus } from '../types';
+import { NewsArticle, NewsSourceCategory, NewsVerificationStatus } from '../src/types';
 
 interface FeedConfig {
   name: string;

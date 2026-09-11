@@ -16,6 +16,8 @@ import { ChatbotWidget } from './components/ChatbotWidget';
 import { ConservationAlertBanner } from './components/ConservationAlertBanner';
 import { SpeciesSpotter } from './components/SpeciesSpotter';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { AppUpdateModal } from './components/AppUpdateModal';
 
 // Section Views
 import { HomeSection } from './components/sections/HomeSection';
@@ -44,7 +46,7 @@ import { WeatherSection } from './components/sections/WeatherSection';
 import { TigerPledgeForm } from './components/TigerPledgeForm';
 
 export default function App() {
-  const { activeTab, setActiveTab, openMobileNav } = useData();
+  const { activeTab, setActiveTab, openMobileNav, isUpdateModalOpen, closeUpdateModal } = useData();
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isInstallOpen, setIsInstallOpen] = useState(false);
 
@@ -154,6 +156,12 @@ export default function App() {
 
       {/* Grounded AI Assistant Floating Chatbot */}
       <ChatbotWidget />
+
+      {/* Offline Connectivity Status & Cached Data Indicator */}
+      <OfflineIndicator />
+
+      {/* App Version & Android APK Update Modal */}
+      <AppUpdateModal isOpen={isUpdateModalOpen} onClose={closeUpdateModal} />
     </div>
   );
 }

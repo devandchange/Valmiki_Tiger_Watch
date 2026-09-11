@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { WeatherAdminSettings } from '../../types';
-import { VTR_WEATHER_ZONES } from '../../server/weatherService';
+import { VTR_WEATHER_ZONES } from '../../data/weatherZones';
 
 interface WeatherAdminTabProps {
   showToast: (msg: string) => void;

@@ -81,7 +81,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (enDict && enDict[key]) {
       return enDict[key];
     }
-    return defaultText || key;
+    if (defaultText) {
+      return defaultText;
+    }
+    // Never expose raw translation dot-keys (e.g. 'pledge.label_fullname') in the UI
+    return '';
   };
 
   return (

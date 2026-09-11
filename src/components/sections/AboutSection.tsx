@@ -2,6 +2,7 @@ import React from 'react';
 import { useData } from '../../context/DataContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CreatorProfileCard } from '../CreatorProfileCard';
+import { APP_CONFIG, APP_VERSION } from '../../config/version';
 import { 
   ShieldCheck, 
   Heart, 
@@ -12,11 +13,14 @@ import {
   Eye, 
   Wifi,
   Globe,
-  ArrowRight
+  ArrowRight,
+  RefreshCw,
+  Smartphone,
+  ExternalLink
 } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
-  const { setActiveTab } = useData();
+  const { setActiveTab, openUpdateModal } = useData();
   const { t, language } = useLanguage();
 
   return (
@@ -155,6 +159,72 @@ export const AboutSection: React.FC = () => {
                 : 'Public access requires no sign-in or personal account creation. Administrative write capabilities are isolated behind secure administrative token controls.'}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* App Information & Software Updates */}
+      <div className="bg-[#FAF8F5] rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#0B3D2E] text-amber-400 flex items-center justify-center shadow-xs">
+              <Smartphone className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-bold text-stone-900">
+                {language === 'hi' ? 'ऐप जानकारी व सॉफ्टवेयर अपडेट' : language === 'ur' ? 'ایپ معلومات اور سافٹ ویئر اپ ڈیٹس' : 'App Information & Software Updates'}
+              </h3>
+              <p className="text-xs text-stone-500 font-mono">
+                {APP_CONFIG.appId} • {APP_CONFIG.githubRepo}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-mono font-bold border border-emerald-200">
+              v{APP_VERSION}
+            </span>
+            <span className="px-3 py-1 rounded-full bg-stone-200 text-stone-700 text-xs font-mono">
+              Build {APP_CONFIG.versionCode}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
+          <div className="bg-white p-3.5 rounded-2xl border border-stone-200">
+            <span className="text-stone-400 block text-[10px] uppercase tracking-wider">Installed Version</span>
+            <span className="text-stone-900 font-bold text-sm">v{APP_VERSION}</span>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-2xl border border-stone-200">
+            <span className="text-stone-400 block text-[10px] uppercase tracking-wider">Release Channel</span>
+            <span className="text-stone-900 font-bold text-sm truncate block">GitHub Official</span>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-2xl border border-stone-200">
+            <span className="text-stone-400 block text-[10px] uppercase tracking-wider">Offline Cache</span>
+            <span className="text-emerald-700 font-bold text-sm">Active & Synced</span>
+          </div>
+        </div>
+
+        <div className="pt-2 flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={openUpdateModal}
+            id="about-check-updates-btn"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0B3D2E] hover:bg-[#145A43] text-white font-bold text-xs shadow-xs transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 text-amber-400" />
+            <span>{t('app.check_updates', 'Check for Updates')}</span>
+          </button>
+
+          <a
+            href={APP_CONFIG.githubReleasesUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white hover:bg-stone-100 text-stone-800 border border-stone-200 text-xs font-semibold transition-colors"
+          >
+            <ExternalLink className="w-4 h-4 text-stone-500" />
+            <span>View Releases on GitHub</span>
+          </a>
         </div>
       </div>
     </div>

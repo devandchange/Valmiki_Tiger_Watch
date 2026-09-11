@@ -13,8 +13,10 @@ import {
   Lock, 
   Layers,
   HeartHandshake,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
+import { APP_VERSION } from '../config/version';
 
 interface NavbarProps {
   onOpenAdmin: () => void;
@@ -38,6 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
     closeMobileNav,
     openVolunteerModal,
     openSupporterModal,
+    openUpdateModal,
     weatherData
   } = useData();
 
@@ -267,6 +270,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
                   className="w-full text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#0B3D2E]/80 hover:bg-[#F5F1E6]"
                 >
                   {t('nav.contact', 'Contact & Hotlines')}
+                </button>
+                <div className="border-t border-[#0B3D2E]/10 my-1"></div>
+                <button
+                  onClick={openUpdateModal}
+                  id="nav-dropdown-check-updates-btn"
+                  className="w-full text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#0B3D2E]/80 hover:bg-[#F5F1E6] flex items-center justify-between group/update"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-600 group-hover/update:rotate-180 transition-transform duration-500" />
+                    <span>{t('app.check_updates', 'Check for Updates')}</span>
+                  </span>
+                  <span className="text-[9px] font-mono font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">
+                    v{APP_VERSION}
+                  </span>
                 </button>
               </div>
             </div>

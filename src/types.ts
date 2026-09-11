@@ -624,3 +624,59 @@ export interface CertificateAdminSettings {
   disclaimerText: { en: string; hi: string; ur: string };
   lastUpdated?: string;
 }
+
+// ==========================================
+// VTW ADMIN, GOOGLE AUTH & DRIVE STORAGE TYPES
+// ==========================================
+export interface AdminUser {
+  email?: string;
+  name?: string;
+  photoUrl?: string;
+  role: 'administrator';
+  isPrimaryOwner: boolean;
+}
+
+export interface AdminSession {
+  sessionToken: string;
+  admin: AdminUser;
+  expiresAt: number;
+}
+
+export interface AdminAuditLogEntry {
+  id: string;
+  adminEmail: string;
+  action: string;
+  recordType: 'auth' | 'volunteer' | 'supporter' | 'pledge' | 'certificate' | 'news' | 'sighting' | 'alert' | 'tiger' | 'settings' | 'drive' | 'sheets' | 'backup';
+  recordId?: string;
+  timestamp: string;
+  result: 'success' | 'failure' | 'warning';
+  details?: string;
+}
+
+export interface DriveFolderInfo {
+  name: string;
+  folderId: string;
+  path: string;
+}
+
+export interface DriveSyncStatus {
+  lastSyncTime: string | null;
+  status: 'idle' | 'connected' | 'syncing' | 'successful' | 'failed';
+  message?: string;
+  sheetsLastSyncTime?: string | null;
+  sheetsStatus?: 'idle' | 'connected' | 'syncing' | 'successful' | 'failed';
+  driveFolderId?: string;
+  spreadsheetIds?: Record<string, string>;
+  subfolders?: Record<string, string>;
+}
+
+export interface VTWAdminSettings {
+  officialCommunicationEmail: string;
+  driveRootFolderId?: string;
+  driveFolders?: Record<string, string>;
+  spreadsheetIds?: Record<string, string>;
+  lastDriveSync?: string;
+  lastSheetsSync?: string;
+  lastBackupDate?: string;
+  lastUpdated: string;
+}

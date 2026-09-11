@@ -21,8 +21,18 @@ import {
   VTRWeatherResponse,
   WeatherAdminSettings,
   TigerPledgeCertificate,
-  CertificateAdminSettings
+  CertificateAdminSettings,
+  AdminUser,
+  AdminAuditLogEntry,
+  DriveSyncStatus,
+  VTWAdminSettings
 } from '../types';
+import {
+  signInWithGoogleAdmin,
+  signOutAdmin,
+  getCachedAccessToken,
+  getCachedSessionToken
+} from '../lib/googleAuth';
 import {
   INITIAL_TIGERS,
   INITIAL_NEWS,
@@ -83,13 +93,24 @@ interface DataContextType {
   submitSighting: (sighting: any) => void;
   addSighting?: (sighting: any) => void;
 
-  // Admin Features
+  // Admin Features & Secure Google OAuth
   isAdmin: boolean;
   isAdminAuthenticated: boolean;
+  adminUser: AdminUser | null;
+  adminSessionToken: string | null;
+  loginWithGoogleAdmin: () => Promise<{ success: boolean; error?: string }>;
+  logoutAdmin: () => Promise<void>;
   adminLogin: (pass: string) => boolean;
   loginAdmin: (pass: string) => boolean;
   adminLogout: () => void;
-  logoutAdmin: () => void;
+  syncWithGoogleDrive: () => Promise<{ success: boolean; message: string; subfolders?: Record<string, string> }>;
+  syncWithGoogleSheets: () => Promise<{ success: boolean; message: string; syncedSheets?: string[] }>;
+  backupVTWDataToDrive: () => Promise<{ success: boolean; message: string; fileName?: string }>;
+  driveSyncStatus: DriveSyncStatus;
+  adminAuditLogs: AdminAuditLogEntry[];
+  refreshAuditLogs: () => Promise<void>;
+  vtwAdminSettings: VTWAdminSettings | null;
+  updateVTWAdminSettings: (settings: Partial<VTWAdminSettings>) => Promise<void>;
 
   // Tiger Operations & Verification
   addTiger: (tiger: Omit<TigerProfile, 'id'>) => void;
@@ -188,6 +209,9 @@ interface DataContextType {
   openChatbot: () => void;
   closeChatbot: () => void;
   toggleChatbot: () => void;
+  isUpdateModalOpen: boolean;
+  openUpdateModal: () => void;
+  closeUpdateModal: () => void;
 
   // VTR Real-time Weather
   weatherData: VTRWeatherResponse | null;
@@ -238,7 +262,6 @@ const STORAGE_KEYS = {
   RESEARCH: 'vtw_research_v5_genuine',
   AUTO_UPDATE: 'vtw_auto_update_v2',
   LAST_NEWS_UPDATE: 'vtw_last_news_update_v2',
-  ADMIN: 'vtw_admin_session_v1',
   VOLUNTEERS: 'vtw_volunteers_v1',
   SUPPORTERS: 'vtw_supporters_v1',
   INTEGRATION_SETTINGS: 'vtw_integration_settings_v1',
@@ -251,8 +274,6 @@ const STORAGE_KEYS = {
   CERT_SEQUENCE: 'vtw_cert_seq_v2',
   LAST_ISSUED_CERT: 'vtw_last_issued_cert_v2'
 };
-
-const ADMIN_PASSWORD_HASH = 'vtw2026admin'; // Standard access key for demonstration
 
 export const DEFAULT_CERTIFICATE_SETTINGS: CertificateAdminSettings = {
   numberingPrefix: 'VTW',
@@ -307,7 +328,7 @@ export const DEFAULT_INTEGRATION_SETTINGS: AppIntegrationSettings = {
   volunteerGoogleFormUrl: '',
   supporterGoogleFormUrl: '',
   googleDriveFolderUrl: '',
-  contactEmail: 'contact@valmikitigerwatch.org',
+  contactEmail: '',
   isVolunteerRegistrationEnabled: true,
   isSupporterRegistrationEnabled: true,
   submissionMode: 'in_app_with_sync',
@@ -410,6 +431,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState<boolean>(false);
   const [isSupporterModalOpen, setIsSupporterModalOpen] = useState<boolean>(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState<boolean>(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
 
   const openVolunteerModal = () => setIsVolunteerModalOpen(true);
   const closeVolunteerModal = () => setIsVolunteerModalOpen(false);
@@ -418,6 +440,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const openChatbot = () => setIsChatbotOpen(true);
   const closeChatbot = () => setIsChatbotOpen(false);
   const toggleChatbot = () => setIsChatbotOpen((prev) => !prev);
+  const openUpdateModal = () => setIsUpdateModalOpen(true);
+  const closeUpdateModal = () => setIsUpdateModalOpen(false);
 
   const openMobileNav = () => setIsMobileNavOpen(true);
   const closeMobileNav = () => setIsMobileNavOpen(false);
@@ -437,13 +461,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [canInstallPwa, setCanInstallPwa] = useState<boolean>(false);
 
-  // Admin Session
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.ADMIN) === 'true';
-    } catch {
-      return false;
-    }
+  // Admin Session & Google Workspace Integration
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const [adminSessionToken, setAdminSessionToken] = useState<string | null>(null);
+  const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLogEntry[]>([]);
+  const [vtwAdminSettings, setVtwAdminSettings] = useState<VTWAdminSettings | null>(null);
+  const [driveSyncStatus, setDriveSyncStatus] = useState<DriveSyncStatus>({
+    lastSyncTime: null,
+    status: 'idle',
+    sheetsLastSyncTime: null,
+    sheetsStatus: 'idle'
   });
 
   // State with LocalStorage Caching
@@ -910,12 +938,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Register Service Worker
+    // Register Service Worker for offline field capability
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/service-worker.js', { scope: '/' })
         .then((reg) => {
-          console.log('[VTW PWA] Service worker registered with scope:', reg.scope);
+          console.log('[VTW PWA] Service worker active with scope:', reg.scope);
+          // Check for periodic updates when online
+          if (reg.update) {
+            reg.update().catch(() => {});
+          }
         })
         .catch((err) => {
           console.warn('[VTW PWA] Service worker registration error:', err);
@@ -954,7 +986,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // PWA Install Trigger
   const installPwa = async () => {
     if (!deferredPrompt) {
-      alert('PWA installation is already installed or not supported by this browser. You can also use "Add to Home Screen" from browser settings.');
+      console.log('[VTW PWA] PWA installation prompt unavailable or already installed.');
       return;
     }
     deferredPrompt.prompt();
@@ -975,23 +1007,246 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSightings(prev => [newSighting, ...prev]);
   };
 
-  // Admin Auth
-  const adminLogin = (pass: string): boolean => {
-    if (pass.trim() === ADMIN_PASSWORD_HASH) {
-      setIsAdmin(true);
-      try {
-        localStorage.setItem(STORAGE_KEYS.ADMIN, 'true');
-      } catch (e) {}
-      return true;
+  // Secure Google OAuth Admin Auth
+  const loginWithGoogleAdmin = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await signInWithGoogleAdmin();
+      if (result.success && result.admin && result.sessionToken) {
+        setIsAdmin(true);
+        setAdminUser(result.admin);
+        setAdminSessionToken(result.sessionToken);
+        setDriveSyncStatus(prev => ({ ...prev, status: 'connected' }));
+        refreshAuditLogs();
+        return { success: true };
+      }
+      return {
+        success: false,
+        error: result.error || 'Access denied. This account is not authorized to access the VTW Admin Console.'
+      };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Authentication error occurred.' };
     }
-    return false;
   };
 
-  const adminLogout = () => {
-    setIsAdmin(false);
+  const logoutAdmin = async () => {
     try {
-      localStorage.removeItem(STORAGE_KEYS.ADMIN);
-    } catch (e) {}
+      await signOutAdmin();
+    } catch {}
+    setIsAdmin(false);
+    setAdminUser(null);
+    setAdminSessionToken(null);
+    setDriveSyncStatus({
+      lastSyncTime: null,
+      status: 'idle',
+      sheetsLastSyncTime: null,
+      sheetsStatus: 'idle'
+    });
+  };
+
+  // Deprecated password login (strictly disabled)
+  const adminLogin = (_pass: string): boolean => {
+    return false;
+  };
+  const loginAdmin = adminLogin;
+  const adminLogout = logoutAdmin;
+
+  // Google Drive Synchronization
+  const syncWithGoogleDrive = async (): Promise<{ success: boolean; message: string; subfolders?: Record<string, string> }> => {
+    const accessToken = getCachedAccessToken();
+    const sessionToken = getCachedSessionToken();
+    if (!accessToken || !sessionToken) {
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        status: 'failed',
+        message: 'Google Drive synchronization failed. Please try again.'
+      }));
+      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+    }
+
+    setDriveSyncStatus(prev => ({ ...prev, status: 'syncing' }));
+    try {
+      const res = await fetch('/api/admin/drive/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken,
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ accessToken })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const timeStr = new Date().toLocaleString();
+        setDriveSyncStatus(prev => ({
+          ...prev,
+          status: 'successful',
+          lastSyncTime: timeStr,
+          driveFolderId: data.rootFolderId,
+          subfolders: data.subfolders,
+          message: data.message
+        }));
+        await refreshAuditLogs();
+        return { success: true, message: data.message, subfolders: data.subfolders };
+      } else {
+        setDriveSyncStatus(prev => ({
+          ...prev,
+          status: 'failed',
+          message: 'Google Drive synchronization failed. Please try again.'
+        }));
+        return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+      }
+    } catch (err: any) {
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        status: 'failed',
+        message: 'Google Drive synchronization failed. Please try again.'
+      }));
+      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+    }
+  };
+
+  // Google Sheets Synchronization
+  const syncWithGoogleSheets = async (): Promise<{ success: boolean; message: string; syncedSheets?: string[] }> => {
+    const accessToken = getCachedAccessToken();
+    const sessionToken = getCachedSessionToken();
+    if (!accessToken || !sessionToken) {
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        sheetsStatus: 'failed',
+        message: 'Google Drive synchronization failed. Please try again.'
+      }));
+      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+    }
+
+    setDriveSyncStatus(prev => ({ ...prev, sheetsStatus: 'syncing' }));
+    try {
+      const res = await fetch('/api/admin/sheets/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken,
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          accessToken,
+          news,
+          research,
+          conservation: alerts
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const timeStr = new Date().toLocaleString();
+        setDriveSyncStatus(prev => ({
+          ...prev,
+          sheetsStatus: 'successful',
+          sheetsLastSyncTime: timeStr,
+          message: data.message
+        }));
+        await refreshAuditLogs();
+        return { success: true, message: data.message, syncedSheets: data.syncedSheets };
+      } else {
+        setDriveSyncStatus(prev => ({
+          ...prev,
+          sheetsStatus: 'failed',
+          message: 'Google Drive synchronization failed. Please try again.'
+        }));
+        return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+      }
+    } catch (err: any) {
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        sheetsStatus: 'failed',
+        message: 'Google Drive synchronization failed. Please try again.'
+      }));
+      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+    }
+  };
+
+  // Backup VTW Data to Google Drive
+  const backupVTWDataToDrive = async (): Promise<{ success: boolean; message: string; fileName?: string }> => {
+    const accessToken = getCachedAccessToken();
+    const sessionToken = getCachedSessionToken();
+    if (!accessToken || !sessionToken) {
+      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+    }
+
+    try {
+      const res = await fetch('/api/admin/backup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken,
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          accessToken,
+          extraData: {
+            tigersCount: tigers.length,
+            newsCount: news.length,
+            sightingsCount: sightings.length,
+            alertsCount: alerts.length
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        await refreshAuditLogs();
+        return { success: true, message: data.message, fileName: data.fileName };
+      } else {
+        return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+      }
+    } catch (err: any) {
+      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
+    }
+  };
+
+  // Refresh Audit Logs
+  const refreshAuditLogs = async () => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return;
+    try {
+      const res = await fetch('/api/admin/audit-logs', {
+        headers: { 'x-vtw-admin-session': sessionToken }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.logs)) {
+          setAdminAuditLogs(data.logs);
+        }
+      }
+    } catch {}
+  };
+
+  // Update VTW Admin Settings
+  const updateVTWAdminSettings = async (settings: Partial<VTWAdminSettings>) => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return;
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken
+        },
+        body: JSON.stringify(settings)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.settings) {
+          setVtwAdminSettings(data.settings);
+          if (data.settings.officialCommunicationEmail) {
+            setIntegrationSettings(prev => ({
+              ...prev,
+              contactEmail: data.settings.officialCommunicationEmail
+            }));
+          }
+        }
+      }
+    } catch {}
   };
 
   // Admin Tiger CRUD & Verification
@@ -1890,10 +2145,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addSighting: submitSighting,
         isAdmin,
         isAdminAuthenticated: isAdmin,
+        adminUser,
+        adminSessionToken,
+        loginWithGoogleAdmin,
+        logoutAdmin,
         adminLogin,
         loginAdmin: adminLogin,
         adminLogout,
-        logoutAdmin: adminLogout,
+        syncWithGoogleDrive,
+        syncWithGoogleSheets,
+        backupVTWDataToDrive,
+        driveSyncStatus,
+        adminAuditLogs,
+        refreshAuditLogs,
+        vtwAdminSettings,
+        updateVTWAdminSettings,
         addTiger,
         updateTiger,
         deleteTiger,
@@ -1971,6 +2237,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openChatbot,
         closeChatbot,
         toggleChatbot,
+        isUpdateModalOpen,
+        openUpdateModal,
+        closeUpdateModal,
         // VTR Real-time Weather
         weatherData,
         isWeatherLoading,

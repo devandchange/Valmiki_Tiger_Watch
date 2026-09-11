@@ -1,0 +1,11 @@
+[
+  {
+    "id": "audit-1789135875258-9122f0b7",
+    "adminEmail": "unknown",
+    "action": "Admin login failed",
+    "recordType": "auth",
+    "timestamp": "2026-09-11T14:11:15.258Z",
+    "result": "failure",
+    "details": "Google token verification rejected by Google API"
+  }
+]
