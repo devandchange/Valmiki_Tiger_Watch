@@ -232,13 +232,13 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
       const result = await loginWithGoogleAdmin();
       if (!result.success) {
         setAuthErrorMessage(
-          result.error || 'Access denied. This account is not authorized to access the VTW Admin Console.'
+          result.error || 'Administrator authentication is temporarily unavailable.'
         );
       } else {
         showToast('Authenticated as Wildlife Data Administrator');
       }
     } catch {
-      setAuthErrorMessage('Access denied. This account is not authorized to access the VTW Admin Console.');
+      setAuthErrorMessage('Administrator authentication is temporarily unavailable.');
     } finally {
       setIsGoogleSigningIn(false);
     }
@@ -445,7 +445,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center space-x-2 mr-1 sm:mr-2">
                 {adminUser && (
                   <span className="text-[11px] font-mono text-emerald-300 hidden md:inline bg-black/40 px-2.5 py-1 rounded-lg border border-emerald-800/80">
-                    {adminUser.name || 'Authorized Administrator'}
+                    Administrator
                   </span>
                 )}
                 <button

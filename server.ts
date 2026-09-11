@@ -311,7 +311,7 @@ async function startServer() {
       if (!authResult.authorized || !authResult.session) {
         res.status(403).json({
           success: false,
-          error: authResult.error || 'This Google account is not authorized to access the VTW Admin Console.'
+          error: 'Administrator authentication is temporarily unavailable.'
         });
         return;
       }
@@ -326,7 +326,7 @@ async function startServer() {
       console.error('Error in /api/admin/login:', error);
       res.status(500).json({
         success: false,
-        error: 'Authentication verification service error.'
+        error: 'Administrator authentication is temporarily unavailable.'
       });
     }
   });
@@ -642,7 +642,7 @@ async function startServer() {
       if (!accessToken) {
         res.status(400).json({
           success: false,
-          error: 'Google OAuth access token is required for Drive synchronization.'
+          error: 'Cloud synchronization is currently unavailable.'
         });
         return;
       }
@@ -662,8 +662,7 @@ async function startServer() {
       console.error('Google Drive synchronization error:', err);
       res.status(500).json({
         success: false,
-        error: 'Google Drive synchronization failed. Please try again.',
-        details: err?.message
+        error: 'Cloud synchronization is currently unavailable.'
       });
     }
   });
@@ -675,7 +674,7 @@ async function startServer() {
       if (!accessToken) {
         res.status(400).json({
           success: false,
-          error: 'Google OAuth access token is required for Google Sheets synchronization.'
+          error: 'Cloud synchronization is currently unavailable.'
         });
         return;
       }
@@ -696,8 +695,7 @@ async function startServer() {
       console.error('Google Sheets synchronization error:', err);
       res.status(500).json({
         success: false,
-        error: 'Google Drive synchronization failed. Please try again.',
-        details: err?.message
+        error: 'Cloud synchronization is currently unavailable.'
       });
     }
   });
@@ -709,7 +707,7 @@ async function startServer() {
       if (!accessToken) {
         res.status(400).json({
           success: false,
-          error: 'Google OAuth access token is required to store backup in Google Drive.'
+          error: 'Cloud synchronization is currently unavailable.'
         });
         return;
       }
@@ -727,8 +725,7 @@ async function startServer() {
       console.error('Backup error:', err);
       res.status(500).json({
         success: false,
-        error: 'Google Drive synchronization failed. Please try again.',
-        details: err?.message
+        error: 'Cloud synchronization is currently unavailable.'
       });
     }
   });

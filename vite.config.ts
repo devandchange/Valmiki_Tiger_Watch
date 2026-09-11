@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
+    base: './',
     plugins: [
       react(),
       tailwindcss(),
@@ -24,36 +25,36 @@ export default defineConfig(() => {
           'IMG-20260907-WA0005.jpg'
         ],
         manifest: {
-          id: '/',
+          id: './',
           name: 'Valmiki Tiger Watch',
           short_name: 'Tiger Watch',
           description: 'An independent conservation and awareness platform dedicated to Valmiki Tiger Reserve, wildlife protection, biodiversity and responsible coexistence.',
           theme_color: '#0B3D2E',
           background_color: '#0B3D2E',
           display: 'standalone',
-          start_url: '/',
-          scope: '/',
+          start_url: './',
+          scope: './',
           icons: [
             {
-              src: '/icons/icon-192.png',
+              src: 'icons/icon-192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icons/icon-512.png',
+              src: 'icons/icon-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icons/icon-1024.png',
+              src: 'icons/icon-1024.png',
               sizes: '1024x1024',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icons/maskable-512.png',
+              src: 'icons/maskable-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',

@@ -33,9 +33,60 @@ export const ChatbotWidget: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [aiStatus, setAiStatus] = useState<{ isConfigured: boolean; modelName: string; provider: string } | null>(null);
+  const [navHeight, setNavHeight] = useState<number>(60);
+  const [isMobileScreen, setIsMobileScreen] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamically calculate bottom navigation height + safe area insets for mobile
+  useEffect(() => {
+    const updateDimensions = () => {
+      const isMobile = window.innerWidth < 1024;
+      setIsMobileScreen(isMobile);
+      if (isMobile) {
+        const navEl = document.getElementById('mobile-bottom-dock-nav');
+        if (navEl) {
+          const rect = navEl.getBoundingClientRect();
+          setNavHeight(rect.height > 0 ? Math.round(rect.height) : 62);
+        } else {
+          setNavHeight(62);
+        }
+      } else {
+        setNavHeight(0);
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    window.addEventListener('orientationchange', updateDimensions);
+
+    const navEl = document.getElementById('mobile-bottom-dock-nav');
+    let observer: ResizeObserver | null = null;
+    if (navEl && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => updateDimensions());
+      observer.observe(navEl);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      window.removeEventListener('orientationchange', updateDimensions);
+      observer?.disconnect();
+    };
+  }, []);
+
+  // Ensure Android virtual keyboard doesn't hide input
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const viewport = window.visualViewport;
+    const handleViewportResize = () => {
+      if (isChatbotOpen) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+    viewport.addEventListener('resize', handleViewportResize);
+    return () => viewport.removeEventListener('resize', handleViewportResize);
+  }, [isChatbotOpen]);
 
   // Initialize welcome message
   useEffect(() => {
@@ -64,7 +115,7 @@ export const ChatbotWidget: React.FC = () => {
         setAiStatus({
           isConfigured: false,
           modelName: 'gemini-3.8-flash',
-          provider: 'Verified VTR Knowledge Engine'
+          provider: 'VTW AI Service'
         });
       });
   }, []);
@@ -139,7 +190,7 @@ export const ChatbotWidget: React.FC = () => {
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         sender: 'assistant',
-        text: 'I could not connect to the assistant service right now. Please check your network connection or try again in a few moments.',
+        text: 'VTW AI is temporarily unavailable. Please try again later.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isError: true
       };
@@ -183,13 +234,19 @@ export const ChatbotWidget: React.FC = () => {
 
   return (
     <>
-      {/* Floating Trigger Button (Always visible on all screens when closed) */}
+      {/* Floating Trigger Button (Position calculated strictly above bottom navigation) */}
       {!isChatbotOpen && (
         <button
           id="open-vtw-chatbot-btn"
           onClick={openChatbot}
           aria-label="Open Valmiki Tiger Watch AI Assistant"
-          className="fixed bottom-6 right-6 z-40 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black shadow-2xl flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95 border border-amber-300/40"
+          style={{
+            bottom: isMobileScreen
+              ? `calc(${navHeight}px + env(safe-area-inset-bottom, 0px) + 14px)`
+              : '24px',
+            right: isMobileScreen ? '14px' : '24px'
+          }}
+          className="fixed z-40 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black shadow-2xl flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95 border border-amber-300/40 select-none cursor-pointer"
         >
           <div className="relative">
             <MessageSquare className="w-6 h-6 fill-black/20" />
@@ -202,14 +259,31 @@ export const ChatbotWidget: React.FC = () => {
         </button>
       )}
 
-      {/* Chat Window / Drawer */}
+      {/* Chat Window / Drawer (Positioned above bottom navigation; bottom menu remains accessible) */}
       {isChatbotOpen && (
         <div
           id="vtw-chatbot-window"
-          className={`fixed z-50 flex flex-col bg-[#051C14] border border-emerald-700/80 shadow-2xl overflow-hidden transition-all duration-200 ${
+          style={
             isExpanded
-              ? 'inset-2 sm:inset-6 sm:rounded-2xl'
-              : 'bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-32px)] sm:w-[440px] h-[600px] max-h-[85vh] rounded-2xl'
+              ? undefined
+              : {
+                  bottom: isMobileScreen
+                    ? `calc(${navHeight}px + env(safe-area-inset-bottom, 0px) + 8px)`
+                    : '24px',
+                  right: isMobileScreen ? '8px' : '24px',
+                  left: isMobileScreen ? '8px' : 'auto',
+                  width: isMobileScreen ? 'calc(100vw - 16px)' : '440px',
+                  maxWidth: isMobileScreen ? 'calc(100vw - 16px)' : '440px',
+                  height: isMobileScreen
+                    ? `min(540px, calc(100dvh - ${navHeight}px - env(safe-area-inset-bottom, 0px) - 28px))`
+                    : '600px',
+                  maxHeight: isMobileScreen
+                    ? `calc(100dvh - ${navHeight}px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) - 20px)`
+                    : '85vh'
+                }
+          }
+          className={`fixed z-50 flex flex-col bg-[#051C14] border border-emerald-700/80 shadow-2xl overflow-hidden transition-all duration-200 rounded-2xl ${
+            isExpanded ? 'inset-2 sm:inset-6' : ''
           }`}
         >
           {/* Header */}
@@ -227,10 +301,10 @@ export const ChatbotWidget: React.FC = () => {
                     className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
                       aiStatus?.isConfigured
                         ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
-                        : 'bg-amber-950/60 text-amber-300 border-amber-800/60'
+                        : 'bg-emerald-950/70 text-emerald-300/90 border-emerald-800/70'
                     }`}
                   >
-                    {aiStatus?.isConfigured ? 'Gemini 3.8 Flash' : 'Verified Knowledge'}
+                    {aiStatus?.isConfigured ? 'Gemini 3.8 Flash' : 'VTW AI Service'}
                   </span>
                 </div>
                 <p className="text-[10px] font-mono text-emerald-300/70">
@@ -265,8 +339,8 @@ export const ChatbotWidget: React.FC = () => {
             </div>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
+          {/* Messages Area (min-h-0 allows shrinking when keyboard opens) */}
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-3.5 text-xs">
             {messages.map((msg) => {
               const isUser = msg.sender === 'user';
               return (

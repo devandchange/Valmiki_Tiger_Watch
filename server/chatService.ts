@@ -261,40 +261,20 @@ export async function processChatMessage(
         suggestedActions: actions.length > 0 ? actions : undefined
       };
     } catch (error: any) {
-      console.warn('Gemini API call failed, falling back to Verified Knowledge Base:', error?.message);
-    }
-  }
-
-  // Grounded Knowledge Base Fallback
-  for (const entry of VERIFIED_KNOWLEDGE_BASE) {
-    const match = entry.keywords.some((kw) => queryLower.includes(kw));
-    if (match) {
+      console.warn('Gemini API call failed or unavailable:', error?.message);
       return {
-        reply: entry.reply,
-        sourceAttribution: entry.source,
-        modelUsed: 'Verified VTR Knowledge Engine (Grounding Ready)',
-        isAiLive: false,
-        suggestedActions: entry.suggestedActions
+        reply: 'VTW AI is temporarily unavailable. Please try again later.',
+        modelUsed: 'VTW AI Service',
+        isAiLive: false
       };
     }
   }
 
-  // Default respectful response when specific topic is not found
+  // If AI backend is not configured or requires billing, do not fabricate AI responses
   return {
-    reply: `I could not find verified official records specifically regarding "${userQuery}" in our current Valmiki Tiger Reserve database.
-
-To ensure strict conservation accuracy without speculation:
-• You may explore our verified sections: Tigers of VTR (54 individuals), Wildlife & Co-predators, Travel & Safaris, or Research Papers.
-• For immediate field inquiries or wildlife distress reports, please contact the VTR Field Directorate or Bihar Forest Dept Helpline at 1926.
-• You can also join as a Volunteer or Supporter through our registration forms.`,
-    sourceAttribution: 'Valmiki Tiger Watch Verified Registry',
-    modelUsed: 'Verified VTR Knowledge Engine',
-    isAiLive: false,
-    suggestedActions: [
-      { label: 'Explore Tigers of VTR', tab: 'tigers', actionType: 'navigate' },
-      { label: 'Become a Volunteer', actionType: 'open_volunteer' },
-      { label: 'Become a Supporter', actionType: 'open_supporter' }
-    ]
+    reply: 'VTW AI is temporarily unavailable. Please try again later.',
+    modelUsed: 'VTW AI Service',
+    isAiLive: false
   };
 }
 
@@ -304,6 +284,6 @@ export function getAiBackendStatus(): { isConfigured: boolean; modelName: string
   return {
     isConfigured,
     modelName: 'gemini-3.8-flash',
-    provider: isConfigured ? 'Google Gemini API (@google/genai)' : 'Verified VTR Knowledge Engine (Awaiting API Key in Settings)'
+    provider: isConfigured ? 'Google Gemini AI' : 'VTW AI Service'
   };
 }

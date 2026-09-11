@@ -270,7 +270,7 @@ export const GoogleDriveStorageTab: React.FC<GoogleDriveStorageTabProps> = ({ sh
           <div className="p-3 bg-red-950/60 border border-red-700/80 rounded-xl text-xs text-red-200 flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold">Google Drive synchronization failed. Please try again.</p>
+              <p className="font-bold">Cloud synchronization is currently unavailable.</p>
               {driveSyncStatus.message && (
                 <p className="text-[11px] text-red-300/80 mt-0.5 font-mono">{driveSyncStatus.message}</p>
               )}
@@ -536,7 +536,7 @@ export const GoogleDriveStorageTab: React.FC<GoogleDriveStorageTabProps> = ({ sh
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
                     <td className="p-2.5 whitespace-nowrap text-amber-300 font-bold">
-                      {log.adminEmail}
+                      {log.adminEmail === 'System Security' ? 'System Security' : 'Administrator'}
                     </td>
                     <td className="p-2.5 whitespace-nowrap font-bold text-white">
                       {log.action}
