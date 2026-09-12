@@ -822,7 +822,7 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
                       {pledgeTickerEntries.map((entry) => (
                         <tr key={entry.id} className="hover:bg-stone-50/80 transition-colors">
                           <td className="px-4 py-3 font-semibold text-stone-900">
-                            {entry.fullName}
+                            {entry.displayName}
                           </td>
                           <td className="px-4 py-3 text-stone-600">
                             {entry.cityAndState}
@@ -868,7 +868,7 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (confirm(`Permanently remove ticker entry for "${entry.fullName}"?`)) {
+                                  if (confirm(`Permanently remove ticker entry for "${entry.displayName}"?`)) {
                                     deletePledgeTickerEntry(entry.id);
                                     showToast('Pledge ticker entry deleted');
                                   }

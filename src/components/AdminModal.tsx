@@ -5,6 +5,7 @@ import { VolunteersSupportersTab } from './admin/VolunteersSupportersTab';
 import { IntegrationsAiTab } from './admin/IntegrationsAiTab';
 import { WeatherAdminTab } from './admin/WeatherAdminTab';
 import { CertificatesAdminTab } from './admin/CertificatesAdminTab';
+import { ProtectorsAdminTab } from './admin/ProtectorsAdminTab';
 import { 
   Lock, 
   Unlock, 
@@ -102,6 +103,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     volunteerSubmissions = [],
     supporterSubmissions = [],
     certificates = [],
+    grassrootsProtectors = [],
     exportDataBackup,
     importDataBackup,
     resetToDefaults,
@@ -111,7 +113,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
 
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'volunteers' | 'integrations' | 'weather' | 'certificates' | 'system'>('tigers');
+  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'volunteers' | 'integrations' | 'weather' | 'certificates' | 'protectors' | 'system'>('tigers');
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'pending' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -584,6 +586,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                 { id: 'integrations', label: `🔗 Forms & Integrations` },
                 { id: 'weather', label: `⛅ Weather Config` },
                 { id: 'certificates', label: `📜 Tiger Pledge Certs (${certificates.length})` },
+                { id: 'protectors', label: `🛡️ Protectors (${grassrootsProtectors.length})` },
                 { id: 'alerts', label: `⚠️ Advisories (${alerts.length})` },
                 { id: 'locations', label: `📍 Map & Gates (${mapLocations.length})` },
                 { id: 'stats', label: `📊 Official Census Stats (${verifiedStats.length})` },
@@ -1862,6 +1865,13 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
               {/* ============================================================ */}
               {activeTab === 'certificates' && (
                 <CertificatesAdminTab showToast={showToast} />
+              )}
+
+              {/* ============================================================ */}
+              {/* TAB: GRASSROOTS PROTECTORS MANAGEMENT */}
+              {/* ============================================================ */}
+              {activeTab === 'protectors' && (
+                <ProtectorsAdminTab showToast={showToast} />
               )}
 
               {/* ============================================================ */}

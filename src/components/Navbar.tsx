@@ -195,10 +195,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
               />
             </div>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight text-[#0B3D2E] leading-tight uppercase font-sans truncate sm:whitespace-normal">
+              <h1 className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold tracking-tight text-[#0B3D2E] leading-tight uppercase font-sans truncate">
                 {t('app.title', 'Valmiki Tiger Watch')}
               </h1>
-              <p className="text-[9px] sm:text-[10px] font-semibold tracking-wider sm:tracking-[0.2em] uppercase text-[#F27D26] mt-0.5 font-mono truncate">
+              <p className="text-[9px] sm:text-[10px] font-semibold tracking-wider sm:tracking-[0.15em] uppercase text-[#F27D26] mt-0.5 font-mono truncate">
                 {t('app.tagline', 'Watch • Protect • Conserve')}
               </p>
             </div>
@@ -319,17 +319,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onOpenInstallGuide,
               <button
                 onClick={installPwa}
                 id="pwa-install-header-btn"
-                className="bg-[#0B3D2E] hover:bg-[#07271D] text-white px-4 sm:px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-1.5"
+                className="bg-[#0B3D2E] hover:bg-[#07271D] text-white px-3 sm:px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-1.5"
                 title="Install Valmiki Tiger Watch"
               >
                 <Download className="w-3.5 h-3.5 text-[#F27D26]" />
-                <span className="hidden xs:inline">{t('app.install', 'Install App')}</span>
+                <span className="hidden sm:inline">{t('app.install', 'Install App')}</span>
               </button>
             ) : (
               <button
                 onClick={handleOpenInstall}
                 className="bg-[#0B3D2E] hover:bg-[#07271D] text-white px-3 sm:px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all hidden sm:flex items-center gap-1.5"
-                title="PWA App Info"
+                title="Install Application"
               >
                 <Download className="w-3.5 h-3.5 text-[#F27D26]" />
                 <span>{t('app.install', 'Install App')}</span>

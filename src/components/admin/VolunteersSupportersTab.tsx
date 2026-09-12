@@ -54,12 +54,12 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
     if (statusFilter !== 'all' && v.status !== statusFilter) return false;
     if (!q) return true;
     return (
-      v.fullName.toLowerCase().includes(q) ||
-      v.email.toLowerCase().includes(q) ||
-      v.mobile.includes(q) ||
-      v.cityDistrict.toLowerCase().includes(q) ||
-      (v.relevantSkills && v.relevantSkills.toLowerCase().includes(q)) ||
-      v.areasOfInterest.some((a) => a.toLowerCase().includes(q))
+      String(v.fullName ?? '').toLowerCase().includes(q) ||
+      String(v.email ?? '').toLowerCase().includes(q) ||
+      String(v.mobile ?? '').includes(q) ||
+      String(v.cityDistrict ?? '').toLowerCase().includes(q) ||
+      (v.relevantSkills && String(v.relevantSkills).toLowerCase().includes(q)) ||
+      (Array.isArray(v.areasOfInterest) && v.areasOfInterest.some((a) => String(a ?? '').toLowerCase().includes(q)))
     );
   });
 
@@ -68,12 +68,12 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
     if (statusFilter !== 'all' && s.status !== statusFilter) return false;
     if (!q) return true;
     return (
-      s.fullName.toLowerCase().includes(q) ||
-      s.email.toLowerCase().includes(q) ||
-      s.mobile.includes(q) ||
-      s.cityDistrict.toLowerCase().includes(q) ||
-      (s.messageComments && s.messageComments.toLowerCase().includes(q)) ||
-      s.supportOptions.some((o) => o.toLowerCase().includes(q))
+      String(s.fullName ?? '').toLowerCase().includes(q) ||
+      String(s.email ?? '').toLowerCase().includes(q) ||
+      String(s.mobile ?? '').includes(q) ||
+      String(s.cityDistrict ?? '').toLowerCase().includes(q) ||
+      (s.messageComments && String(s.messageComments).toLowerCase().includes(q)) ||
+      (Array.isArray(s.supportOptions) && s.supportOptions.some((o) => String(o ?? '').toLowerCase().includes(q)))
     );
   });
 
@@ -82,12 +82,11 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
     if (statusFilter !== 'all' && f.status !== statusFilter) return false;
     if (!q) return true;
     return (
-      f.name.toLowerCase().includes(q) ||
-      f.email.toLowerCase().includes(q) ||
-      (f.phone && f.phone.includes(q)) ||
-      f.subject.toLowerCase().includes(q) ||
-      f.message.toLowerCase().includes(q) ||
-      f.type.toLowerCase().includes(q)
+      String(f.name ?? '').toLowerCase().includes(q) ||
+      String(f.email ?? '').toLowerCase().includes(q) ||
+      String(f.category ?? '').toLowerCase().includes(q) ||
+      String(f.message ?? '').toLowerCase().includes(q) ||
+      String(f.deviceInfo ?? '').toLowerCase().includes(q)
     );
   });
 
@@ -144,20 +143,20 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
     if (subTypeFilter !== 'volunteers' && subTypeFilter !== 'supporters') {
       feedbackSubmissions.forEach((f) => {
         rows.push([
-          `Feedback (${f.type})`,
+          `Feedback (${f.category})`,
           f.id,
           f.submittedAt,
           f.status,
-          `"${f.name.replace(/"/g, '""')}"`,
-          f.email,
-          f.phone || '',
+          `"${String(f.name ?? 'Anonymous').replace(/"/g, '""')}"`,
+          f.email || 'N/A',
+          '',
           '',
           '',
           'India',
           'en',
-          f.type,
-          f.subject,
-          `"${f.message.replace(/"/g, '""')}"`,
+          f.category,
+          f.deviceInfo || '',
+          `"${String(f.message ?? '').replace(/"/g, '""')}"`,
           'N/A'
         ]);
       });
@@ -551,7 +550,7 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h5 className="font-bold text-sm text-white">{fb.name}</h5>
+                          <h5 className="font-bold text-sm text-white">{fb.name || 'Anonymous Citizen'}</h5>
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-mono capitalize ${
                               fb.status === 'resolved'
@@ -567,12 +566,14 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
                           </span>
                         </div>
                         <div className="text-[11px] text-emerald-300 font-mono mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="flex items-center gap-1">
-                            <Mail className="w-3 h-3 text-amber-400" /> {fb.email}
-                          </span>
-                          {fb.phone && (
+                          {fb.email && (
                             <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3 text-emerald-400" /> {fb.phone}
+                              <Mail className="w-3 h-3 text-amber-400" /> {fb.email}
+                            </span>
+                          )}
+                          {fb.deviceInfo && (
+                            <span className="text-[10px] text-stone-400 font-mono">
+                              Device: {fb.deviceInfo}
                             </span>
                           )}
                         </div>
@@ -580,9 +581,10 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
 
                       <button
                         onClick={() => {
-                          if (confirm(`Delete feedback message from ${fb.name}?`)) {
+                          const citizenName = fb.name || 'this citizen';
+                          if (confirm(`Delete feedback message from ${citizenName}?`)) {
                             deleteFeedback(fb.id);
-                            showToast(`Feedback from ${fb.name} deleted.`);
+                            showToast(`Feedback deleted.`);
                           }
                         }}
                         className="p-1.5 text-emerald-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors"
@@ -592,14 +594,11 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
                       </button>
                     </div>
 
-                    {/* Subject & Category badge */}
+                    {/* Category badge */}
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 bg-blue-950 text-blue-200 border border-blue-800 rounded-md text-[10px] uppercase font-mono">
-                          {fb.type.replace('_', ' ')}
-                        </span>
-                        <span className="font-semibold text-xs text-white">
-                          {fb.subject}
+                          {fb.category}
                         </span>
                       </div>
                     </div>

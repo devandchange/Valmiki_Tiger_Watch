@@ -33,8 +33,12 @@ export const ChatbotWidget: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [aiStatus, setAiStatus] = useState<{ isConfigured: boolean; modelName: string; provider: string } | null>(null);
-  const [navHeight, setNavHeight] = useState<number>(60);
-  const [isMobileScreen, setIsMobileScreen] = useState<boolean>(false);
+  const [isMobileScreen, setIsMobileScreen] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 1024 : false;
+  });
+  const [navHeight, setNavHeight] = useState<number>(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 1024 ? 64 : 0;
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,9 +52,9 @@ export const ChatbotWidget: React.FC = () => {
         const navEl = document.getElementById('mobile-bottom-dock-nav');
         if (navEl) {
           const rect = navEl.getBoundingClientRect();
-          setNavHeight(rect.height > 0 ? Math.round(rect.height) : 62);
+          setNavHeight(rect.height > 0 ? Math.max(Math.round(rect.height), 60) : 64);
         } else {
-          setNavHeight(62);
+          setNavHeight(64);
         }
       } else {
         setNavHeight(0);
@@ -242,7 +246,7 @@ export const ChatbotWidget: React.FC = () => {
           aria-label="Open Valmiki Tiger Watch AI Assistant"
           style={{
             bottom: isMobileScreen
-              ? `calc(${navHeight}px + env(safe-area-inset-bottom, 0px) + 14px)`
+              ? `calc(${Math.max(navHeight, 60)}px + env(safe-area-inset-bottom, 0px) + 16px)`
               : '24px',
             right: isMobileScreen ? '14px' : '24px'
           }}
@@ -268,22 +272,22 @@ export const ChatbotWidget: React.FC = () => {
               ? undefined
               : {
                   bottom: isMobileScreen
-                    ? `calc(${navHeight}px + env(safe-area-inset-bottom, 0px) + 8px)`
+                    ? `calc(${Math.max(navHeight, 60)}px + env(safe-area-inset-bottom, 0px) + 10px)`
                     : '24px',
                   right: isMobileScreen ? '8px' : '24px',
                   left: isMobileScreen ? '8px' : 'auto',
                   width: isMobileScreen ? 'calc(100vw - 16px)' : '440px',
                   maxWidth: isMobileScreen ? 'calc(100vw - 16px)' : '440px',
                   height: isMobileScreen
-                    ? `min(540px, calc(100dvh - ${navHeight}px - env(safe-area-inset-bottom, 0px) - 28px))`
+                    ? `min(540px, calc(100dvh - ${Math.max(navHeight, 60)}px - env(safe-area-inset-bottom, 0px) - 28px))`
                     : '600px',
                   maxHeight: isMobileScreen
-                    ? `calc(100dvh - ${navHeight}px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) - 20px)`
+                    ? `calc(100dvh - ${Math.max(navHeight, 60)}px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) - 20px)`
                     : '85vh'
                 }
           }
           className={`fixed z-50 flex flex-col bg-[#051C14] border border-emerald-700/80 shadow-2xl overflow-hidden transition-all duration-200 rounded-2xl ${
-            isExpanded ? 'inset-2 sm:inset-6' : ''
+            isExpanded ? 'inset-x-2 top-[calc(env(safe-area-inset-top,0px)+8px)] bottom-[calc(env(safe-area-inset-bottom,0px)+8px)] sm:inset-6' : ''
           }`}
         >
           {/* Header */}

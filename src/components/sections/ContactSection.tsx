@@ -68,8 +68,8 @@ export const ContactSection: React.FC = () => {
     setTimeout(() => {
       // Also log as feedback submission behind the scenes for admin traceability
       submitFeedback({
-        userName: name.trim(),
-        userEmail: email.trim(),
+        name: name.trim(),
+        email: email.trim(),
         category: 'Other',
         message: `[Inquiry: ${subject}] ${message.trim()}`
       });
@@ -98,8 +98,8 @@ export const ContactSection: React.FC = () => {
     setFeedbackStatus({ type: 'loading' });
     setTimeout(() => {
       const res = submitFeedback({
-        userName: feedbackName.trim() || undefined,
-        userEmail: feedbackEmail.trim() || undefined,
+        name: feedbackName.trim() || undefined,
+        email: feedbackEmail.trim() || undefined,
         category: feedbackCategory,
         message: feedbackMessage.trim()
       });

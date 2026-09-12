@@ -27,13 +27,16 @@ export const TigersSection: React.FC = () => {
     // Only show live items on public portal
     if (t.isLive === false) return false;
 
-    const matchesSearch = 
-      t.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.name && t.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      t.safeTerritory.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.markings.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q ||
+      String(t.code ?? '').toLowerCase().includes(q) ||
+      String(t.name ?? '').toLowerCase().includes(q) ||
+      String(t.safeTerritory ?? '').toLowerCase().includes(q) ||
+      String(t.markings ?? '').toLowerCase().includes(q) ||
+      String(t.approxAge ?? '').toLowerCase().includes(q) ||
+      String(t.status ?? '').toLowerCase().includes(q);
 
-    const matchesSex = filterSex === 'all' || t.sex.toLowerCase() === filterSex.toLowerCase();
+    const matchesSex = filterSex === 'all' || String(t.sex ?? '').toLowerCase() === filterSex.toLowerCase();
     const matchesVerif = filterVerification === 'all' || t.verification === filterVerification;
 
     return matchesSearch && matchesSex && matchesVerif;

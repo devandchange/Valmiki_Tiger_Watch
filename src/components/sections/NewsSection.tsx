@@ -308,14 +308,14 @@ export const NewsSection: React.FC = () => {
 
       // Search match
       const matchesSearch = !q || 
-        item.headline.toLowerCase().includes(q) ||
-        item.summary.toLowerCase().includes(q) ||
-        item.source.toLowerCase().includes(q) ||
-        (item.tags && item.tags.some(t => t.toLowerCase().includes(q)));
+        String(item.headline ?? '').toLowerCase().includes(q) ||
+        String(item.summary ?? '').toLowerCase().includes(q) ||
+        String(item.source ?? '').toLowerCase().includes(q) ||
+        (Array.isArray(item.tags) && item.tags.some(t => String(t ?? '').toLowerCase().includes(q)));
 
       // Topic Filter
-      const matchesTopic = selectedTopic === 'All Topics' || (item.tags && item.tags.some(t => {
-        const lowerT = t.toLowerCase();
+      const matchesTopic = selectedTopic === 'All Topics' || (Array.isArray(item.tags) && item.tags.some(t => {
+        const lowerT = String(t ?? '').toLowerCase();
         const lowerTopic = selectedTopic.toLowerCase();
         return lowerT.includes(lowerTopic) || lowerTopic.includes(lowerT);
       }));
@@ -327,7 +327,8 @@ export const NewsSection: React.FC = () => {
       } else if (selectedSourceType === 'media') {
         matchesSourceType = item.sourceCategory === 'Established Media';
       } else if (selectedSourceType === 'local') {
-        matchesSourceType = item.source.includes('Jagran') || item.source.includes('Hindustan') || item.source.includes('Prabhat') || item.source.includes('Bhaskar');
+        const srcStr = String(item.source ?? '');
+        matchesSourceType = srcStr.includes('Jagran') || srcStr.includes('Hindustan') || srcStr.includes('Prabhat') || srcStr.includes('Bhaskar');
       }
 
       // Language Filter

@@ -260,12 +260,12 @@ export const ResearchSection: React.FC = () => {
 
         const q = searchQuery.toLowerCase().trim();
         const matchesSearch = !q || 
-          r.title.toLowerCase().includes(q) ||
-          r.authors.toLowerCase().includes(q) ||
-          r.organization.toLowerCase().includes(q) ||
-          r.abstract.toLowerCase().includes(q) ||
-          (r.doi && r.doi.toLowerCase().includes(q)) ||
-          (r.tags && r.tags.some(tag => tag.toLowerCase().includes(q)));
+          String(r.title ?? '').toLowerCase().includes(q) ||
+          String(r.authors ?? '').toLowerCase().includes(q) ||
+          String(r.organization ?? '').toLowerCase().includes(q) ||
+          String(r.abstract ?? '').toLowerCase().includes(q) ||
+          (r.doi && String(r.doi).toLowerCase().includes(q)) ||
+          (Array.isArray(r.tags) && r.tags.some(tag => String(tag ?? '').toLowerCase().includes(q)));
 
         const matchesCat = selectedCategory === 'all' || r.category === selectedCategory;
         const matchesType = selectedType === 'all' || (r.publicationType || 'external') === selectedType;
