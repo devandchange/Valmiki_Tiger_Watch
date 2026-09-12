@@ -288,12 +288,11 @@ async function startServer() {
 
   // Admin Google Sign-In & Verification
   app.post('/api/admin/login', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     try {
-      const { accessToken, idToken } = req.body || {};
-      const token = idToken || accessToken;
-      const tokenType = idToken ? 'id_token' : 'access_token';
+      const { accessToken, idToken, email } = req.body || {};
 
-      if (!token) {
+      if (!accessToken && !idToken) {
         res.status(400).json({
           success: false,
           error: 'Google authentication credential is required.'
@@ -301,11 +300,16 @@ async function startServer() {
         return;
       }
 
-      const authResult = await authenticateAdminWithGoogle(token, tokenType);
+      const authResult = await authenticateAdminWithGoogle({
+        accessToken,
+        idToken,
+        email
+      });
+
       if (!authResult.authorized || !authResult.session) {
         res.status(403).json({
           success: false,
-          error: 'Administrator authentication is temporarily unavailable.'
+          error: authResult.error || 'Access denied. This account is not authorized to access the VTW Admin Console.'
         });
         return;
       }

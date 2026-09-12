@@ -71,7 +71,8 @@ export async function signInWithGoogleAdmin(): Promise<{
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         accessToken,
@@ -80,7 +81,31 @@ export async function signInWithGoogleAdmin(): Promise<{
       })
     });
 
-    const data = await res.json();
+    let data: any = null;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+    } else {
+      const text = await res.text().catch(() => '');
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = null;
+      }
+    }
+
+    if (!data) {
+      await fbSignOut(auth).catch(() => {});
+      clearCachedSession();
+      return {
+        success: false,
+        error: 'Unable to reach the administrator authentication server. Please check your network connection and try again.'
+      };
+    }
 
     if (!res.ok || !data.success) {
       // Clear client auth on rejection
@@ -101,13 +126,14 @@ export async function signInWithGoogleAdmin(): Promise<{
       sessionToken: data.sessionToken
     };
   } catch (err: any) {
+    await fbSignOut(auth).catch(() => {});
     clearCachedSession();
     let message = 'Google sign-in could not be completed. Please try again.';
     if (err?.code === 'auth/popup-closed-by-user') {
       message = 'Sign-in cancelled. Please click "Continue with Google" to authorize.';
     } else if (err?.code === 'auth/popup-blocked') {
       message = 'Popup was blocked by your browser. Please allow popups for Google Sign-In.';
-    } else if (err?.message) {
+    } else if (err?.message && !err.message.includes('<!DOCTYPE') && !err.message.includes('<html') && !err.message.includes('Unexpected token')) {
       message = err.message;
     }
     return {
@@ -153,8 +179,8 @@ export async function verifyCurrentAdminSession(): Promise<AdminUser | null> {
     });
 
     if (res.ok) {
-      const data = await res.json();
-      if (data.success && data.admin) {
+      const data = await res.json().catch(() => null);
+      if (data && data.success && data.admin) {
         cachedAdminUser = data.admin;
         return data.admin;
       }

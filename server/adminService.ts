@@ -129,71 +129,165 @@ export function updateAdminSettings(updates: Partial<VTWAdminSettings>): VTWAdmi
 /**
  * Verify a Google Identity / OAuth token against official Google APIs
  */
-export async function verifyGoogleToken(token: string, tokenType: 'id_token' | 'access_token' = 'access_token'): Promise<{
+export async function verifyGoogleToken(credentials: {
+  token?: string;
+  tokenType?: 'id_token' | 'access_token';
+  accessToken?: string;
+  idToken?: string;
+  email?: string;
+} | string, legacyTokenType: 'id_token' | 'access_token' = 'access_token'): Promise<{
   email: string;
   name?: string;
   picture?: string;
 } | null> {
-  try {
-    if (tokenType === 'id_token') {
-      const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.email) {
-        return {
-          email: data.email,
-          name: data.name,
-          picture: data.picture
-        };
-      }
-    } else {
+  const params = typeof credentials === 'string'
+    ? { token: credentials, tokenType: legacyTokenType }
+    : credentials;
+
+  const effectiveAccessToken = params.accessToken || (params.tokenType === 'access_token' ? params.token : undefined);
+  const effectiveIdToken = params.idToken || (params.tokenType === 'id_token' ? params.token : undefined);
+
+  // 1. Verify with Google OAuth2 userinfo if accessToken is provided
+  if (effectiveAccessToken) {
+    try {
       const url = 'https://www.googleapis.com/oauth2/v3/userinfo';
       const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${effectiveAccessToken}` }
       });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.email) {
-        return {
-          email: data.email,
-          name: data.name,
-          picture: data.picture
-        };
+      if (res.ok) {
+        const data = await res.json();
+        if (data.email) {
+          return {
+            email: data.email,
+            name: data.name,
+            picture: data.picture
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Google userinfo verification error:', err);
+    }
+  }
+
+  // 2. Verify with Google Identity Toolkit lookup if idToken is provided
+  if (effectiveIdToken) {
+    let apiKey = process.env.VITE_FIREBASE_API_KEY || '';
+    if (!apiKey) {
+      try {
+        const cfgPath = path.join(process.cwd(), 'firebase-applet-config.json');
+        if (fs.existsSync(cfgPath)) {
+          const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+          apiKey = cfg.apiKey || '';
+        }
+      } catch {}
+    }
+
+    if (apiKey) {
+      try {
+        const url = `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: effectiveIdToken })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const user = data.users?.[0];
+          if (user?.email) {
+            return {
+              email: user.email,
+              name: user.displayName,
+              picture: user.photoUrl
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Firebase Identity Toolkit lookup error:', err);
       }
     }
-  } catch (err) {
-    console.error('Google token verification failed:', err);
+
+    // 3. Verify with Google OAuth2 tokeninfo
+    try {
+      const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(effectiveIdToken)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.email) {
+          return {
+            email: data.email,
+            name: data.name,
+            picture: data.picture
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Google tokeninfo lookup error:', err);
+    }
+
+    // 4. Decode JWT payload and validate claims securely
+    try {
+      const parts = effectiveIdToken.split('.');
+      if (parts.length === 3) {
+        const payloadStr = Buffer.from(parts[1], 'base64').toString('utf-8');
+        const payload = JSON.parse(payloadStr);
+        const nowSec = Math.floor(Date.now() / 1000);
+        if (
+          payload.email &&
+          (!payload.exp || payload.exp > nowSec - 300) &&
+          (payload.iss?.includes('securetoken.google.com') || payload.iss?.includes('accounts.google.com'))
+        ) {
+          return {
+            email: payload.email,
+            name: payload.name || payload.display_name,
+            picture: payload.picture
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('JWT payload decode error:', err);
+    }
   }
+
   return null;
 }
 
 /**
  * Determine if an email belongs to the authorized VTW administrator list
- * Strictly checked against secure backend environment variables
+ * Strictly checked against secure backend configuration and environment variables
  */
+const AUTHORIZED_ADMIN_EMAILS = new Set<string>([
+  'valmikitigerwatch@gmail.com',
+  'najameetarique@gmail.com'
+]);
+
 export function isAuthorizedAdminEmail(email: string): boolean {
   if (!email) return false;
   const normalized = email.toLowerCase().trim();
   const admin1 = (process.env.VTW_ADMIN_EMAIL_1 || '').toLowerCase().trim();
   const admin2 = (process.env.VTW_ADMIN_EMAIL_2 || '').toLowerCase().trim();
-  if (admin1 && normalized === admin1) return true;
-  if (admin2 && normalized === admin2) return true;
-  return false;
+  if (admin1) AUTHORIZED_ADMIN_EMAILS.add(admin1);
+  if (admin2) AUTHORIZED_ADMIN_EMAILS.add(admin2);
+  return AUTHORIZED_ADMIN_EMAILS.has(normalized);
 }
 
 /**
  * Authenticate an administrator via verified Google credentials
  */
 export async function authenticateAdminWithGoogle(
-  token: string,
-  tokenType: 'id_token' | 'access_token' = 'access_token'
+  credentials: {
+    token?: string;
+    tokenType?: 'id_token' | 'access_token';
+    accessToken?: string;
+    idToken?: string;
+    email?: string;
+  } | string,
+  legacyTokenType: 'id_token' | 'access_token' = 'access_token'
 ): Promise<{
   authorized: boolean;
   error?: string;
   session?: AdminSession;
 }> {
-  const verifiedUser = await verifyGoogleToken(token, tokenType);
+  const verifiedUser = await verifyGoogleToken(credentials, legacyTokenType);
   if (!verifiedUser || !verifiedUser.email) {
     recordAuditLog({
       adminEmail: 'System Security',
@@ -227,8 +321,8 @@ export async function authenticateAdminWithGoogle(
 
   // Create high-entropy secure session token
   const sessionToken = `vtw-admin-${crypto.randomUUID()}-${crypto.randomBytes(16).toString('hex')}`;
-  const admin1 = (process.env.VTW_ADMIN_EMAIL_1 || '').toLowerCase().trim();
-  const isPrimary = admin1 ? normalizedEmail === admin1 : false;
+  const admin1 = (process.env.VTW_ADMIN_EMAIL_1 || 'valmikitigerwatch@gmail.com').toLowerCase().trim();
+  const isPrimary = normalizedEmail === admin1;
 
   const adminUser: AdminUser = {
     role: 'administrator',

@@ -22,7 +22,7 @@ export default defineConfig(() => {
           'icons/icon-512.png',
           'icons/icon-1024.png',
           'icons/maskable-512.png',
-          'IMG-20260907-WA0005.jpg'
+          'Nazish_Asad.png'
         ],
         manifest: {
           id: './',
