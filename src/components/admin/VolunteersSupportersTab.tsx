@@ -13,8 +13,8 @@ import {
   MapPin,
   ExternalLink,
   Edit3,
-  FileSpreadsheet,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { VolunteerSubmission, SupporterSubmission } from '../../types';
@@ -31,10 +31,13 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
     updateSupporterSubmissionStatus,
     deleteVolunteerSubmission,
     deleteSupporterSubmission,
-    integrationSettings
+    integrationSettings,
+    feedbackSubmissions = [],
+    updateFeedbackStatus,
+    deleteFeedback
   } = useData();
 
-  const [subTypeFilter, setSubTypeFilter] = useState<'all' | 'volunteers' | 'supporters'>('all');
+  const [subTypeFilter, setSubTypeFilter] = useState<'all' | 'volunteers' | 'supporters' | 'feedback'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'reviewed' | 'contacted' | 'approved' | 'acknowledged'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<{ type: 'volunteer' | 'supporter'; data: VolunteerSubmission | SupporterSubmission } | null>(null);
@@ -74,13 +77,27 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
     );
   });
 
-  // Export to CSV for Google Drive / Google Sheets
+  const filteredFeedback = feedbackSubmissions.filter((f) => {
+    if (subTypeFilter !== 'all' && subTypeFilter !== 'feedback') return false;
+    if (statusFilter !== 'all' && f.status !== statusFilter) return false;
+    if (!q) return true;
+    return (
+      f.name.toLowerCase().includes(q) ||
+      f.email.toLowerCase().includes(q) ||
+      (f.phone && f.phone.includes(q)) ||
+      f.subject.toLowerCase().includes(q) ||
+      f.message.toLowerCase().includes(q) ||
+      f.type.toLowerCase().includes(q)
+    );
+  });
+
+  // Export submissions to CSV file
   const handleExportCSV = () => {
     const rows = [
       ['Type', 'ID', 'Submitted At', 'Status', 'Full Name', 'Email', 'Mobile', 'District', 'State', 'Country', 'Language', 'Interests / Options', 'Availability / Notes', 'Why / Message', 'Synced to Form']
     ];
 
-    if (subTypeFilter !== 'supporters') {
+    if (subTypeFilter !== 'supporters' && subTypeFilter !== 'feedback') {
       volunteerSubmissions.forEach((v) => {
         rows.push([
           'Volunteer',
@@ -102,7 +119,7 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
       });
     }
 
-    if (subTypeFilter !== 'volunteers') {
+    if (subTypeFilter !== 'volunteers' && subTypeFilter !== 'feedback') {
       supporterSubmissions.forEach((s) => {
         rows.push([
           'Supporter',
@@ -124,6 +141,28 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
       });
     }
 
+    if (subTypeFilter !== 'volunteers' && subTypeFilter !== 'supporters') {
+      feedbackSubmissions.forEach((f) => {
+        rows.push([
+          `Feedback (${f.type})`,
+          f.id,
+          f.submittedAt,
+          f.status,
+          `"${f.name.replace(/"/g, '""')}"`,
+          f.email,
+          f.phone || '',
+          '',
+          '',
+          'India',
+          'en',
+          f.type,
+          f.subject,
+          `"${f.message.replace(/"/g, '""')}"`,
+          'N/A'
+        ]);
+      });
+    }
+
     const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(',')).join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -132,7 +171,7 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Submissions exported to CSV for Google Drive/Sheets.');
+    showToast('Submissions exported to CSV successfully.');
   };
 
   return (
@@ -148,18 +187,10 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>Supporters: <strong className="text-white">{supporterSubmissions.length}</strong></span>
           </div>
-
-          {integrationSettings.googleDriveFolderUrl && (
-            <a
-              href={integrationSettings.googleDriveFolderUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-900/60 hover:bg-emerald-800 text-amber-300 rounded-xl border border-amber-500/40 font-mono transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Open Google Drive Folder</span>
-            </a>
-          )}
+          <div className="flex items-center gap-2 bg-[#051C14] px-3 py-1.5 rounded-xl border border-emerald-700 font-mono">
+            <MessageSquare className="w-4 h-4 text-blue-400" />
+            <span>Inquiries: <strong className="text-white">{feedbackSubmissions.length}</strong></span>
+          </div>
         </div>
 
         <button
@@ -167,14 +198,14 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
           className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold rounded-xl flex items-center gap-1.5 shadow transition-all"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Export Submissions (CSV / Sheets)</span>
+          <span>Export Submissions (CSV)</span>
         </button>
       </div>
 
       {/* Filter Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Type pills */}
-        <div className="flex items-center bg-[#07271D] p-1 rounded-xl border border-emerald-800">
+        <div className="flex flex-wrap items-center bg-[#07271D] p-1 rounded-xl border border-emerald-800 gap-1">
           <button
             onClick={() => setSubTypeFilter('all')}
             className={`px-3 py-1 rounded-lg font-mono transition-all ${
@@ -183,7 +214,7 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
                 : 'text-emerald-300 hover:text-white'
             }`}
           >
-            All Submissions ({volunteerSubmissions.length + supporterSubmissions.length})
+            All Submissions ({volunteerSubmissions.length + supporterSubmissions.length + feedbackSubmissions.length})
           </button>
           <button
             onClick={() => setSubTypeFilter('volunteers')}
@@ -204,6 +235,16 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
             }`}
           >
             Supporters ({supporterSubmissions.length})
+          </button>
+          <button
+            onClick={() => setSubTypeFilter('feedback')}
+            className={`px-3 py-1 rounded-lg font-mono transition-all ${
+              subTypeFilter === 'feedback'
+                ? 'bg-amber-400 text-black font-bold'
+                : 'text-emerald-300 hover:text-white'
+            }`}
+          >
+            Inquiries & Feedback ({feedbackSubmissions.length})
           </button>
         </div>
 
@@ -474,6 +515,121 @@ export const VolunteersSupportersTab: React.FC<VolunteersSupportersTabProps> = (
 
                       <div className="text-[10px] font-mono text-emerald-400/60">
                         Submitted: {new Date(sup.submittedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Feedback & Inquiries Section */}
+        {subTypeFilter !== 'volunteers' && subTypeFilter !== 'supporters' && (
+          <div className="space-y-3 pt-4">
+            <div className="flex items-center justify-between border-b border-emerald-800/80 pb-2">
+              <h4 className="font-display font-bold text-sm text-blue-300 flex items-center gap-1.5">
+                <MessageSquare className="w-4 h-4 text-blue-400" />
+                <span>Citizen Inquiries & Feedback ({filteredFeedback.length})</span>
+              </h4>
+              <span className="text-[11px] text-emerald-400 font-mono">
+                {filteredFeedback.filter(f => f.status === 'new').length} new • {filteredFeedback.filter(f => f.status === 'reviewed').length} reviewed • {filteredFeedback.filter(f => f.status === 'resolved').length} resolved
+              </span>
+            </div>
+
+            {filteredFeedback.length === 0 ? (
+              <div className="p-6 bg-[#051C14] rounded-2xl border border-emerald-800 text-center text-emerald-400/80 font-mono">
+                No citizen inquiries or feedback matching the current filters.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredFeedback.map((fb) => (
+                  <div
+                    key={fb.id}
+                    className="bg-[#051C14] p-4 rounded-2xl border border-emerald-800 space-y-3 hover:border-emerald-600 transition-colors shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h5 className="font-bold text-sm text-white">{fb.name}</h5>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-mono capitalize ${
+                              fb.status === 'resolved'
+                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                                : fb.status === 'reviewed'
+                                ? 'bg-purple-950 text-purple-300 border border-purple-700'
+                                : fb.status === 'archived'
+                                ? 'bg-stone-800 text-stone-300 border border-stone-600'
+                                : 'bg-blue-950 text-blue-300 border border-blue-700'
+                            }`}
+                          >
+                            {fb.status}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-emerald-300 font-mono mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3 text-amber-400" /> {fb.email}
+                          </span>
+                          {fb.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-emerald-400" /> {fb.phone}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete feedback message from ${fb.name}?`)) {
+                            deleteFeedback(fb.id);
+                            showToast(`Feedback from ${fb.name} deleted.`);
+                          }
+                        }}
+                        className="p-1.5 text-emerald-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors"
+                        title="Delete feedback"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Subject & Category badge */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-blue-950 text-blue-200 border border-blue-800 rounded-md text-[10px] uppercase font-mono">
+                          {fb.type.replace('_', ' ')}
+                        </span>
+                        <span className="font-semibold text-xs text-white">
+                          {fb.subject}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Message body */}
+                    <div className="p-2.5 bg-[#07271D] rounded-xl border border-emerald-800/80 text-[11px] text-emerald-100/90 whitespace-pre-wrap leading-relaxed">
+                      {fb.message}
+                    </div>
+
+                    {/* Admin Status & Notes Controls */}
+                    <div className="pt-2 border-t border-emerald-800/80 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-emerald-400">Status:</span>
+                        <select
+                          value={fb.status}
+                          onChange={(e) => {
+                            updateFeedbackStatus(fb.id, e.target.value as any);
+                            showToast(`Feedback marked as ${e.target.value}.`);
+                          }}
+                          className="px-2 py-1 bg-[#07271D] border border-emerald-700 rounded-lg text-[11px] text-white focus:outline-none"
+                        >
+                          <option value="new">New</option>
+                          <option value="reviewed">Reviewed</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="archived">Archived</option>
+                        </select>
+                      </div>
+
+                      <div className="text-[10px] font-mono text-emerald-400/60">
+                        Received: {new Date(fb.submittedAt).toLocaleDateString()}
                       </div>
                     </div>
                   </div>

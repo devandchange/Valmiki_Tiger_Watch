@@ -20,8 +20,6 @@ const activeSessions = new Map<string, AdminSession>();
 let auditLogs: AdminAuditLogEntry[] = [];
 let adminSettings: VTWAdminSettings = {
   officialCommunicationEmail: DEFAULT_VTW_OFFICIAL_EMAIL,
-  driveFolders: {},
-  spreadsheetIds: {},
   lastUpdated: new Date().toISOString()
 };
 

@@ -78,16 +78,20 @@ export const CreatorProfileCard: React.FC<CreatorProfileCardProps> = ({ variant 
           <div className="relative group flex-shrink-0">
             <div className="w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 rounded-2xl overflow-hidden border-2 border-amber-400/90 shadow-2xl bg-[#07271D] flex items-center justify-center relative">
               <img
-                src="/Nazish_Asad.png"
+                src="/assets/IMG-20260907-WA0005.jpg"
                 alt={`${creatorName} — ${creatorTitle}`}
+                referrerPolicy="no-referrer"
+                loading="eager"
                 className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => {
                   const target = e.currentTarget;
                   const currentSrc = target.src;
-                  if (!currentSrc.includes('/assets/Nazish_Asad.png')) {
+                  if (!currentSrc.includes('/Nazish_Asad.png')) {
+                    target.src = '/Nazish_Asad.png';
+                  } else if (!currentSrc.includes('/assets/Nazish_Asad.png')) {
                     target.src = '/assets/Nazish_Asad.png';
-                  } else if (!currentSrc.includes('/nazish-asad.jpg')) {
-                    target.src = '/assets/nazish-asad.jpg';
+                  } else if (!currentSrc.includes('/IMG-20260907-WA0005.jpg')) {
+                    target.src = '/IMG-20260907-WA0005.jpg';
                   } else {
                     target.style.display = 'none';
                     const fallback = target.nextElementSibling as HTMLElement;

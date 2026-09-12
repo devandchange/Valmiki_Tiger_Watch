@@ -1,12 +1,17 @@
-// Firebase Applet Configuration for Google Authentication & Google Workspace
+// Firebase Applet Configuration
 import rawConfig from '../../firebase-applet-config.json';
 
+// Safe getter: reads from client env if supplied, else from raw config file
+const getCfg = (envVal: string | undefined, rawVal: string | undefined): string => {
+  return envVal || rawVal || "";
+};
+
 export const firebaseConfig = {
-  projectId: rawConfig.projectId || "gen-lang-client-0741534586",
-  appId: rawConfig.appId || "1:350309246189:web:a4e00fa09d823741b818e4",
-  apiKey: rawConfig.apiKey || "AIzaSyC-sl0OJLDNYWPGg-e4_xfTqixA0cpUIzk",
-  authDomain: rawConfig.authDomain || "gen-lang-client-0741534586.firebaseapp.com",
-  storageBucket: rawConfig.storageBucket || "gen-lang-client-0741534586.firebasestorage.app",
-  messagingSenderId: rawConfig.messagingSenderId || "350309246189",
-  oAuthClientId: rawConfig.oAuthClientId || "350309246189-hpjajvv6mijv1j51gk9u65sli2m2aqma.apps.googleusercontent.com"
+  projectId: getCfg(import.meta.env.VITE_FIREBASE_PROJECT_ID, rawConfig.projectId),
+  appId: getCfg(import.meta.env.VITE_FIREBASE_APP_ID, rawConfig.appId),
+  apiKey: getCfg(import.meta.env.VITE_FIREBASE_API_KEY, rawConfig.apiKey),
+  authDomain: getCfg(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, rawConfig.authDomain),
+  storageBucket: getCfg(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET, rawConfig.storageBucket),
+  messagingSenderId: getCfg(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID, rawConfig.messagingSenderId),
+  oAuthClientId: getCfg(import.meta.env.VITE_FIREBASE_OAUTH_CLIENT_ID, rawConfig.oAuthClientId)
 };

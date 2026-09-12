@@ -46,7 +46,7 @@ export function clearCachedSession() {
 }
 
 /**
- * Initiates Google OAuth Sign-In with Google Drive and Google Sheets scopes.
+ * Initiates Google OAuth Sign-In for administrator authentication.
  * Verifies authenticated account on the secure backend.
  */
 export async function signInWithGoogleAdmin(): Promise<{
@@ -57,9 +57,6 @@ export async function signInWithGoogleAdmin(): Promise<{
 }> {
   try {
     const provider = new GoogleAuthProvider();
-    // Request mandatory Google Workspace scopes
-    provider.addScope('https://www.googleapis.com/auth/drive.file');
-    provider.addScope('https://www.googleapis.com/auth/spreadsheets');
     // Prompt user to select their account explicitly
     provider.setCustomParameters({
       prompt: 'select_account'

@@ -24,8 +24,12 @@ import {
   CertificateAdminSettings,
   AdminUser,
   AdminAuditLogEntry,
-  DriveSyncStatus,
-  VTWAdminSettings
+  VTWAdminSettings,
+  GrassrootsProtectorStory,
+  EditorialStatus,
+  FeedbackSubmission,
+  FeedbackCategory,
+  PledgeTickerEntry
 } from '../types';
 import {
   signInWithGoogleAdmin,
@@ -47,6 +51,9 @@ import {
   INITIAL_GALLERY,
   INITIAL_MAP_LOCATIONS
 } from '../data/initialData';
+import { INITIAL_PROTECTORS } from '../data/initialProtectors';
+import { INITIAL_PLEDGE_TICKER, INITIAL_FEEDBACK } from '../data/initialFeedbackAndTicker';
+import { getUniversalVTRWeather } from '../services/clientWeatherService';
 import { VERIFIED_STATISTICS_REGISTRY } from '../data/tigerWorldwideData';
 import { syncNewsFeeds } from '../utils/newsFeedService';
 
@@ -103,10 +110,6 @@ interface DataContextType {
   adminLogin: (pass: string) => boolean;
   loginAdmin: (pass: string) => boolean;
   adminLogout: () => void;
-  syncWithGoogleDrive: () => Promise<{ success: boolean; message: string; subfolders?: Record<string, string> }>;
-  syncWithGoogleSheets: () => Promise<{ success: boolean; message: string; syncedSheets?: string[] }>;
-  backupVTWDataToDrive: () => Promise<{ success: boolean; message: string; fileName?: string }>;
-  driveSyncStatus: DriveSyncStatus;
   adminAuditLogs: AdminAuditLogEntry[];
   refreshAuditLogs: () => Promise<void>;
   vtwAdminSettings: VTWAdminSettings | null;
@@ -237,11 +240,36 @@ interface DataContextType {
     organization?: string;
     language?: 'en' | 'hi' | 'ur';
     pledgeId?: string;
+    consentPublicTicker?: boolean;
   }) => Promise<TigerPledgeCertificate & { alreadyIssued?: boolean }>;
   revokePledgeCertificate: (certNumber: string, reason: string) => Promise<{ success: boolean; message: string }>;
   restorePledgeCertificate: (certNumber: string) => Promise<{ success: boolean; message: string }>;
   updateCertificateSettings: (settings: Partial<CertificateAdminSettings>) => Promise<void>;
   refreshCertificates: () => Promise<void>;
+
+  // Grassroots Protectors
+  grassrootsProtectors: GrassrootsProtectorStory[];
+  addGrassrootsProtector: (story: Omit<GrassrootsProtectorStory, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateGrassrootsProtector: (id: string, updates: Partial<GrassrootsProtectorStory>) => void;
+  deleteGrassrootsProtector: (id: string) => void;
+  setGrassrootsEditorialStatus: (id: string, status: EditorialStatus, notes?: string) => void;
+
+  // Feedback System
+  feedbackSubmissions: FeedbackSubmission[];
+  submitFeedback: (feedback: Omit<FeedbackSubmission, 'id' | 'submittedAt' | 'status'>) => { success: boolean; message: string };
+  updateFeedbackStatus: (id: string, status: 'new' | 'reviewed' | 'resolved' | 'archived') => void;
+  deleteFeedback: (id: string) => void;
+
+  // Pledge Ticker
+  pledgeTickerEntries: PledgeTickerEntry[];
+  addPledgeTickerEntry: (entry: Omit<PledgeTickerEntry, 'id' | 'pledgedAt'>) => void;
+  togglePledgeTickerStatus: (id: string) => void;
+  deletePledgeTickerEntry: (id: string) => void;
+  isTickerEnabled: boolean;
+  setIsTickerEnabled: (enabled: boolean) => void;
+
+  // Aggregate Engagement Voting
+  updateContentVotes: (contentType: 'news' | 'research' | 'protector', id: string, likes: number, dislikes: number) => void;
 
   // Backup & Reset
   exportDataBackup: () => string;
@@ -272,7 +300,11 @@ const STORAGE_KEYS = {
   CERTIFICATES: 'vtw_certificates_v1',
   CERTIFICATE_SETTINGS: 'vtw_certificate_settings_v1',
   CERT_SEQUENCE: 'vtw_cert_seq_v2',
-  LAST_ISSUED_CERT: 'vtw_last_issued_cert_v2'
+  LAST_ISSUED_CERT: 'vtw_last_issued_cert_v2',
+  PROTECTORS: 'vtw_protectors_v1',
+  FEEDBACK: 'vtw_feedback_v1',
+  PLEDGE_TICKER: 'vtw_pledge_ticker_v1',
+  TICKER_ENABLED: 'vtw_ticker_enabled_v1'
 };
 
 export const DEFAULT_CERTIFICATE_SETTINGS: CertificateAdminSettings = {
@@ -327,7 +359,6 @@ export const DEFAULT_WEATHER_SETTINGS: WeatherAdminSettings = {
 export const DEFAULT_INTEGRATION_SETTINGS: AppIntegrationSettings = {
   volunteerGoogleFormUrl: '',
   supporterGoogleFormUrl: '',
-  googleDriveFolderUrl: '',
   contactEmail: '',
   isVolunteerRegistrationEnabled: true,
   isSupporterRegistrationEnabled: true,
@@ -467,12 +498,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [adminSessionToken, setAdminSessionToken] = useState<string | null>(null);
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLogEntry[]>([]);
   const [vtwAdminSettings, setVtwAdminSettings] = useState<VTWAdminSettings | null>(null);
-  const [driveSyncStatus, setDriveSyncStatus] = useState<DriveSyncStatus>({
-    lastSyncTime: null,
-    status: 'idle',
-    sheetsLastSyncTime: null,
-    sheetsStatus: 'idle'
-  });
 
   // State with LocalStorage Caching
   const [tigers, setTigers] = useState<TigerProfile[]>(() => {
@@ -621,7 +646,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
-  // App Integration Settings (Google Forms, Google Drive, Registration Toggles)
+  // App Integration Settings (Google Forms, Registration Toggles)
   const [integrationSettings, setIntegrationSettings] = useState<AppIntegrationSettings>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.INTEGRATION_SETTINGS);
@@ -738,16 +763,198 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // Grassroots Protectors State
+  const [grassrootsProtectors, setGrassrootsProtectors] = useState<GrassrootsProtectorStory[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PROTECTORS);
+      return saved ? JSON.parse(saved) : INITIAL_PROTECTORS;
+    } catch {
+      return INITIAL_PROTECTORS;
+    }
+  });
+
+  const addGrassrootsProtector = (story: Omit<GrassrootsProtectorStory, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newStory: GrassrootsProtectorStory = {
+      ...story,
+      id: `protector-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      likes: story.likes || 0,
+      dislikes: story.dislikes || 0
+    };
+    setGrassrootsProtectors(prev => {
+      const next = [newStory, ...prev];
+      try { localStorage.setItem(STORAGE_KEYS.PROTECTORS, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const updateGrassrootsProtector = (id: string, updates: Partial<GrassrootsProtectorStory>) => {
+    setGrassrootsProtectors(prev => {
+      const next = prev.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p);
+      try { localStorage.setItem(STORAGE_KEYS.PROTECTORS, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const deleteGrassrootsProtector = (id: string) => {
+    setGrassrootsProtectors(prev => {
+      const next = prev.filter(p => p.id !== id);
+      try { localStorage.setItem(STORAGE_KEYS.PROTECTORS, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const setGrassrootsEditorialStatus = (id: string, status: EditorialStatus, notes?: string) => {
+    setGrassrootsProtectors(prev => {
+      const next = prev.map(p => {
+        if (p.id !== id) return p;
+        const now = new Date().toISOString();
+        const isVerifying = status === 'verified' || status === 'published';
+        return {
+          ...p,
+          verificationStatus: status,
+          verifiedDate: isVerifying ? (p.verifiedDate || now) : p.verifiedDate,
+          verifiedBy: isVerifying ? (p.verifiedBy || adminUser?.name || 'VTW Editorial Board') : p.verifiedBy,
+          verificationNotes: notes !== undefined ? notes : p.verificationNotes,
+          updatedAt: now
+        };
+      });
+      try { localStorage.setItem(STORAGE_KEYS.PROTECTORS, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  // Feedback Submissions State
+  const [feedbackSubmissions, setFeedbackSubmissions] = useState<FeedbackSubmission[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.FEEDBACK);
+      return saved ? JSON.parse(saved) : INITIAL_FEEDBACK;
+    } catch {
+      return INITIAL_FEEDBACK;
+    }
+  });
+
+  const submitFeedback = (feedback: Omit<FeedbackSubmission, 'id' | 'submittedAt' | 'status'>) => {
+    if (!feedback.message || feedback.message.trim().length < 5) {
+      return { success: false, message: 'Please provide a message with at least 5 characters.' };
+    }
+    const newEntry: FeedbackSubmission = {
+      ...feedback,
+      id: `fb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      status: 'new',
+      submittedAt: new Date().toISOString()
+    };
+    setFeedbackSubmissions(prev => {
+      const next = [newEntry, ...prev];
+      try { localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(next)); } catch {}
+      return next;
+    });
+    return { success: true, message: 'Thank you! Your feedback has been securely submitted to the Valmiki Tiger Watch team.' };
+  };
+
+  const updateFeedbackStatus = (id: string, status: 'new' | 'reviewed' | 'resolved' | 'archived') => {
+    setFeedbackSubmissions(prev => {
+      const next = prev.map(f => f.id === id ? { ...f, status } : f);
+      try { localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const deleteFeedback = (id: string) => {
+    setFeedbackSubmissions(prev => {
+      const next = prev.filter(f => f.id !== id);
+      try { localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  // Pledge Ticker State
+  const [pledgeTickerEntries, setPledgeTickerEntries] = useState<PledgeTickerEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PLEDGE_TICKER);
+      return saved ? JSON.parse(saved) : INITIAL_PLEDGE_TICKER;
+    } catch {
+      return INITIAL_PLEDGE_TICKER;
+    }
+  });
+
+  const [isTickerEnabled, setIsTickerEnabledState] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.TICKER_ENABLED);
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const setIsTickerEnabled = (enabled: boolean) => {
+    setIsTickerEnabledState(enabled);
+    try { localStorage.setItem(STORAGE_KEYS.TICKER_ENABLED, JSON.stringify(enabled)); } catch {}
+  };
+
+  const addPledgeTickerEntry = (entry: Omit<PledgeTickerEntry, 'id' | 'pledgedAt'>) => {
+    const newEntry: PledgeTickerEntry = {
+      ...entry,
+      id: `ticker-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      pledgedAt: new Date().toISOString()
+    };
+    setPledgeTickerEntries(prev => {
+      const next = [newEntry, ...prev];
+      try { localStorage.setItem(STORAGE_KEYS.PLEDGE_TICKER, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const togglePledgeTickerStatus = (id: string) => {
+    setPledgeTickerEntries(prev => {
+      const next = prev.map(e => {
+        if (e.id !== id) return e;
+        const newStatus: 'active' | 'hidden' = e.status === 'active' ? 'hidden' : 'active';
+        return { ...e, status: newStatus };
+      });
+      try { localStorage.setItem(STORAGE_KEYS.PLEDGE_TICKER, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const deletePledgeTickerEntry = (id: string) => {
+    setPledgeTickerEntries(prev => {
+      const next = prev.filter(e => e.id !== id);
+      try { localStorage.setItem(STORAGE_KEYS.PLEDGE_TICKER, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  // Engagement Voting Sync
+  const updateContentVotes = (contentType: 'news' | 'research' | 'protector', id: string, likes: number, dislikes: number) => {
+    if (contentType === 'news') {
+      setNews(prev => {
+        const next = prev.map(item => item.id === id ? { ...item, likes, dislikes } : item);
+        try { localStorage.setItem(STORAGE_KEYS.NEWS, JSON.stringify(next)); } catch {}
+        return next;
+      });
+    } else if (contentType === 'research') {
+      setResearch(prev => {
+        const next = prev.map(item => item.id === id ? { ...item, likes, dislikes } : item);
+        try { localStorage.setItem(STORAGE_KEYS.RESEARCH, JSON.stringify(next)); } catch {}
+        return next;
+      });
+    } else if (contentType === 'protector') {
+      setGrassrootsProtectors(prev => {
+        const next = prev.map(item => item.id === id ? { ...item, likes, dislikes } : item);
+        try { localStorage.setItem(STORAGE_KEYS.PROTECTORS, JSON.stringify(next)); } catch {}
+        return next;
+      });
+    }
+  };
+
   const fetchWeather = async (force: boolean = false, zoneOverride?: string) => {
     const targetZone = zoneOverride || selectedWeatherZone || weatherSettings.defaultZoneId || 'valmikinagar';
     setIsWeatherLoading(true);
     setWeatherError(null);
     try {
-      const res = await fetch(`/api/weather?zoneId=${encodeURIComponent(targetZone)}${force ? '&forceRefresh=true' : ''}`);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-      const data: VTRWeatherResponse = await res.json();
+      const data = await getUniversalVTRWeather(targetZone, force);
       if (!data.success && !data.current) {
         throw new Error(data.error || 'Weather data unavailable. Please verify network or retry.');
       }
@@ -758,7 +965,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Failed saving weather cache:', e);
       }
     } catch (err: any) {
-      console.warn('VTR Weather fetch issue:', err);
+      console.warn('VTR Weather fetch issue, attempting cached fallback:', err);
+      try {
+        const cached = localStorage.getItem(STORAGE_KEYS.WEATHER_CACHE);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.current) {
+            setWeatherData({ ...parsed, cached: true });
+            return;
+          }
+        }
+      } catch {}
       setWeatherError(err?.message || 'Weather data unavailable. Please retry.');
     } finally {
       setIsWeatherLoading(false);
@@ -1015,7 +1232,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAdmin(true);
         setAdminUser(result.admin);
         setAdminSessionToken(result.sessionToken);
-        setDriveSyncStatus(prev => ({ ...prev, status: 'connected' }));
         refreshAuditLogs();
         return { success: true };
       }
@@ -1035,12 +1251,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAdmin(false);
     setAdminUser(null);
     setAdminSessionToken(null);
-    setDriveSyncStatus({
-      lastSyncTime: null,
-      status: 'idle',
-      sheetsLastSyncTime: null,
-      sheetsStatus: 'idle'
-    });
   };
 
   // Deprecated password login (strictly disabled)
@@ -1049,160 +1259,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   const loginAdmin = adminLogin;
   const adminLogout = logoutAdmin;
-
-  // Google Drive Synchronization
-  const syncWithGoogleDrive = async (): Promise<{ success: boolean; message: string; subfolders?: Record<string, string> }> => {
-    const accessToken = getCachedAccessToken();
-    const sessionToken = getCachedSessionToken();
-    if (!accessToken || !sessionToken) {
-      setDriveSyncStatus(prev => ({
-        ...prev,
-        status: 'failed',
-        message: 'Google Drive synchronization failed. Please try again.'
-      }));
-      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-    }
-
-    setDriveSyncStatus(prev => ({ ...prev, status: 'syncing' }));
-    try {
-      const res = await fetch('/api/admin/drive/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-vtw-admin-session': sessionToken,
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({ accessToken })
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const timeStr = new Date().toLocaleString();
-        setDriveSyncStatus(prev => ({
-          ...prev,
-          status: 'successful',
-          lastSyncTime: timeStr,
-          driveFolderId: data.rootFolderId,
-          subfolders: data.subfolders,
-          message: data.message
-        }));
-        await refreshAuditLogs();
-        return { success: true, message: data.message, subfolders: data.subfolders };
-      } else {
-        setDriveSyncStatus(prev => ({
-          ...prev,
-          status: 'failed',
-          message: 'Google Drive synchronization failed. Please try again.'
-        }));
-        return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-      }
-    } catch (err: any) {
-      setDriveSyncStatus(prev => ({
-        ...prev,
-        status: 'failed',
-        message: 'Google Drive synchronization failed. Please try again.'
-      }));
-      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-    }
-  };
-
-  // Google Sheets Synchronization
-  const syncWithGoogleSheets = async (): Promise<{ success: boolean; message: string; syncedSheets?: string[] }> => {
-    const accessToken = getCachedAccessToken();
-    const sessionToken = getCachedSessionToken();
-    if (!accessToken || !sessionToken) {
-      setDriveSyncStatus(prev => ({
-        ...prev,
-        sheetsStatus: 'failed',
-        message: 'Google Drive synchronization failed. Please try again.'
-      }));
-      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-    }
-
-    setDriveSyncStatus(prev => ({ ...prev, sheetsStatus: 'syncing' }));
-    try {
-      const res = await fetch('/api/admin/sheets/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-vtw-admin-session': sessionToken,
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          accessToken,
-          news,
-          research,
-          conservation: alerts
-        })
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const timeStr = new Date().toLocaleString();
-        setDriveSyncStatus(prev => ({
-          ...prev,
-          sheetsStatus: 'successful',
-          sheetsLastSyncTime: timeStr,
-          message: data.message
-        }));
-        await refreshAuditLogs();
-        return { success: true, message: data.message, syncedSheets: data.syncedSheets };
-      } else {
-        setDriveSyncStatus(prev => ({
-          ...prev,
-          sheetsStatus: 'failed',
-          message: 'Google Drive synchronization failed. Please try again.'
-        }));
-        return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-      }
-    } catch (err: any) {
-      setDriveSyncStatus(prev => ({
-        ...prev,
-        sheetsStatus: 'failed',
-        message: 'Google Drive synchronization failed. Please try again.'
-      }));
-      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-    }
-  };
-
-  // Backup VTW Data to Google Drive
-  const backupVTWDataToDrive = async (): Promise<{ success: boolean; message: string; fileName?: string }> => {
-    const accessToken = getCachedAccessToken();
-    const sessionToken = getCachedSessionToken();
-    if (!accessToken || !sessionToken) {
-      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-    }
-
-    try {
-      const res = await fetch('/api/admin/backup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-vtw-admin-session': sessionToken,
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          accessToken,
-          extraData: {
-            tigersCount: tigers.length,
-            newsCount: news.length,
-            sightingsCount: sightings.length,
-            alertsCount: alerts.length
-          }
-        })
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        await refreshAuditLogs();
-        return { success: true, message: data.message, fileName: data.fileName };
-      } else {
-        return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-      }
-    } catch (err: any) {
-      return { success: false, message: 'Google Drive synchronization failed. Please try again.' };
-    }
-  };
 
   // Refresh Audit Logs
   const refreshAuditLogs = async () => {
@@ -1794,6 +1850,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     organization?: string;
     language?: 'en' | 'hi' | 'ur';
     pledgeId?: string;
+    consentPublicTicker?: boolean;
   }): Promise<TigerPledgeCertificate & { alreadyIssued?: boolean }> => {
     setIsCertificateGenerating(true);
     const trimmedName = input.fullName.trim();
@@ -1857,6 +1914,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             localStorage.setItem(STORAGE_KEYS.LAST_ISSUED_CERT, JSON.stringify(returnVal));
           } catch (e) {}
+
+          if (input.consentPublicTicker && !isAlreadyIssued) {
+            const nameParts = trimmedName.split(/\s+/);
+            const firstName = nameParts[0] || 'Friend of Tigers';
+            const lastInitial = nameParts.length > 1 ? ` ${nameParts[nameParts.length - 1][0].toUpperCase()}.` : '';
+            addPledgeTickerEntry({
+              displayName: `${firstName}${lastInitial}`,
+              cityAndState: trimmedCity || 'India',
+              consentPublicTicker: true,
+              status: 'active'
+            });
+          }
 
           return returnVal;
         }
@@ -1943,6 +2012,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         localStorage.setItem(STORAGE_KEYS.LAST_ISSUED_CERT, JSON.stringify(fallbackCert));
       } catch (e) {}
+
+      if (input.consentPublicTicker) {
+        const nameParts = trimmedName.split(/\s+/);
+        const firstName = nameParts[0] || 'Friend of Tigers';
+        const lastInitial = nameParts.length > 1 ? ` ${nameParts[nameParts.length - 1][0].toUpperCase()}.` : '';
+        addPledgeTickerEntry({
+          displayName: `${firstName}${lastInitial}`,
+          cityAndState: trimmedCity || 'India',
+          consentPublicTicker: true,
+          status: 'active'
+        });
+      }
 
       return fallbackCert;
     } finally {
@@ -2152,10 +2233,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adminLogin,
         loginAdmin: adminLogin,
         adminLogout,
-        syncWithGoogleDrive,
-        syncWithGoogleSheets,
-        backupVTWDataToDrive,
-        driveSyncStatus,
         adminAuditLogs,
         refreshAuditLogs,
         vtwAdminSettings,
@@ -2260,6 +2337,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         restorePledgeCertificate,
         updateCertificateSettings,
         refreshCertificates,
+        // Grassroots Protectors
+        grassrootsProtectors,
+        addGrassrootsProtector,
+        updateGrassrootsProtector,
+        deleteGrassrootsProtector,
+        setGrassrootsEditorialStatus,
+        // Feedback System
+        feedbackSubmissions,
+        submitFeedback,
+        updateFeedbackStatus,
+        deleteFeedback,
+        // Pledge Ticker
+        pledgeTickerEntries,
+        addPledgeTickerEntry,
+        togglePledgeTickerStatus,
+        deletePledgeTickerEntry,
+        isTickerEnabled,
+        setIsTickerEnabled,
+        // Aggregate Engagement Voting
+        updateContentVotes,
         // Backup
         exportDataBackup,
         importDataBackup,

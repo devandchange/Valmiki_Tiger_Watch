@@ -31,6 +31,7 @@ import {
   FileCheck,
   Link as LinkIcon
 } from 'lucide-react';
+import { EngagementBar } from '../EngagementBar';
 
 const RESEARCH_CATEGORIES: ResearchCategory[] = [
   'Tiger Conservation Research',
@@ -56,7 +57,8 @@ export const ResearchSection: React.FC = () => {
     setResearchStatus,
     verifyAndPublishResearch,
     unpublishResearch,
-    rejectResearch
+    rejectResearch,
+    updateContentVotes
   } = useData();
   const safeResearch = research || [];
   const { language, isRtl, t } = useLanguage();
@@ -720,8 +722,24 @@ export const ResearchSection: React.FC = () => {
                 </div>
               )}
 
+              {/* Engagement Bar: Thumbs up/down + Native Share */}
+              <div className="pt-3 border-t border-stone-100">
+                <EngagementBar
+                  contentType="research"
+                  contentId={report.id}
+                  title={report.title}
+                  text={report.abstract}
+                  url={report.downloadUrl || report.officialUrl || report.originalSourceLink}
+                  initialLikes={report.likes || 0}
+                  initialDislikes={report.dislikes || 0}
+                  onVote={(type, newLikes, newDislikes) => {
+                    updateContentVotes('research', report.id, newLikes, newDislikes);
+                  }}
+                />
+              </div>
+
               {/* Action Bar: DOI, Official Link, Full Details, Copy Citation */}
-              <div className="pt-4 border-t border-stone-100 flex flex-wrap justify-between items-center text-xs text-stone-500 gap-3">
+              <div className="pt-2 border-t border-stone-100 flex flex-wrap justify-between items-center text-xs text-stone-500 gap-3">
                 <div className="flex flex-wrap items-center gap-3">
                   {report.source && (
                     <span className="text-stone-600 font-mono text-[11px]">
@@ -868,6 +886,22 @@ export const ResearchSection: React.FC = () => {
               <div className="p-4 bg-stone-100 rounded-2xl border border-stone-200 space-y-2">
                 <strong className="text-stone-900 font-mono text-xs uppercase block">Full Citation:</strong>
                 <p className="italic font-serif text-stone-700">{activeReportForDetails.citation}</p>
+              </div>
+
+              {/* Engagement Bar inside dossier modal */}
+              <div className="pt-2 border-t border-stone-200">
+                <EngagementBar
+                  contentType="research"
+                  contentId={activeReportForDetails.id}
+                  title={activeReportForDetails.title}
+                  text={activeReportForDetails.abstract}
+                  url={activeReportForDetails.downloadUrl || activeReportForDetails.officialUrl || activeReportForDetails.originalSourceLink}
+                  initialLikes={activeReportForDetails.likes || 0}
+                  initialDislikes={activeReportForDetails.dislikes || 0}
+                  onVote={(type, newLikes, newDislikes) => {
+                    updateContentVotes('research', activeReportForDetails.id, newLikes, newDislikes);
+                  }}
+                />
               </div>
             </div>
 

@@ -6,10 +6,8 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
-  FolderSync,
   FormInput,
   KeyRound,
-  FileSpreadsheet,
   Plus,
   Trash2,
   RotateCcw,
@@ -47,7 +45,6 @@ export const IntegrationsAiTab: React.FC<IntegrationsAiTabProps> = ({ showToast 
   // Local state copies for form editing
   const [volFormUrl, setVolFormUrl] = useState(integrationSettings.volunteerGoogleFormUrl || '');
   const [supFormUrl, setSupFormUrl] = useState(integrationSettings.supporterGoogleFormUrl || '');
-  const [driveUrl, setDriveUrl] = useState(integrationSettings.googleDriveFolderUrl || '');
   const [contactEmail, setContactEmail] = useState(integrationSettings.contactEmail || '');
   const [isVolEnabled, setIsVolEnabled] = useState(integrationSettings.isVolunteerRegistrationEnabled);
   const [isSupEnabled, setIsSupEnabled] = useState(integrationSettings.isSupporterRegistrationEnabled);
@@ -91,7 +88,6 @@ export const IntegrationsAiTab: React.FC<IntegrationsAiTabProps> = ({ showToast 
     updateIntegrationSettings({
       volunteerGoogleFormUrl: volFormUrl.trim(),
       supporterGoogleFormUrl: supFormUrl.trim(),
-      googleDriveFolderUrl: driveUrl.trim(),
       contactEmail: contactEmail.trim(),
       isVolunteerRegistrationEnabled: isVolEnabled,
       isSupporterRegistrationEnabled: isSupEnabled,
@@ -121,10 +117,10 @@ export const IntegrationsAiTab: React.FC<IntegrationsAiTabProps> = ({ showToast 
         <div className="space-y-1">
           <h3 className="font-display font-bold text-base text-white flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Integrations, Google Forms, Drive & AI Configuration</span>
+            <span>Integrations, Google Forms & AI Configuration</span>
           </h3>
           <p className="text-emerald-200/80 leading-relaxed text-[11px]">
-            Manage external Google Workspace URLs (Google Forms, Google Drive), public volunteer registration toggles, and Gemini AI assistant behavior.
+            Manage external Google Forms URLs, public volunteer registration toggles, and Gemini AI assistant behavior.
           </p>
         </div>
 
@@ -137,16 +133,16 @@ export const IntegrationsAiTab: React.FC<IntegrationsAiTabProps> = ({ showToast 
         </button>
       </div>
 
-      {/* SECTION 1: GOOGLE FORMS & GOOGLE DRIVE INTEGRATIONS */}
+      {/* SECTION 1: GOOGLE FORMS INTEGRATIONS */}
       <div className="bg-[#07271D] p-5 rounded-2xl border border-emerald-800 space-y-5">
         <div className="flex items-center gap-2 border-b border-emerald-800 pb-3">
           <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
             <FormInput className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="font-bold text-sm text-white">Google Forms & Google Drive Connectors</h4>
+            <h4 className="font-bold text-sm text-white">Google Forms Connectors</h4>
             <p className="text-[10px] font-mono text-emerald-300">
-              Submissions in the app are automatically mirrored and can link to your official Google Forms and Drive repository.
+              Submissions in the app are automatically recorded locally and can optionally link to your official Google Forms.
             </p>
           </div>
         </div>
@@ -234,37 +230,6 @@ export const IntegrationsAiTab: React.FC<IntegrationsAiTabProps> = ({ showToast 
             placeholder="https://docs.google.com/forms/d/e/.../viewform"
             className="w-full p-2.5 bg-[#051C14] border border-emerald-700 rounded-xl text-xs text-white placeholder-emerald-500/50 font-mono focus:outline-none focus:ring-1 focus:ring-amber-400"
           />
-        </div>
-
-        {/* Google Drive Folder URL */}
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <label className="font-mono text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
-              <FolderSync className="w-3.5 h-3.5 text-amber-400" />
-              <span>Google Drive Storage Folder URL</span>
-            </label>
-            {driveUrl && (
-              <a
-                href={driveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-amber-400 hover:text-amber-300 inline-flex items-center gap-1 font-mono text-[10px] underline"
-              >
-                <span>Open Drive Folder</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-          <input
-            type="url"
-            value={driveUrl}
-            onChange={(e) => setDriveUrl(e.target.value)}
-            placeholder="https://drive.google.com/drive/folders/..."
-            className="w-full p-2.5 bg-[#051C14] border border-emerald-700 rounded-xl text-xs text-white placeholder-emerald-500/50 font-mono focus:outline-none focus:ring-1 focus:ring-amber-400"
-          />
-          <p className="text-[10px] text-emerald-300/70">
-            Link to your organization's Google Drive folder where volunteer photo IDs, waivers, and conservation spreadsheets are archived.
-          </p>
         </div>
 
         {/* Official Contact Email */}

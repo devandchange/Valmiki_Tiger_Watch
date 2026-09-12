@@ -5,7 +5,6 @@ import { VolunteersSupportersTab } from './admin/VolunteersSupportersTab';
 import { IntegrationsAiTab } from './admin/IntegrationsAiTab';
 import { WeatherAdminTab } from './admin/WeatherAdminTab';
 import { CertificatesAdminTab } from './admin/CertificatesAdminTab';
-import { GoogleDriveStorageTab } from './admin/GoogleDriveStorageTab';
 import { 
   Lock, 
   Unlock, 
@@ -105,12 +104,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     certificates = [],
     exportDataBackup,
     importDataBackup,
-    resetToDefaults
+    resetToDefaults,
+    adminAuditLogs = [],
+    refreshAuditLogs
   } = useData();
 
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'volunteers' | 'integrations' | 'drive_storage' | 'weather' | 'certificates' | 'system'>('tigers');
+  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'volunteers' | 'integrations' | 'weather' | 'certificates' | 'system'>('tigers');
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'pending' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -580,7 +581,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                 { id: 'news', label: `📰 News (${news.length})` },
                 { id: 'sightings', label: `👁️ Sightings (${sightings.length})` },
                 { id: 'volunteers', label: `🤝 Submissions (${volunteerSubmissions.length + supporterSubmissions.length})` },
-                { id: 'drive_storage', label: `📁 Google Drive & Storage` },
                 { id: 'integrations', label: `🔗 Forms & Integrations` },
                 { id: 'weather', label: `⛅ Weather Config` },
                 { id: 'certificates', label: `📜 Tiger Pledge Certs (${certificates.length})` },
@@ -1844,14 +1844,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
               )}
 
               {/* ============================================================ */}
-              {/* TAB: GOOGLE DRIVE & STORAGE SYNC */}
-              {/* ============================================================ */}
-              {activeTab === 'drive_storage' && (
-                <GoogleDriveStorageTab showToast={showToast} />
-              )}
-
-              {/* ============================================================ */}
-              {/* TAB: INTEGRATIONS, GOOGLE FORMS, DRIVE & AI SETTINGS */}
+              {/* TAB: INTEGRATIONS, GOOGLE FORMS & AI SETTINGS */}
               {/* ============================================================ */}
               {activeTab === 'integrations' && (
                 <IntegrationsAiTab showToast={showToast} />
@@ -1872,7 +1865,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
               )}
 
               {/* ============================================================ */}
-              {/* TAB 7: SYSTEM MAINTENANCE & BACKUP */}
+              {/* TAB 7: SYSTEM MAINTENANCE & AUDIT TRAIL */}
               {/* ============================================================ */}
               {activeTab === 'system' && (
                 <div className="space-y-6">
@@ -1915,6 +1908,81 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                         <span>Reset All Records to Factory Baseline</span>
                       </button>
                     </div>
+                  </div>
+
+                  {/* Administrative Audit Log Table */}
+                  <div className="bg-[#07271D] p-6 rounded-2xl border border-emerald-800 space-y-4 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-800 pb-3">
+                      <div>
+                        <h4 className="font-bold text-sm text-white">Administrative Security & Audit Trail</h4>
+                        <p className="text-[11px] text-emerald-300/80 font-mono">
+                          Complete tamper-evident log of administrative actions, verifications, and security events.
+                        </p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          await refreshAuditLogs();
+                          showToast('Audit logs refreshed.');
+                        }}
+                        className="px-3 py-1.5 bg-[#051C14] hover:bg-emerald-900/60 border border-emerald-700 text-emerald-300 rounded-xl font-mono text-[11px] flex items-center gap-1.5 transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Refresh Logs</span>
+                      </button>
+                    </div>
+
+                    {adminAuditLogs.length === 0 ? (
+                      <p className="text-emerald-400/60 font-mono text-center py-6">
+                        No audit events recorded in this session.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto border border-emerald-800/80 rounded-xl">
+                        <table className="w-full text-left text-xs font-mono">
+                          <thead className="bg-black/50 text-emerald-300 border-b border-emerald-800 text-[11px]">
+                            <tr>
+                              <th className="p-2.5">Time</th>
+                              <th className="p-2.5">Operator</th>
+                              <th className="p-2.5">Action</th>
+                              <th className="p-2.5">Record</th>
+                              <th className="p-2.5">Result</th>
+                              <th className="p-2.5">Details</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-emerald-800/40 text-emerald-100">
+                            {adminAuditLogs.map((log) => (
+                              <tr key={log.id} className="hover:bg-emerald-950/40 transition-colors">
+                                <td className="p-2.5 whitespace-nowrap text-[11px] text-emerald-300/80">
+                                  {new Date(log.timestamp).toLocaleString()}
+                                </td>
+                                <td className="p-2.5 whitespace-nowrap text-amber-300 font-bold">
+                                  {log.adminEmail === 'System Security' ? 'System Security' : 'Administrator'}
+                                </td>
+                                <td className="p-2.5 whitespace-nowrap font-bold text-white">
+                                  {log.action}
+                                </td>
+                                <td className="p-2.5 whitespace-nowrap text-emerald-300 capitalize">
+                                  {log.recordType}
+                                </td>
+                                <td className="p-2.5 whitespace-nowrap">
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      log.result === 'success'
+                                        ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700'
+                                        : 'bg-red-900/60 text-red-300 border border-red-700'
+                                    }`}
+                                  >
+                                    {log.result}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 text-[11px] text-emerald-200/90 max-w-xs truncate">
+                                  {log.details || '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

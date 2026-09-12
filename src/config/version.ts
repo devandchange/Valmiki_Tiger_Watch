@@ -25,7 +25,7 @@ export interface ReleaseInfo {
 }
 
 // Default official repository configured for this project
-const DEFAULT_GITHUB_REPO = 'valmikitigerwatch/valmiki-tiger-watch';
+const DEFAULT_GITHUB_REPO = 'devandchange/Valmiki_Tiger_Watch';
 
 // Safe getter for environment repo if configured
 function getConfiguredRepo(): string {

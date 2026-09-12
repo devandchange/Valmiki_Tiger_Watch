@@ -675,7 +675,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onOpenInstallGuide }) 
           </div>
           <div className="flex items-center gap-2 text-emerald-200/90 font-mono">
             <span className="w-2 h-2 rounded-full bg-teal-400"></span>
-            <span>Google Forms & Drive Integration</span>
+            <span>Google Forms Integration</span>
           </div>
           <div className="flex items-center gap-2 text-emerald-200/90 font-mono">
             <span className="w-2 h-2 rounded-full bg-blue-400"></span>

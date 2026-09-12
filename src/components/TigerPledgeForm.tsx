@@ -33,6 +33,7 @@ import {
   printCertificate,
   shareCertificate
 } from '../utils/certificateExporter';
+import { RecentPledgesTicker } from './RecentPledgesTicker';
 
 export const TigerPledgeForm: React.FC = () => {
   const { t, language } = useLanguage();
@@ -42,7 +43,9 @@ export const TigerPledgeForm: React.FC = () => {
     isCertificateGenerating,
     certificates,
     lastIssuedCertificate,
-    clearLastIssuedCertificate
+    clearLastIssuedCertificate,
+    pledgeTickerEntries,
+    isTickerEnabled
   } = useData();
 
   // Form State
@@ -55,6 +58,7 @@ export const TigerPledgeForm: React.FC = () => {
     (language as 'en' | 'hi' | 'ur') || 'en'
   );
   const [agreedToPledge, setAgreedToPledge] = useState(false);
+  const [consentPublicTicker, setConsentPublicTicker] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Active Certificate State (initialized with last issued certificate if present)
@@ -118,7 +122,8 @@ export const TigerPledgeForm: React.FC = () => {
         email: email.trim() || undefined,
         organization: organization.trim() || undefined,
         language: certLanguage,
-        pledgeId: uniquePledgeId
+        pledgeId: uniquePledgeId,
+        consentPublicTicker
       });
 
       setGeneratedCert(certResult);
@@ -539,6 +544,11 @@ export const TigerPledgeForm: React.FC = () => {
             <span>{t('pledge.tab_verify', 'Search & Verify Certificates') || 'Search & Verify Certificates'}</span>
           </button>
         </div>
+
+        {/* Community Pledges TV Ribbon Ticker */}
+        <div className="pt-4 max-w-4xl mx-auto">
+          <RecentPledgesTicker entries={pledgeTickerEntries} enabled={isTickerEnabled} />
+        </div>
       </div>
 
       {/* TAB 1: PLEDGE GENERATION & CERTIFICATE DISPLAY */}
@@ -682,6 +692,22 @@ export const TigerPledgeForm: React.FC = () => {
                     <label htmlFor="pledge-agree-checkbox" className="text-xs sm:text-sm text-stone-800 font-semibold cursor-pointer leading-relaxed">
                       {t('pledge.required_statement', 'I voluntarily pledge to support tiger conservation, protect wildlife, respect forest laws, and contribute to the protection of tigers and their natural habitat.') ||
                         'I voluntarily pledge to support tiger conservation, protect wildlife, respect forest laws, and contribute to the protection of tigers and their natural habitat.'}
+                    </label>
+                  </div>
+                </div>
+
+                {/* Optional Public Ticker Consent Checkbox */}
+                <div className="pt-1">
+                  <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 flex items-start gap-3">
+                    <input
+                      id="pledge-ticker-consent-checkbox"
+                      type="checkbox"
+                      checked={consentPublicTicker}
+                      onChange={(e) => setConsentPublicTicker(e.target.checked)}
+                      className="w-4 h-4 mt-0.5 rounded border-stone-400 text-emerald-800 focus:ring-emerald-700 shrink-0 cursor-pointer"
+                    />
+                    <label htmlFor="pledge-ticker-consent-checkbox" className="text-xs text-stone-700 cursor-pointer leading-relaxed">
+                      <span className="font-semibold text-stone-900">Feature on Recent Pledges Ticker:</span> Display my name and city on the community ticker ribbon to encourage others.
                     </label>
                   </div>
                 </div>

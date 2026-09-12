@@ -69,6 +69,9 @@ export interface NewsArticle {
   verifiedBy?: string;
   officialSourceRef?: string;
   language?: 'en' | 'hi' | 'ur';
+  likes?: number;
+  dislikes?: number;
+  workflowStatus?: EditorialStatus;
 }
 
 export interface NewsSource {
@@ -220,6 +223,9 @@ export interface ResearchReport {
   verifiedBy?: string;
   verifiedDate?: string;
   verificationNotes?: string;
+  likes?: number;
+  dislikes?: number;
+  workflowStatus?: EditorialStatus;
 }
 
 export interface EducationItem {
@@ -437,7 +443,6 @@ export interface SupporterSubmission {
 export interface AppIntegrationSettings {
   volunteerGoogleFormUrl: string;
   supporterGoogleFormUrl: string;
-  googleDriveFolderUrl: string;
   contactEmail: string;
   isVolunteerRegistrationEnabled: boolean;
   isSupporterRegistrationEnabled: boolean;
@@ -603,6 +608,7 @@ export interface TigerPledgeCertificate {
   createdAt: string;
   verificationHash?: string;
   isLocallyStored?: boolean;
+  consentPublicTicker?: boolean;
 }
 
 export interface CertificateAdminSettings {
@@ -626,7 +632,7 @@ export interface CertificateAdminSettings {
 }
 
 // ==========================================
-// VTW ADMIN, GOOGLE AUTH & DRIVE STORAGE TYPES
+// VTW ADMIN & AUTHENTICATION TYPES
 // ==========================================
 export interface AdminUser {
   email?: string;
@@ -646,37 +652,83 @@ export interface AdminAuditLogEntry {
   id: string;
   adminEmail: string;
   action: string;
-  recordType: 'auth' | 'volunteer' | 'supporter' | 'pledge' | 'certificate' | 'news' | 'sighting' | 'alert' | 'tiger' | 'settings' | 'drive' | 'sheets' | 'backup';
+  recordType: 'auth' | 'volunteer' | 'supporter' | 'pledge' | 'certificate' | 'news' | 'sighting' | 'alert' | 'tiger' | 'settings' | 'backup';
   recordId?: string;
   timestamp: string;
   result: 'success' | 'failure' | 'warning';
   details?: string;
 }
 
-export interface DriveFolderInfo {
-  name: string;
-  folderId: string;
-  path: string;
-}
-
-export interface DriveSyncStatus {
-  lastSyncTime: string | null;
-  status: 'idle' | 'connected' | 'syncing' | 'successful' | 'failed';
-  message?: string;
-  sheetsLastSyncTime?: string | null;
-  sheetsStatus?: 'idle' | 'connected' | 'syncing' | 'successful' | 'failed';
-  driveFolderId?: string;
-  spreadsheetIds?: Record<string, string>;
-  subfolders?: Record<string, string>;
-}
-
 export interface VTWAdminSettings {
   officialCommunicationEmail: string;
-  driveRootFolderId?: string;
-  driveFolders?: Record<string, string>;
-  spreadsheetIds?: Record<string, string>;
-  lastDriveSync?: string;
-  lastSheetsSync?: string;
   lastBackupDate?: string;
   lastUpdated: string;
+}
+
+// ==========================================
+// GRASSROOTS PROTECTORS OF TIGER PROTECTION
+// ==========================================
+export type EditorialStatus = 'draft' | 'pending_verification' | 'verified' | 'published' | 'rejected' | 'archived';
+
+export interface GrassrootsProtectorStory {
+  id: string;
+  protectorName: string;
+  role: string;
+  location: string;
+  photograph: string;
+  photoCaption?: string;
+  photographerCredit?: string;
+  storyTitle: string;
+  shortIntro: string;
+  fullStory: string;
+  achievements: string[];
+  date: string;
+  source: string;
+  sourceUrl?: string;
+  verificationStatus: EditorialStatus;
+  verifiedBy?: string;
+  verifiedDate?: string;
+  verificationNotes?: string;
+  likes?: number;
+  dislikes?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==========================================
+// FEEDBACK SYSTEM
+// ==========================================
+export type FeedbackCategory = 'App Feedback' | 'Bug Report' | 'News/Content' | 'Suggestion' | 'Other';
+
+export interface FeedbackSubmission {
+  id: string;
+  name?: string;
+  email?: string;
+  category: FeedbackCategory;
+  message: string;
+  status: 'new' | 'reviewed' | 'resolved' | 'archived';
+  submittedAt: string;
+  deviceInfo?: string;
+}
+
+// ==========================================
+// RECENT PLEDGES TICKER
+// ==========================================
+export interface PledgeTickerEntry {
+  id: string;
+  displayName: string;
+  cityAndState: string;
+  pledgedAt: string;
+  consentPublicTicker: boolean;
+  status: 'active' | 'hidden' | 'moderated';
+}
+
+// ==========================================
+// ENGAGEMENT & VOTING
+// ==========================================
+export interface EngagementRecord {
+  contentId: string;
+  contentType: 'news' | 'research' | 'protector';
+  likes: number;
+  dislikes: number;
 }

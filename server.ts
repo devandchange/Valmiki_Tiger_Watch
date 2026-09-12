@@ -30,12 +30,6 @@ import {
   saveSupporterSubmission,
   DEFAULT_VTW_OFFICIAL_EMAIL
 } from './server/adminService';
-import {
-  ensureVTWFolderHierarchy,
-  syncAllVTWSheets,
-  uploadBackupToDrive,
-  syncCertificatesToDrive
-} from './server/googleWorkspaceService';
 
 async function startServer() {
   const app = express();
@@ -526,7 +520,7 @@ async function startServer() {
   // APP VERSION & ANDROID APK UPDATE API
   // ==========================================
   app.get('/api/app-version', (_req, res) => {
-    const repo = process.env.VTW_GITHUB_REPO || process.env.VITE_GITHUB_REPO || 'valmikitigerwatch/valmiki-tiger-watch';
+    const repo = process.env.VTW_GITHUB_REPO || process.env.VITE_GITHUB_REPO || 'devandchange/Valmiki_Tiger_Watch';
     res.json({
       appName: 'Valmiki Tiger Watch',
       appId: 'com.valmikitigerwatch.app',
@@ -541,7 +535,7 @@ async function startServer() {
 
   app.get('/api/app-update', async (_req, res) => {
     const currentVersion = '1.0.1';
-    const repo = process.env.VTW_GITHUB_REPO || process.env.VITE_GITHUB_REPO || 'valmikitigerwatch/valmiki-tiger-watch';
+    const repo = process.env.VTW_GITHUB_REPO || process.env.VITE_GITHUB_REPO || 'devandchange/Valmiki_Tiger_Watch';
     const defaultReleasesUrl = `https://github.com/${repo}/releases`;
 
     try {
@@ -627,105 +621,6 @@ async function startServer() {
         releaseUrl: defaultReleasesUrl,
         downloadUrl: defaultReleasesUrl,
         error: 'Unable to check for updates. Please try again later.'
-      });
-    }
-  });
-
-  // ==========================================
-  // GOOGLE DRIVE & SHEETS SYNCHRONIZATION API
-  // ==========================================
-
-  // Sync Google Drive folders & certificates
-  app.post('/api/admin/drive/sync', requireAdminAuth, async (req, res) => {
-    try {
-      const accessToken = req.body?.accessToken || (req.headers['authorization']?.replace('Bearer ', ''));
-      if (!accessToken) {
-        res.status(400).json({
-          success: false,
-          error: 'Cloud synchronization is currently unavailable.'
-        });
-        return;
-      }
-      const admin = (req as any).adminUser;
-      const hierarchy = await ensureVTWFolderHierarchy(accessToken);
-      const certsResult = await syncCertificatesToDrive(accessToken, admin.email);
-
-      res.json({
-        success: true,
-        message: 'Google Drive synchronization completed successfully.',
-        rootFolderId: hierarchy.rootFolderId,
-        subfolders: hierarchy.subfolders,
-        certificatesExported: certsResult.syncedCount,
-        syncTime: new Date().toISOString()
-      });
-    } catch (err: any) {
-      console.error('Google Drive synchronization error:', err);
-      res.status(500).json({
-        success: false,
-        error: 'Cloud synchronization is currently unavailable.'
-      });
-    }
-  });
-
-  // Sync all 8 Google Sheets
-  app.post('/api/admin/sheets/sync', requireAdminAuth, async (req, res) => {
-    try {
-      const accessToken = req.body?.accessToken || (req.headers['authorization']?.replace('Bearer ', ''));
-      if (!accessToken) {
-        res.status(400).json({
-          success: false,
-          error: 'Cloud synchronization is currently unavailable.'
-        });
-        return;
-      }
-      const admin = (req as any).adminUser;
-      const result = await syncAllVTWSheets(accessToken, admin.email, {
-        news: req.body?.news,
-        research: req.body?.research,
-        conservation: req.body?.conservation
-      });
-
-      res.json({
-        success: true,
-        message: 'Google Sheets synchronized successfully.',
-        syncedSheets: result.syncedSheets,
-        lastSyncTime: result.lastSyncTime
-      });
-    } catch (err: any) {
-      console.error('Google Sheets synchronization error:', err);
-      res.status(500).json({
-        success: false,
-        error: 'Cloud synchronization is currently unavailable.'
-      });
-    }
-  });
-
-  // Backup VTW Data to Google Drive
-  app.post('/api/admin/backup', requireAdminAuth, async (req, res) => {
-    try {
-      const accessToken = req.body?.accessToken || (req.headers['authorization']?.replace('Bearer ', ''));
-      if (!accessToken) {
-        res.status(400).json({
-          success: false,
-          error: 'Cloud synchronization is currently unavailable.'
-        });
-        return;
-      }
-      const admin = (req as any).adminUser;
-      const result = await uploadBackupToDrive(accessToken, admin.email, req.body?.extraData);
-
-      res.json({
-        success: true,
-        message: 'App data backup successfully saved to Google Drive 09_App_Backups/.',
-        fileName: result.fileName,
-        fileId: result.fileId,
-        backupTime: result.backupTime
-      });
-    } catch (err: any) {
-      console.error('Backup error:', err);
-      res.status(500).json({
-        success: false,
-        error: 'Cloud synchronization is currently unavailable.'
       });
     }
   });

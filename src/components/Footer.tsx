@@ -265,8 +265,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           </div>
         </div>
 
-        <div className="text-center text-[10px] text-[#F5F1E6]/50 mt-4 font-mono tracking-widest uppercase">
-          Valmiki Tiger Watch • English • हिन्दी • اردو
+        <div className="text-center text-[11px] text-[#F5F1E6]/70 mt-4 font-mono tracking-wider">
+          © Valmiki Tiger Watch. All Rights Reserved.
         </div>
       </div>
     </footer>

@@ -37,11 +37,16 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
     updateCertificateSettings,
     revokePledgeCertificate,
     restorePledgeCertificate,
-    refreshCertificates
+    refreshCertificates,
+    pledgeTickerEntries = [],
+    isTickerEnabled = true,
+    setIsTickerEnabled,
+    togglePledgeTickerStatus,
+    deletePledgeTickerEntry
   } = useData();
 
-  // Sub-tab: 'registry' | 'signature' | 'wording'
-  const [subTab, setSubTab] = useState<'registry' | 'signature' | 'wording'>('registry');
+  // Sub-tab: 'registry' | 'signature' | 'wording' | 'ticker'
+  const [subTab, setSubTab] = useState<'registry' | 'signature' | 'wording' | 'ticker'>('registry');
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -275,6 +280,19 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
           >
             <Globe className="w-3.5 h-3.5" />
             <span>Wording & Translations</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSubTab('ticker')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
+              subTab === 'ticker'
+                ? 'bg-amber-500 text-stone-950 shadow-sm'
+                : 'bg-white/10 text-stone-300 hover:bg-white/20'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Public Ticker Moderation ({pledgeTickerEntries.length})</span>
           </button>
         </div>
       </div>
@@ -727,6 +745,148 @@ export const CertificatesAdminTab: React.FC<CertificatesAdminTabProps> = ({ show
               <Save className="w-3.5 h-3.5" />
               <span>Save Wording for All Languages</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* SUBTAB 4: LIVE PUBLIC PLEDGE TICKER MODERATION */}
+      {subTab === 'ticker' && (
+        <div className="space-y-6">
+          {/* Ticker Settings & Global Master Switch */}
+          <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-800" />
+                  <span>Public Live Pledge Ticker Stream</span>
+                </h3>
+                <p className="text-xs text-stone-600 mt-1">
+                  Controls the live animated banner displayed above the Tiger Pledge submission form. Only pledges with verified user consent are displayed.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-stone-700">
+                  Global Ticker Display:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isTickerEnabled;
+                    setIsTickerEnabled(next);
+                    showToast(next ? 'Public pledge ticker stream enabled' : 'Public pledge ticker stream disabled');
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                    isTickerEnabled
+                      ? 'bg-emerald-800 text-white shadow-sm'
+                      : 'bg-stone-200 text-stone-700'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{isTickerEnabled ? 'Enabled (Active)' : 'Disabled (Hidden)'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Ticker Entries Moderation Table */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700">
+                Pledged Citizens Stream ({pledgeTickerEntries.length} entries)
+              </h4>
+              <span className="text-[11px] text-stone-500 font-mono">
+                {pledgeTickerEntries.filter(e => e.status === 'active').length} active • {pledgeTickerEntries.filter(e => e.status === 'hidden').length} hidden
+              </span>
+            </div>
+
+            {pledgeTickerEntries.length === 0 ? (
+              <div className="bg-white p-8 rounded-2xl border border-stone-200 text-center text-xs text-stone-500">
+                No pledge ticker entries found. New pledges with consent will stream here automatically.
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-stone-50 text-stone-600 border-b border-stone-200 font-semibold uppercase text-[10px] tracking-wider">
+                      <tr>
+                        <th className="px-4 py-3">Pledgee Name</th>
+                        <th className="px-4 py-3">Location</th>
+                        <th className="px-4 py-3">Pledge Type / Title</th>
+                        <th className="px-4 py-3">Pledged Date</th>
+                        <th className="px-4 py-3">Display Status</th>
+                        <th className="px-4 py-3 text-right">Moderation Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 text-stone-700">
+                      {pledgeTickerEntries.map((entry) => (
+                        <tr key={entry.id} className="hover:bg-stone-50/80 transition-colors">
+                          <td className="px-4 py-3 font-semibold text-stone-900">
+                            {entry.fullName}
+                          </td>
+                          <td className="px-4 py-3 text-stone-600">
+                            {entry.cityAndState}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-mono bg-emerald-50 text-emerald-900 border border-emerald-200 font-semibold">
+                              {entry.title || 'Guardian of the Wild'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-stone-500 font-mono text-[11px]">
+                            {new Date(entry.pledgedAt).toLocaleDateString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              entry.status === 'active'
+                                ? 'bg-emerald-100 text-emerald-900'
+                                : 'bg-stone-200 text-stone-600'
+                            }`}>
+                              {entry.status === 'active' ? '● Public Active' : '○ Hidden / Muted'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  togglePledgeTickerStatus(entry.id);
+                                  showToast(entry.status === 'active' ? 'Pledge entry muted from ticker' : 'Pledge entry restored to active ticker');
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                                  entry.status === 'active'
+                                    ? 'bg-amber-100 hover:bg-amber-200 text-amber-900'
+                                    : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900'
+                                }`}
+                              >
+                                {entry.status === 'active' ? 'Hide / Mute' : 'Show / Activate'}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Permanently remove ticker entry for "${entry.fullName}"?`)) {
+                                    deletePledgeTickerEntry(entry.id);
+                                    showToast('Pledge ticker entry deleted');
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition"
+                                title="Delete ticker entry"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

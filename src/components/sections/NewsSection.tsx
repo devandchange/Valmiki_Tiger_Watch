@@ -29,6 +29,7 @@ import {
   Eye,
   Info
 } from 'lucide-react';
+import { EngagementBar } from '../EngagementBar';
 
 const NEWS_TOPICS = [
   'All Topics',
@@ -58,7 +59,8 @@ export const NewsSection: React.FC = () => {
     addNewsSource,
     isAutoUpdateEnabled,
     lastNewsUpdate,
-    toggleAutoUpdate
+    toggleAutoUpdate,
+    updateContentVotes
   } = useData();
 
   const safeNews = news || [];
@@ -911,8 +913,24 @@ export const NewsSection: React.FC = () => {
                   )}
                 </div>
 
+                {/* Engagement Bar: Thumbs up/down + Native Share */}
+                <div className="pt-2 border-t border-stone-100">
+                  <EngagementBar
+                    contentType="news"
+                    contentId={item.id}
+                    title={item.headline}
+                    text={item.summary}
+                    url={item.externalUrl || item.sourceLink}
+                    initialLikes={item.likes || 0}
+                    initialDislikes={item.dislikes || 0}
+                    onVote={(type, newLikes, newDislikes) => {
+                      updateContentVotes('news', item.id, newLikes, newDislikes);
+                    }}
+                  />
+                </div>
+
                 {/* Footer Action Links */}
-                <div className="pt-3 border-t border-stone-100 flex flex-wrap justify-between items-center gap-2 text-xs text-stone-500">
+                <div className="pt-2 border-t border-stone-100 flex flex-wrap justify-between items-center gap-2 text-xs text-stone-500">
                   <span className="font-mono text-[11px] text-stone-500">
                     Source: <strong className="text-stone-700">{item.source}</strong>
                   </span>
@@ -1019,6 +1037,22 @@ export const NewsSection: React.FC = () => {
                   </ul>
                 </div>
               )}
+
+              {/* Engagement Bar inside modal */}
+              <div className="pt-2 border-t border-stone-200">
+                <EngagementBar
+                  contentType="news"
+                  contentId={selectedNews.id}
+                  title={selectedNews.headline}
+                  text={selectedNews.summary}
+                  url={selectedNews.externalUrl || selectedNews.sourceLink}
+                  initialLikes={selectedNews.likes || 0}
+                  initialDislikes={selectedNews.dislikes || 0}
+                  onVote={(type, newLikes, newDislikes) => {
+                    updateContentVotes('news', selectedNews.id, newLikes, newDislikes);
+                  }}
+                />
+              </div>
             </div>
 
             <div className="pt-4 border-t border-stone-200 flex justify-between items-center gap-3">
