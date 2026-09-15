@@ -2,6 +2,7 @@ import React from 'react';
 import { useData } from '../../context/DataContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CreatorProfileCard } from '../CreatorProfileCard';
+import { VTWMemberSection } from '../VTWMemberSection';
 import { APP_CONFIG, APP_VERSION } from '../../config/version';
 import { 
   ShieldCheck, 
@@ -161,6 +162,9 @@ export const AboutSection: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* VTW Officials & Members Section */}
+      <VTWMemberSection />
 
       {/* App Information & Software Updates */}
       <div className="bg-[#FAF8F5] rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-5">

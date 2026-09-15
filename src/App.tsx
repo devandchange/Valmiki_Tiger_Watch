@@ -43,6 +43,7 @@ import { LocalCuisineSection } from './components/sections/LocalCuisineSection';
 import { TravelGuideSection } from './components/sections/TravelGuideSection';
 import { SightseeingSection } from './components/sections/SightseeingSection';
 import { WeatherSection } from './components/sections/WeatherSection';
+import { VTWMemberSection } from './components/VTWMemberSection';
 import { TigerPledgeForm } from './components/TigerPledgeForm';
 
 export default function App() {
@@ -113,6 +114,14 @@ export default function App() {
         return <MapSection />;
       case 'about':
         return <AboutSection />;
+      case 'members':
+      case 'officials':
+      case 'team':
+        return (
+          <div className="space-y-8 animate-fade-in pb-8">
+            <VTWMemberSection />
+          </div>
+        );
       case 'credits':
         return <CreditsSection />;
       case 'contact':

@@ -1,7 +1,7 @@
 import React, { forwardRef, useState, useEffect } from 'react';
 import { ShieldCheck, Award, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { TigerPledgeCertificate, CertificateAdminSettings } from '../types';
-import { PRESIDENT_SIGNATURE_DATA_URL, VTW_LOGO_DATA_URL } from '../assets/certificateImages';
+import { PRESIDENT_SIGNATURE_DATA_URL, VTW_LOGO_DATA_URL, VTW_OFFICIAL_SEAL_DATA_URL } from '../assets/certificateImages';
 import { generateCertificateQrCodeDataUrl } from '../utils/qrCodeGenerator';
 
 interface CertificatePreviewProps {
@@ -377,33 +377,21 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
                 </div>
               </div>
 
-              {/* Center Column: Official Golden Seal */}
+              {/* Center Column: Actual Graphic Official VTW Round Seal */}
               <div className="flex flex-col items-center justify-center text-center">
-                <div
-                  className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full p-0.5 shadow-md flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #FBBF24, #F59E0B, #B45309)' }}
-                >
+                <div className="relative flex flex-col items-center justify-center">
+                  <img
+                    src={VTW_OFFICIAL_SEAL_DATA_URL}
+                    alt="Official Round Seal — Valmiki Tiger Watch • Watch, Protect, Conserve • Est. 2024"
+                    className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md select-none pointer-events-none"
+                    crossOrigin="anonymous"
+                    loading="eager"
+                  />
                   <div
-                    className="w-full h-full rounded-full border flex flex-col items-center justify-center p-1"
-                    style={{
-                      backgroundColor: '#022C22',
-                      color: '#FDE68A',
-                      borderColor: 'rgba(253, 230, 138, 0.5)'
-                    }}
+                    className="text-[6.5px] sm:text-[7.5px] font-mono uppercase tracking-wider font-bold mt-0.5"
+                    style={{ color: '#064E3B' }}
                   >
-                    <Award className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" style={{ color: '#FBBF24' }} />
-                    <span
-                      className="text-[6px] sm:text-[7px] font-black tracking-tighter uppercase leading-tight"
-                      style={{ color: '#FDE68A' }}
-                    >
-                      VTW OFFICIAL
-                    </span>
-                    <span
-                      className="text-[5px] sm:text-[6px] uppercase"
-                      style={{ color: 'rgba(253, 230, 138, 0.8)' }}
-                    >
-                      VERIFIED SEAL
-                    </span>
+                    Official VTW Seal
                   </div>
                 </div>
               </div>

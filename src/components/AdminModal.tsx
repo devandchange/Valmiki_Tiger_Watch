@@ -6,6 +6,8 @@ import { IntegrationsAiTab } from './admin/IntegrationsAiTab';
 import { WeatherAdminTab } from './admin/WeatherAdminTab';
 import { CertificatesAdminTab } from './admin/CertificatesAdminTab';
 import { ProtectorsAdminTab } from './admin/ProtectorsAdminTab';
+import { CreatorAdminTab } from './admin/CreatorAdminTab';
+import { MembersAdminTab } from './admin/MembersAdminTab';
 import { 
   Lock, 
   Unlock, 
@@ -104,6 +106,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     supporterSubmissions = [],
     certificates = [],
     grassrootsProtectors = [],
+    vtwMembers = [],
     exportDataBackup,
     importDataBackup,
     resetToDefaults,
@@ -113,7 +116,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
 
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'volunteers' | 'integrations' | 'weather' | 'certificates' | 'protectors' | 'system'>('tigers');
+  const [activeTab, setActiveTab] = useState<'tigers' | 'news' | 'sightings' | 'alerts' | 'locations' | 'stats' | 'sources' | 'volunteers' | 'integrations' | 'weather' | 'certificates' | 'protectors' | 'creator' | 'members' | 'system'>('tigers');
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'pending' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -587,6 +590,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                 { id: 'weather', label: `⛅ Weather Config` },
                 { id: 'certificates', label: `📜 Tiger Pledge Certs (${certificates.length})` },
                 { id: 'protectors', label: `🛡️ Protectors (${grassrootsProtectors.length})` },
+                { id: 'creator', label: `👤 Creator Photo & Bio` },
+                { id: 'members', label: `👥 Officials & Members (${vtwMembers?.length || 0})` },
                 { id: 'alerts', label: `⚠️ Advisories (${alerts.length})` },
                 { id: 'locations', label: `📍 Map & Gates (${mapLocations.length})` },
                 { id: 'stats', label: `📊 Official Census Stats (${verifiedStats.length})` },
@@ -1872,6 +1877,20 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
               {/* ============================================================ */}
               {activeTab === 'protectors' && (
                 <ProtectorsAdminTab showToast={showToast} />
+              )}
+
+              {/* ============================================================ */}
+              {/* TAB: CREATOR PHOTO & PROFILE MANAGEMENT */}
+              {/* ============================================================ */}
+              {activeTab === 'creator' && (
+                <CreatorAdminTab />
+              )}
+
+              {/* ============================================================ */}
+              {/* TAB: VTW OFFICIALS & MEMBERS MANAGEMENT */}
+              {/* ============================================================ */}
+              {activeTab === 'members' && (
+                <MembersAdminTab />
               )}
 
               {/* ============================================================ */}

@@ -29,14 +29,19 @@ import {
   EditorialStatus,
   FeedbackSubmission,
   FeedbackCategory,
-  PledgeTickerEntry
+  PledgeTickerEntry,
+  CreatorProfileData,
+  VTWMember
 } from '../types';
 import {
   signInWithGoogleAdmin,
   signOutAdmin,
   getCachedAccessToken,
-  getCachedSessionToken
+  getCachedSessionToken,
+  verifyCurrentAdminSession,
+  handleRedirectAuthResult
 } from '../lib/googleAuth';
+import { apiUrl } from '../lib/apiConfig';
 import {
   INITIAL_TIGERS,
   INITIAL_NEWS,
@@ -271,6 +276,19 @@ interface DataContextType {
   // Aggregate Engagement Voting
   updateContentVotes: (contentType: 'news' | 'research' | 'protector', id: string, likes: number, dislikes: number) => void;
 
+  // Creator Profile & VTW Officials / Members
+  creatorProfile: CreatorProfileData;
+  vtwMembers: VTWMember[];
+  refreshCreatorProfile: () => Promise<void>;
+  updateCreatorProfileData: (data: Partial<CreatorProfileData>) => Promise<boolean>;
+  uploadCreatorPhotograph: (dataUrl: string) => Promise<{ success: boolean; photoUrl?: string; error?: string }>;
+  removeCreatorPhotograph: () => Promise<boolean>;
+  refreshVTWMembers: (includeInactive?: boolean) => Promise<void>;
+  addVTWMemberRecord: (member: Omit<VTWMember, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
+  updateVTWMemberRecord: (id: string, member: Partial<VTWMember>) => Promise<boolean>;
+  deleteVTWMemberRecord: (id: string) => Promise<boolean>;
+  uploadVTWMemberPhotograph: (id: string, dataUrl: string) => Promise<{ success: boolean; photoUrl?: string; error?: string }>;
+
   // Backup & Reset
   exportDataBackup: () => string;
   importDataBackup: (jsonData: string) => boolean;
@@ -498,6 +516,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [adminSessionToken, setAdminSessionToken] = useState<string | null>(null);
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLogEntry[]>([]);
   const [vtwAdminSettings, setVtwAdminSettings] = useState<VTWAdminSettings | null>(null);
+
+  // Creator Profile & VTW Officials / Members
+  const [creatorProfile, setCreatorProfile] = useState<CreatorProfileData>({
+    fullName: 'Nazish Asad',
+    title: 'Creator & Lead Systems Architect',
+    photoUrl: '', // Default empty: displays dignified placeholder until uploaded
+    bio: {
+      en: "Nazish Asad is an environmental activist and wildlife conservation advocate dedicated to raising awareness about tiger protection, biodiversity, habitat conservation, and the importance of preserving India's natural heritage.\n\nThrough Valmiki Tiger Watch, he aims to promote independent conservation awareness, responsible eco-tourism, wildlife education, and public participation in protecting tigers and their habitats.\n\nHis work focuses on connecting people with nature, encouraging conservation responsibility, and supporting greater awareness of the challenges facing wildlife and forest ecosystems.",
+      hi: "नाज़िश असद एक पर्यावरण कार्यकर्ता और वन्यजीव संरक्षण समर्थक हैं, जो बाघ संरक्षण, जैव विविधता, पर्यावास संरक्षण और भारत की प्राकृतिक विरासत के संरक्षण के प्रति जागरूकता बढ़ाने के लिए समर्पित हैं।\n\nवाल्मीकि टाइगर वॉच के माध्यम से, उनका उद्देश्य स्वतंत्र संरक्षण जागरूकता, जिम्मेदार पर्यावरण-पर्यटन, वन्यजीव शिक्षा, और बाघों तथा उनके पर्यावासों की रक्षा में जनभागीदारी को बढ़ावा देना है।\n\nउनका कार्य लोगों को प्रकृति से जोड़ने, संरक्षण की जिम्मेदारी को प्रोत्साहित करने और वन्यजीवों तथा वन पारिस्थितिक तंत्र के समक्ष आने वाली चुनौतियों के प्रति व्यापक जागरूकता का समर्थन करने पर केंद्रित है।",
+      ur: "نازش اسد ایک ماحولیاتی کارکن اور جنگلی حیات کے تحفظ کے حامی ہیں جو شیروں کے تحفظ، حیاتیاتی تنوع، مسکن کے تحفظ اور بھارت کے قدرتی ورثے کو محفوظ رکھنے کے بارے میں شعور بیدار کرنے کے لیے وقف ہیں۔\n\nوالمیکی ٹائیگر واچ کے ذریعے، ان کا مقصد آزادانہ تحفظ کے شعور، ذمہ دارانہ ایکو ٹورازم، جنگلی حیات کی تعلیم، اور شیروں اور ان کے مسکن کے تحفظ میں عوامی شرکت کو فروغ دینا ہے۔\n\nان کا کام لوگوں کو فطرت سے جوڑنے، تحفظ کی ذمہ داری کی حوصلہ افزائی کرنے، और جنگلی حیات اور جنگلاتی ماحولیاتی نظام کو درپیش چیلنجوں کے بارے میں زیادہ سے زیادہ آگاہی کی حمایت کرنے پر مرکوز ہے۔"
+    },
+    lastUpdated: new Date().toISOString()
+  });
+  const [vtwMembers, setVtwMembers] = useState<VTWMember[]>([]);
 
   // State with LocalStorage Caching
   const [tigers, setTigers] = useState<TigerProfile[]>(() => {
@@ -1192,6 +1224,55 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Initialization: Handle Android APK redirect auth, session restoration, and fetch creator/members
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initializeSessionAndData() {
+      // 1. Check for incoming Google OAuth redirect result (e.g. from Android APK WebView)
+      try {
+        const redirectRes = await handleRedirectAuthResult();
+        if (isMounted && redirectRes && redirectRes.success && redirectRes.admin) {
+          setIsAdmin(true);
+          setAdminUser(redirectRes.admin);
+          const sessToken = getCachedSessionToken();
+          if (sessToken) setAdminSessionToken(sessToken);
+        }
+      } catch (e) {
+        console.warn('Redirect auth check completed with note:', e);
+      }
+
+      // 2. If already have cached session token, verify it
+      try {
+        const sess = getCachedSessionToken();
+        if (sess && !isAdmin) {
+          const verifiedAdmin = await verifyCurrentAdminSession();
+          if (isMounted && verifiedAdmin) {
+            setIsAdmin(true);
+            setAdminUser(verifiedAdmin);
+            setAdminSessionToken(sess);
+          }
+        }
+      } catch (e) {
+        console.warn('Session verification note:', e);
+      }
+
+      // 3. Fetch Creator Profile and VTW Members
+      try {
+        await Promise.allSettled([
+          refreshCreatorProfile(),
+          refreshVTWMembers()
+        ]);
+      } catch {}
+    }
+
+    initializeSessionAndData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Tab Switcher with URL Hash
   const setActiveTab = (tab: string) => {
     setActiveTabState(tab);
@@ -1265,7 +1346,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const sessionToken = getCachedSessionToken();
     if (!sessionToken) return;
     try {
-      const res = await fetch('/api/admin/audit-logs', {
+      const res = await fetch(apiUrl('/api/admin/audit-logs'), {
         headers: { 'x-vtw-admin-session': sessionToken }
       });
       if (res.ok) {
@@ -1282,7 +1363,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const sessionToken = getCachedSessionToken();
     if (!sessionToken) return;
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch(apiUrl('/api/admin/settings'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1303,6 +1384,217 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch {}
+  };
+
+  // ==========================================
+  // CREATOR PROFILE & PHOTOGRAPH OPERATIONS
+  // ==========================================
+  const refreshCreatorProfile = async () => {
+    try {
+      const res = await fetch(apiUrl('/api/creator-profile'));
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.profile) {
+          setCreatorProfile(data.profile);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed loading creator profile from API:', err);
+    }
+  };
+
+  const updateCreatorProfileData = async (data: Partial<CreatorProfileData>): Promise<boolean> => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return false;
+    try {
+      const res = await fetch(apiUrl('/api/admin/creator-profile'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken
+        },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const resData = await res.json();
+        if (resData.success && resData.profile) {
+          setCreatorProfile(resData.profile);
+          refreshAuditLogs();
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update creator profile:', err);
+    }
+    return false;
+  };
+
+  const uploadCreatorPhotograph = async (dataUrl: string): Promise<{ success: boolean; photoUrl?: string; error?: string }> => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return { success: false, error: 'Admin session token is required.' };
+    try {
+      const res = await fetch(apiUrl('/api/admin/creator-photo'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken
+        },
+        body: JSON.stringify({ photoDataUrl: dataUrl })
+      });
+      const resData = await res.json().catch(() => null);
+      if (res.ok && resData?.success) {
+        setCreatorProfile(prev => ({ ...prev, photoUrl: resData.photoUrl }));
+        refreshAuditLogs();
+        return { success: true, photoUrl: resData.photoUrl };
+      }
+      return { success: false, error: resData?.error || 'Failed to upload creator photograph.' };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Network error occurred during photo upload.' };
+    }
+  };
+
+  const removeCreatorPhotograph = async (): Promise<boolean> => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return false;
+    try {
+      const res = await fetch(apiUrl('/api/admin/creator-photo'), {
+        method: 'DELETE',
+        headers: {
+          'x-vtw-admin-session': sessionToken
+        }
+      });
+      if (res.ok) {
+        const resData = await res.json();
+        if (resData.success) {
+          setCreatorProfile(prev => ({ ...prev, photoUrl: '' }));
+          refreshAuditLogs();
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to remove creator photograph:', err);
+    }
+    return false;
+  };
+
+  // ==========================================
+  // VTW OFFICIALS & MEMBERS OPERATIONS
+  // ==========================================
+  const refreshVTWMembers = async (includeInactive: boolean = false) => {
+    try {
+      const sessionToken = getCachedSessionToken();
+      const endpoint = includeInactive && sessionToken ? '/api/admin/members' : '/api/members';
+      const headers: Record<string, string> = {};
+      if (includeInactive && sessionToken) {
+        headers['x-vtw-admin-session'] = sessionToken;
+      }
+      const res = await fetch(apiUrl(endpoint), { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.members)) {
+          setVtwMembers(data.members);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed loading VTW members from API:', err);
+    }
+  };
+
+  const addVTWMemberRecord = async (member: Omit<VTWMember, 'id' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return false;
+    try {
+      const res = await fetch(apiUrl('/api/admin/members'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken
+        },
+        body: JSON.stringify(member)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.member) {
+          setVtwMembers(prev => [...prev, data.member]);
+          refreshAuditLogs();
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to add VTW member:', err);
+    }
+    return false;
+  };
+
+  const updateVTWMemberRecord = async (id: string, member: Partial<VTWMember>): Promise<boolean> => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return false;
+    try {
+      const res = await fetch(apiUrl(`/api/admin/members/${id}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken
+        },
+        body: JSON.stringify(member)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.member) {
+          setVtwMembers(prev => prev.map(m => m.id === id ? data.member : m));
+          refreshAuditLogs();
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update VTW member:', err);
+    }
+    return false;
+  };
+
+  const deleteVTWMemberRecord = async (id: string): Promise<boolean> => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return false;
+    try {
+      const res = await fetch(apiUrl(`/api/admin/members/${id}`), {
+        method: 'DELETE',
+        headers: {
+          'x-vtw-admin-session': sessionToken
+        }
+      });
+      if (res.ok) {
+        setVtwMembers(prev => prev.filter(m => m.id !== id));
+        refreshAuditLogs();
+        return true;
+      }
+    } catch (err) {
+      console.error('Failed to delete VTW member:', err);
+    }
+    return false;
+  };
+
+  const uploadVTWMemberPhotograph = async (id: string, dataUrl: string): Promise<{ success: boolean; photoUrl?: string; error?: string }> => {
+    const sessionToken = getCachedSessionToken();
+    if (!sessionToken) return { success: false, error: 'Admin session required.' };
+    try {
+      const res = await fetch(apiUrl(`/api/admin/members/${id}/photo`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vtw-admin-session': sessionToken
+        },
+        body: JSON.stringify({ photoDataUrl: dataUrl })
+      });
+      const resData = await res.json().catch(() => null);
+      if (res.ok && resData?.success) {
+        setVtwMembers(prev => prev.map(m => m.id === id ? { ...m, photoUrl: resData.photoUrl } : m));
+        refreshAuditLogs();
+        return { success: true, photoUrl: resData.photoUrl };
+      }
+      return { success: false, error: resData?.error || 'Failed to upload member photo.' };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Network error occurred.' };
+    }
   };
 
   // Admin Tiger CRUD & Verification
@@ -2357,6 +2649,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsTickerEnabled,
         // Aggregate Engagement Voting
         updateContentVotes,
+        // Creator Profile & VTW Officials / Members
+        creatorProfile,
+        vtwMembers,
+        refreshCreatorProfile,
+        updateCreatorProfileData,
+        uploadCreatorPhotograph,
+        removeCreatorPhotograph,
+        refreshVTWMembers,
+        addVTWMemberRecord,
+        updateVTWMemberRecord,
+        deleteVTWMemberRecord,
+        uploadVTWMemberPhotograph,
         // Backup
         exportDataBackup,
         importDataBackup,

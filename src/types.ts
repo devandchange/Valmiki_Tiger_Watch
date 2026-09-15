@@ -652,7 +652,7 @@ export interface AdminAuditLogEntry {
   id: string;
   adminEmail: string;
   action: string;
-  recordType: 'auth' | 'volunteer' | 'supporter' | 'pledge' | 'certificate' | 'news' | 'sighting' | 'alert' | 'tiger' | 'settings' | 'backup';
+  recordType: 'auth' | 'volunteer' | 'supporter' | 'pledge' | 'certificate' | 'news' | 'sighting' | 'alert' | 'tiger' | 'settings' | 'backup' | 'creator_profile' | 'creator_photo' | 'member' | 'member_photo';
   recordId?: string;
   timestamp: string;
   result: 'success' | 'failure' | 'warning';
@@ -731,4 +731,38 @@ export interface EngagementRecord {
   contentType: 'news' | 'research' | 'protector';
   likes: number;
   dislikes: number;
+}
+
+// ==========================================
+// CREATOR PROFILE & VTW OFFICIALS / MEMBERS
+// ==========================================
+export interface CreatorProfileData {
+  fullName: string;
+  title: string;
+  photoUrl: string;
+  bio: {
+    en: string;
+    hi: string;
+    ur: string;
+  };
+  lastUpdated: string;
+  updatedBy?: string;
+}
+
+export interface VTWMember {
+  id: string;
+  fullName: string;
+  role: string;
+  designation: string;
+  category: 'leadership' | 'field_ops' | 'scientific' | 'community' | 'admin';
+  photoUrl?: string;
+  bio?: string;
+  department?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: string;
 }

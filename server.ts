@@ -30,6 +30,17 @@ import {
   saveSupporterSubmission,
   DEFAULT_VTW_OFFICIAL_EMAIL
 } from './server/adminService';
+import {
+  getCreatorProfile,
+  saveCreatorProfile,
+  saveCreatorPhotoUpload,
+  removeCreatorPhoto,
+  getAllMembers,
+  addMember,
+  updateMember,
+  deleteMember,
+  saveMemberPhotoUpload
+} from './server/membersAndCreatorService';
 
 async function startServer() {
   const app = express();
@@ -37,7 +48,25 @@ async function startServer() {
   const PORT = 3000;
   const isDev = process.env.NODE_ENV !== 'production';
 
-  app.use(express.json({ limit: '10mb' }));
+  // Enable CORS for web preview and Android APK / Capacitor origins
+  app.use((req, res, next) => {
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-vtw-admin-session, Accept, Origin, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+    next();
+  });
+
+  // Statically serve uploads directory
+  app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+
+  app.use(express.json({ limit: '15mb' }));
 
   // API Health Check
   app.get('/api/health', (_req, res) => {
@@ -521,6 +550,254 @@ async function startServer() {
   });
 
   // ==========================================
+  // CREATOR PROFILE & PHOTO MANAGEMENT API
+  // ==========================================
+
+  // Public: Get Creator Profile
+  app.get('/api/creator-profile', (_req, res) => {
+    try {
+      const profile = getCreatorProfile();
+      res.json({ success: true, profile });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to load creator profile.' });
+    }
+  });
+
+  // Admin: Update Creator Profile
+  app.post('/api/admin/creator-profile', requireAdminAuth, (req, res) => {
+    try {
+      const admin = (req as any).adminUser;
+      const { fullName, title, bio, photoUrl } = req.body || {};
+      const updated = saveCreatorProfile({ fullName, title, bio, photoUrl }, admin?.email);
+
+      recordAuditLog({
+        adminEmail: admin?.email || 'admin',
+        action: 'Update Creator Profile',
+        recordType: 'creator_profile',
+        result: 'success',
+        details: 'Updated creator profile details'
+      });
+
+      res.json({ success: true, profile: updated });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to update creator profile.' });
+    }
+  });
+
+  // Admin: Upload Creator Photo
+  app.post('/api/admin/creator-photo', requireAdminAuth, (req, res) => {
+    try {
+      const admin = (req as any).adminUser;
+      const { photoDataUrl } = req.body || {};
+      if (!photoDataUrl) {
+        res.status(400).json({ success: false, error: 'Photo data URL is required.' });
+        return;
+      }
+
+      const result = saveCreatorPhotoUpload(photoDataUrl, admin?.email);
+      if (!result.success) {
+        res.status(400).json({ success: false, error: result.error });
+        return;
+      }
+
+      recordAuditLog({
+        adminEmail: admin?.email || 'admin',
+        action: 'Upload Creator Photograph',
+        recordType: 'creator_photo',
+        result: 'success',
+        details: `Uploaded new photograph for creator (${result.photoUrl})`
+      });
+
+      res.json({ success: true, photoUrl: result.photoUrl });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to upload creator photo.' });
+    }
+  });
+
+  // Admin: Remove Creator Photo
+  app.delete('/api/admin/creator-photo', requireAdminAuth, (req, res) => {
+    try {
+      const admin = (req as any).adminUser;
+      const updated = removeCreatorPhoto(admin?.email);
+
+      recordAuditLog({
+        adminEmail: admin?.email || 'admin',
+        action: 'Remove Creator Photograph',
+        recordType: 'creator_photo',
+        result: 'success',
+        details: 'Removed creator photograph; reverted to placeholder'
+      });
+
+      res.json({ success: true, profile: updated });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to remove creator photo.' });
+    }
+  });
+
+  // ==========================================
+  // VTW OFFICIALS & MEMBERS MANAGEMENT API
+  // ==========================================
+
+  // Public: Get Active Members
+  app.get('/api/members', (_req, res) => {
+    try {
+      const members = getAllMembers(false);
+      res.json({ success: true, members });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to load VTW members.' });
+    }
+  });
+
+  // Admin: Get All Members (including inactive)
+  app.get('/api/admin/members', requireAdminAuth, (_req, res) => {
+    try {
+      const members = getAllMembers(true);
+      res.json({ success: true, members });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to load admin members list.' });
+    }
+  });
+
+  // Admin: Add Member
+  app.post('/api/admin/members', requireAdminAuth, (req, res) => {
+    try {
+      const admin = (req as any).adminUser;
+      const { fullName, role, designation, category, photoUrl, bio, department, contactEmail, contactPhone, displayOrder, isActive } = req.body || {};
+      if (!fullName) {
+        res.status(400).json({ success: false, error: 'Full name is required.' });
+        return;
+      }
+
+      const newMember = addMember({
+        fullName,
+        role: role || designation || 'Official',
+        designation: designation || role || 'Official',
+        category: category || 'field_ops',
+        photoUrl: photoUrl || '',
+        bio: bio || '',
+        department: department || '',
+        contactEmail: contactEmail || '',
+        contactPhone: contactPhone || '',
+        displayOrder: typeof displayOrder === 'number' ? displayOrder : 1,
+        isActive: isActive !== false
+      }, admin?.email);
+
+      recordAuditLog({
+        adminEmail: admin?.email || 'admin',
+        action: 'Add Official/Member',
+        recordType: 'member',
+        recordId: newMember.id,
+        result: 'success',
+        details: `Added ${newMember.fullName} (${newMember.designation})`
+      });
+
+      res.json({ success: true, member: newMember });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to create member.' });
+    }
+  });
+
+  // Admin: Update Member
+  app.put('/api/admin/members/:id', requireAdminAuth, (req, res) => {
+    try {
+      const admin = (req as any).adminUser;
+      const { id } = req.params;
+      const { fullName, role, designation, category, photoUrl, bio, department, contactEmail, contactPhone, displayOrder, isActive } = req.body || {};
+
+      const updated = updateMember(id, {
+        fullName,
+        role,
+        designation,
+        category,
+        photoUrl,
+        bio,
+        department,
+        contactEmail,
+        contactPhone,
+        displayOrder,
+        isActive
+      }, admin?.email);
+
+      if (!updated) {
+        res.status(404).json({ success: false, error: 'Member not found.' });
+        return;
+      }
+
+      recordAuditLog({
+        adminEmail: admin?.email || 'admin',
+        action: 'Update Official/Member',
+        recordType: 'member',
+        recordId: id,
+        result: 'success',
+        details: `Updated ${updated.fullName} (${updated.role})`
+      });
+
+      res.json({ success: true, member: updated });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to update member.' });
+    }
+  });
+
+  // Admin: Delete Member
+  app.delete('/api/admin/members/:id', requireAdminAuth, (req, res) => {
+    try {
+      const admin = (req as any).adminUser;
+      const { id } = req.params;
+      const success = deleteMember(id);
+
+      if (!success) {
+        res.status(404).json({ success: false, error: 'Member not found.' });
+        return;
+      }
+
+      recordAuditLog({
+        adminEmail: admin?.email || 'admin',
+        action: 'Delete Official/Member',
+        recordType: 'member',
+        recordId: id,
+        result: 'success',
+        details: `Deleted member ID ${id}`
+      });
+
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to delete member.' });
+    }
+  });
+
+  // Admin: Upload Member Photo
+  app.post('/api/admin/members/:id/photo', requireAdminAuth, (req, res) => {
+    try {
+      const admin = (req as any).adminUser;
+      const { id } = req.params;
+      const { photoDataUrl } = req.body || {};
+      if (!photoDataUrl) {
+        res.status(400).json({ success: false, error: 'Photo data URL is required.' });
+        return;
+      }
+
+      const result = saveMemberPhotoUpload(id, photoDataUrl, admin?.email);
+      if (!result.success) {
+        res.status(400).json({ success: false, error: result.error });
+        return;
+      }
+
+      recordAuditLog({
+        adminEmail: admin?.email || 'admin',
+        action: 'Upload Member Photo',
+        recordType: 'member_photo',
+        recordId: id,
+        result: 'success',
+        details: `Uploaded photo for member ID ${id}`
+      });
+
+      res.json({ success: true, photoUrl: result.photoUrl });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'Failed to upload member photo.' });
+    }
+  });
+
+  // ==========================================
   // APP VERSION & ANDROID APK UPDATE API
   // ==========================================
   app.get('/api/app-version', (_req, res) => {
@@ -627,6 +904,27 @@ async function startServer() {
         error: 'Unable to check for updates. Please try again later.'
       });
     }
+  });
+
+  // Dedicated JSON 404 for unhandled API routes (prevents fallback to HTML index.html)
+  app.all('/api/*', (_req, res) => {
+    res.status(404).json({
+      success: false,
+      error: 'Requested API endpoint was not found.'
+    });
+  });
+
+  // Dedicated JSON Error Handler for API routes (guarantees JSON responses on crashes)
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path.startsWith('/api')) {
+      console.error('Unhandled API exception caught:', err);
+      res.status(500).json({
+        success: false,
+        error: err?.message || 'Internal server error occurred in API handler.'
+      });
+      return;
+    }
+    next(err);
   });
 
   // Vite middleware for development vs Static files for production

@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <!-- Radial Gradients for Metallic Gold Finish -->
+    <radialGradient id="outerGoldGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="50%" stop-color="#D97706" />
+      <stop offset="85%" stop-color="#B45309" />
+      <stop offset="100%" stop-color="#78350F" />
+    </radialGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="25%" stop-color="#FDE68A" />
+      <stop offset="50%" stop-color="#D97706" />
+      <stop offset="75%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#92400E" />
+    </linearGradient>
+    <radialGradient id="emeraldCenterGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#064E3B" />
+      <stop offset="60%" stop-color="#022C22" />
+      <stop offset="100%" stop-color="#011812" />
+    </radialGradient>
+
+    <!-- Circular Text Paths -->
+    <!-- Top Arc for VALMIKI TIGER WATCH -->
+    <path id="topTextArc" d="M 60,250 A 190,190 0 0,1 440,250" fill="none" />
+    <!-- Bottom Arc for WATCH • PROTECT • CONSERVE -->
+    <path id="bottomTextArc" d="M 440,250 A 190,190 0 0,1 60,250" fill="none" />
+  </defs>
+
+  <!-- Outer Serrated / Notched Gear Border (24 Petals) -->
+  <g id="serratedOuterRings">
+    <!-- Outer concentric ring -->
+    <circle cx="250" cy="250" r="242" fill="none" stroke="url(#outerGoldGrad)" stroke-width="5" />
+    <circle cx="250" cy="250" r="234" fill="none" stroke="#D97706" stroke-width="1.5" stroke-dasharray="4 3" />
+    <circle cx="250" cy="250" r="226" fill="url(#outerGoldGrad)" />
+  </g>
+
+  <!-- Deep Forest Green Ring for Circular Typography -->
+  <circle cx="250" cy="250" r="222" fill="#022C22" stroke="url(#ringGrad)" stroke-width="4" />
+  <circle cx="250" cy="250" r="156" fill="none" stroke="url(#ringGrad)" stroke-width="3" />
+  <circle cx="250" cy="250" r="150" fill="none" stroke="#FDE68A" stroke-width="1" stroke-dasharray="3 3" />
+
+  <!-- Organization Top Text: VALMIKI TIGER WATCH -->
+  <text font-family="'Plus Jakarta Sans', 'Cinzel', 'Trajan Pro', Georgia, serif" font-size="29" font-weight="900" fill="#FDE68A" letter-spacing="5">
+    <textPath href="#topTextArc" startOffset="50%" text-anchor="middle">
+      VALMIKI TIGER WATCH
+    </textPath>
+  </text>
+
+  <!-- Left Star Separator -->
+  <g transform="translate(68, 250)">
+    <polygon points="0,-8 2.5,-2.5 8,0 2.5,2.5 0,8 -2.5,2.5 -8,0 -2.5,-2.5" fill="#FBBF24" />
+    <circle cx="0" cy="0" r="1.5" fill="#022C22" />
+  </g>
+
+  <!-- Right Star Separator -->
+  <g transform="translate(432, 250)">
+    <polygon points="0,-8 2.5,-2.5 8,0 2.5,2.5 0,8 -2.5,2.5 -8,0 -2.5,-2.5" fill="#FBBF24" />
+    <circle cx="0" cy="0" r="1.5" fill="#022C22" />
+  </g>
+
+  <!-- Motto Bottom Text: WATCH • PROTECT • CONSERVE -->
+  <text font-family="'Plus Jakarta Sans', 'Cinzel', 'Trajan Pro', Georgia, serif" font-size="20" font-weight="800" fill="#FDE68A" letter-spacing="4">
+    <textPath href="#bottomTextArc" startOffset="50%" text-anchor="middle">
+      WATCH • PROTECT • CONSERVE
+    </textPath>
+  </text>
+
+  <!-- Inner Medallion: Royal Emerald Core -->
+  <circle cx="250" cy="250" r="144" fill="url(#emeraldCenterGrad)" stroke="url(#ringGrad)" stroke-width="3.5" />
+  <circle cx="250" cy="250" r="138" fill="none" stroke="rgba(253, 230, 138, 0.4)" stroke-width="1.5" />
+
+  <!-- Center Artwork: Majestic Tiger Face & Conservation Crest -->
+  <g id="tigerConservationCrest" transform="translate(250, 222) scale(0.95)">
+    <!-- Laurel Wreath of Forest Conservation -->
+    <!-- Left Wreath Leaf Cluster -->
+    <path d="M -85,15 C -95,-15 -80,-55 -55,-75 C -58,-65 -60,-50 -55,-40 C -70,-20 -75,0 -70,25 Z" fill="url(#ringGrad)" opacity="0.85" />
+    <path d="M -65,30 C -80,10 -75,-25 -50,-45 C -52,-35 -52,-20 -45,-10 C -55,10 -58,25 -50,40 Z" fill="url(#ringGrad)" opacity="0.9" />
+    <!-- Right Wreath Leaf Cluster -->
+    <path d="M 85,15 C 95,-15 80,-55 55,-75 C 58,-65 60,-50 55,-40 C 70,-20 75,0 70,25 Z" fill="url(#ringGrad)" opacity="0.85" />
+    <path d="M 65,30 C 80,10 75,-25 50,-45 C 52,-35 52,-20 45,-10 C 55,10 58,25 50,40 Z" fill="url(#ringGrad)" opacity="0.9" />
+
+    <!-- Stylized Bengal Tiger Head Silhouette -->
+    <!-- Crown / Ears -->
+    <path d="M -38,-42 L -52,-62 C -42,-64 -30,-58 -26,-48 C -14,-52 14,-52 26,-48 C 30,-58 42,-64 52,-62 L 38,-42 C 48,-30 52,-15 50,5 C 46,30 25,52 0,56 C -25,52 -46,30 -50,5 C -52,-15 -48,-30 -38,-42 Z" fill="url(#ringGrad)" />
+    
+    <!-- Tiger Stripe Cuts (Deep Emerald Negative Space) -->
+    <!-- Forehead Stripes -->
+    <path d="M 0,-44 L -4,-28 L 4,-28 Z" fill="#022C22" />
+    <path d="M -12,-38 L -18,-24 L -10,-26 Z" fill="#022C22" />
+    <path d="M 12,-38 L 18,-24 L 10,-26 Z" fill="#022C22" />
+    <path d="M 0,-24 L -6,-8 L 6,-8 Z" fill="#022C22" />
+    <!-- Cheek Stripes -->
+    <path d="M -32,-18 L -44,-10 L -30,-6 Z" fill="#022C22" />
+    <path d="M -30,-2 L -42,8 L -28,8 Z" fill="#022C22" />
+    <path d="M 32,-18 L 44,-10 L 30,-6 Z" fill="#022C22" />
+    <path d="M 30,-2 L 42,8 L 28,8 Z" fill="#022C22" />
+    <!-- Eyes and Muzzle -->
+    <polygon points="-16,-6 -24,-2 -14,2" fill="#022C22" />
+    <polygon points="16,-6 24,-2 14,2" fill="#022C22" />
+    <!-- Nose & Whiskers Base -->
+    <polygon points="0,14 -7,6 7,6" fill="#022C22" />
+    <path d="M 0,14 L 0,22 M 0,22 C -6,22 -12,24 -15,28 M 0,22 C 6,22 12,24 15,28" stroke="#022C22" stroke-width="2.5" fill="none" stroke-linecap="round" />
+  </g>
+
+  <!-- Lower Ribbon / Banner for EST. 2024 -->
+  <g id="estBanner" transform="translate(250, 320)">
+    <!-- Banner Shadow -->
+    <path d="M -68,14 L -82,24 L -78,6 L -68,-6 Z" fill="#78350F" />
+    <path d="M 68,14 L 82,24 L 78,6 L 68,-6 Z" fill="#78350F" />
+    <!-- Main Banner Body -->
+    <rect x="-70" y="-12" width="140" height="26" rx="5" fill="url(#ringGrad)" stroke="#78350F" stroke-width="1.5" />
+    <!-- Inner Accent Line -->
+    <rect x="-67" y="-9" width="134" height="20" rx="3" fill="none" stroke="#FEF3C7" stroke-width="1" />
+    <!-- Text: EST. 2024 -->
+    <text x="0" y="6" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-size="14" font-weight="900" fill="#022C22" text-anchor="middle" letter-spacing="2.5">
+      EST. 2024
+    </text>
+  </g>
+
+  <!-- Official Security Notch & Certification Stars -->
+  <circle cx="250" cy="18" r="4" fill="#FDE68A" />
+  <circle cx="250" cy="482" r="4" fill="#FDE68A" />
+  <circle cx="18" cy="250" r="4" fill="#FDE68A" />
+  <circle cx="482" cy="250" r="4" fill="#FDE68A" />
+</svg>

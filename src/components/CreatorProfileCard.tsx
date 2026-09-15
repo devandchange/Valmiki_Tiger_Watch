@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { ShieldCheck, Leaf, Compass } from 'lucide-react';
+import { useData } from '../context/DataContext';
+import { ShieldCheck, Leaf, Compass, Camera, Upload, CheckCircle2 } from 'lucide-react';
 
 interface CreatorProfileCardProps {
   variant?: 'full' | 'compact';
@@ -8,8 +9,12 @@ interface CreatorProfileCardProps {
 
 export const CreatorProfileCard: React.FC<CreatorProfileCardProps> = ({ variant = 'full' }) => {
   const { language, isRtl, t } = useLanguage();
+  const { creatorProfile, isAdmin, setActiveTab, uploadCreatorPhotograph } = useData();
+  const [imgError, setImgError] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // Exact paragraphs provided by user
+  // Exact paragraphs provided by user with support for dynamic override
   const bioParagraphs = {
     en: [
       "Nazish Asad is an environmental activist and wildlife conservation advocate dedicated to raising awareness about tiger protection, biodiversity, habitat conservation, and the importance of preserving India's natural heritage.",
@@ -28,20 +33,54 @@ export const CreatorProfileCard: React.FC<CreatorProfileCardProps> = ({ variant 
     ]
   };
 
-  const currentBio = bioParagraphs[language] || bioParagraphs.en;
+  const dynamicBio = creatorProfile?.bio?.[language] || creatorProfile?.bio?.en;
+  const currentBio = dynamicBio ? [dynamicBio] : (bioParagraphs[language] || bioParagraphs.en);
 
-  const creatorName = language === 'hi' ? 'नाज़िश असद' : language === 'ur' ? 'نازش اسد' : 'Nazish Asad';
-  const creatorTitle = language === 'hi' 
+  const creatorName = creatorProfile?.fullName || (language === 'hi' ? 'नाज़िश असद' : language === 'ur' ? 'نازش اسد' : 'Nazish Asad');
+  const creatorTitle = creatorProfile?.title || (language === 'hi' 
     ? 'पर्यावरण एवं वन्यजीव संरक्षण कार्यकर्ता' 
     : language === 'ur' 
     ? 'ماحولیاتی اور جنگلی حیات کے تحفظ کے کارکن' 
-    : 'Environmental & Wildlife Conservation Activist';
+    : 'Environmental & Wildlife Conservation Activist');
 
   const aboutHeading = language === 'hi' 
     ? 'रचनाकार के बारे में' 
     : language === 'ur' 
-    ? 'تخلیق کار کے بارے میں' 
+    ? 'تخلیق کار के बारे में' 
     : 'About the Creator';
+
+  const hasPhoto = Boolean(creatorProfile?.photoUrl && !imgError);
+
+  const handleQuickUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (JPEG, PNG, or WebP).');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Image file size must be under 8MB.');
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const res = await uploadCreatorPhotograph(dataUrl);
+      setIsUploading(false);
+      if (res.success) {
+        setImgError(false);
+        setUploadSuccess(true);
+        setTimeout(() => setUploadSuccess(false), 3000);
+      } else {
+        alert(res.error || 'Failed to upload photo.');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div
@@ -70,42 +109,44 @@ export const CreatorProfileCard: React.FC<CreatorProfileCardProps> = ({ variant 
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
             <span>{t('app.independent', 'Independent Conservation Initiative')}</span>
           </div>
+
+          {isAdmin && (
+            <div className="inline-flex items-center space-x-1.5 rtl:space-x-reverse bg-amber-500/20 border border-amber-400/80 rounded-full px-3 py-1 text-xs text-amber-200 font-mono">
+              <Camera className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+              <span>Admin Photo Manager</span>
+            </div>
+          )}
         </div>
 
         {/* Primary Profile Identity & Photograph */}
         <div className={`flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 ${isRtl ? 'sm:flex-row-reverse text-right' : 'text-left'}`}>
-          {/* Photograph Display */}
+          {/* Photograph Container — Strictly Protected: Never shows signature */}
           <div className="relative group flex-shrink-0">
             <div className="w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 rounded-2xl overflow-hidden border-2 border-amber-400/90 shadow-2xl bg-[#07271D] flex items-center justify-center relative">
-              <img
-                src="/Nazish_Asad.png"
-                alt={`${creatorName} — ${creatorTitle}`}
-                referrerPolicy="no-referrer"
-                loading="eager"
-                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  const currentSrc = target.src;
-                  if (!currentSrc.includes('/assets/Nazish_Asad.png')) {
-                    target.src = '/assets/Nazish_Asad.png';
-                  } else {
-                    target.style.display = 'none';
-                    const fallback = target.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'flex';
-                  }
-                }}
-              />
-              {/* Fallback Display if image is not yet rendered */}
-              <div 
-                style={{ display: 'none' }}
-                className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#0B3D2E] to-[#07271D] text-amber-300 font-mono text-center p-3"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-2xl font-bold text-amber-300 mb-1.5 shadow-inner">
-                  NA
+              {hasPhoto ? (
+                <img
+                  src={creatorProfile.photoUrl}
+                  alt={`${creatorName} — ${creatorTitle}`}
+                  referrerPolicy="no-referrer"
+                  loading="eager"
+                  className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                  onError={() => {
+                    setImgError(true);
+                  }}
+                />
+              ) : (
+                /* Dignified Neutral Placeholder when photograph has not yet been uploaded */
+                <div 
+                  id="creator-photo-placeholder"
+                  className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#0B3D2E] via-[#07271D] to-[#041B14] text-amber-300 font-mono text-center p-4"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-400/50 flex items-center justify-center text-2xl font-bold text-amber-300 mb-2 shadow-inner">
+                    NA
+                  </div>
+                  <span className="text-[11px] uppercase tracking-wider font-bold text-emerald-200">{creatorName}</span>
+                  <span className="text-[10px] text-amber-300/70 mt-1">Creator photograph unavailable</span>
                 </div>
-                <span className="text-xs uppercase tracking-wider font-bold text-emerald-200">{creatorName}</span>
-                <span className="text-[10px] text-amber-300/80 mt-1 line-clamp-2">{creatorTitle}</span>
-              </div>
+              )}
             </div>
 
             {/* Profile Tag */}
@@ -137,9 +178,38 @@ export const CreatorProfileCard: React.FC<CreatorProfileCardProps> = ({ variant 
               {language === 'hi'
                 ? 'स्वतंत्र संरक्षण जागरूकता, जिम्मेदार पर्यावरण-पर्यटन और वन्यजीव शिक्षा पहल।'
                 : language === 'ur'
-                ? 'خود مختار تحفظی شعور، ذمہ دارانہ ایکو ٹورازم اور جنگلی حیات کی تعلیمی مہم۔'
+                ? 'خود مختار تحفظی شعور، ذمہ دارانہ ایکو ٹورازم اور جنگلی حیات کی تعلیمی مہم। '
                 : 'Independent conservation awareness, responsible eco-tourism, and wildlife education initiative.'}
             </p>
+
+            {/* Authorized Admin Direct Controls */}
+            {isAdmin && (
+              <div className="pt-3 flex flex-wrap items-center gap-2 justify-center sm:justify-start rtl:sm:justify-start">
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-mono font-semibold border border-amber-400/50 cursor-pointer transition">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{isUploading ? 'Uploading...' : hasPhoto ? 'Replace Photograph' : 'Upload Photograph'}</span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={handleQuickUpload}
+                    disabled={isUploading}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('admin')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-900/60 hover:bg-emerald-900/90 text-emerald-300 text-xs font-mono border border-emerald-500/40 transition"
+                >
+                  <span>Admin Console</span>
+                </button>
+                {uploadSuccess && (
+                  <span className="inline-flex items-center gap-1 text-xs text-emerald-400 font-mono">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Photo saved!
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
